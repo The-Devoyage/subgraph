@@ -90,6 +90,7 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 
 - service: Table
 
+|key             | value          |
 |----------------|----------------|
 |service_name    | String         |
 |----------------|----------------|
@@ -100,6 +101,7 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 
 - database config
 
+|key          | value    |
 |-------------|----------|
 |mongo_uri    | String   |
 |-------------|----------|
@@ -110,6 +112,7 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 
 - entity
 
+|key          | value    |
 |-------------|----------|
 |name         | String   |
 |-------------|----------|
@@ -119,6 +122,7 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 
 - field
 
+|key          | value    |
 |-------------|----------|
 |name         | String   |
 |-------------|----------|
