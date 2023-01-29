@@ -5,7 +5,7 @@ use mongodb::Database;
 use super::Services;
 
 impl Services {
-    pub async fn create(
+    pub async fn create_many(
         db: Database,
         new_structs: Vec<Document>,
     ) -> Result<Vec<Document>, async_graphql::Error> {

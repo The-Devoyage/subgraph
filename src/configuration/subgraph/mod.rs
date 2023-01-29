@@ -25,9 +25,16 @@ pub struct ServiceEntity {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct ServiceDatabaseConfig {
+    pub mongo_uri: Option<String>,
+    pub mongo_db: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ServiceConfig {
     pub service_name: String,
     pub entities: Vec<ServiceEntity>,
+    pub database_config: Option<ServiceDatabaseConfig>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
