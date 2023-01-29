@@ -93,20 +93,15 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 |key             | value          |
 |----------------|----------------|
 |service_name    | String         |
-|----------------|----------------|
 |entities        | entity[]       |
-|----------------|----------------|
 |database_config | DatabaseConfig |
-|----------------|----------------|
 
 - database config
 
 |key          | value    |
 |-------------|----------|
 |mongo_uri    | String   |
-|-------------|----------|
 |mongo_db     | String   |
-|-------------|----------|
 
 
 
@@ -115,9 +110,7 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 |key          | value    |
 |-------------|----------|
 |name         | String   |
-|-------------|----------|
 |fields       | field[]  |
-|-------------|----------|
 
 
 - field
@@ -125,9 +118,6 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 |key          | value    |
 |-------------|----------|
 |name         | String   |
-|-------------|----------|
 |scalar       | String   |
-|-------------|----------|
 |required     | Boolean  |
-|-------------|----------|
 
