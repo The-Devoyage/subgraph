@@ -18,4 +18,8 @@ pub struct CliArgs {
     // The port this service runs on.
     #[arg(short, long, default_value = "0")]
     pub port: Option<u16>,
+
+    // Mongo DB Connection URI String
+    #[arg(short, long)]
+    pub mongo_uri: Option<String>,
 }

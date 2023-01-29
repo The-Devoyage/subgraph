@@ -6,7 +6,7 @@ use async_graphql_warp::{GraphQLBadRequest, GraphQLResponse};
 use clap::Parser;
 use env_logger::Env;
 use http::StatusCode;
-use log::{debug, info};
+use log::{debug, error, info};
 use std::convert::Infallible;
 use warp::{http::Response as HttpResponse, Filter, Rejection};
 
@@ -27,11 +27,10 @@ async fn main() {
     let environment = configuration::environment::Environment::init();
     let subgraph_config = configuration::subgraph::SubGraphConfig::init(&args);
 
-    let data_source = database::data_source::DataSource::init().await;
-    debug!("Data Source: {:?}", data_source);
+    let data_source = database::data_source::DataSource::init(&subgraph_config).await;
+    debug!("{:?}", data_source);
 
-    let schema = graphql::schema::ServiceSchema::generate_schema(subgraph_config, data_source);
-    debug!("Created Schema: {:?}", schema);
+    let schema = graphql::schema::ServiceSchema::build(subgraph_config, data_source).finish();
 
     let graphql_post = async_graphql_warp::graphql(schema).and_then(
         |(schema, request): (Schema, async_graphql::Request)| async move {

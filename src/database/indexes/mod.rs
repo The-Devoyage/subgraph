@@ -1,19 +1,19 @@
-use async_graphql::futures_util::StreamExt;
-use bson::doc;
-use log::{debug, error, info, log_enabled, trace, warn, Level};
-use mongodb::{
-    options::{IndexOptions, ListIndexesOptions},
-    IndexModel,
-};
+// use async_graphql::futures_util::StreamExt;
+// use bson::{doc, Document};
+// use log::{debug, error, info, log_enabled, trace, warn, Level};
+// use mongodb::{
+//     options::{IndexOptions, ListIndexesOptions},
+//     IndexModel,
+// };
 
-pub struct Indexes;
+// pub struct Indexes;
 
 // impl Indexes {
 //     pub async fn list_indexes(db: &mongodb::Database) {
 //         info!("Checking Indexes.");
 //         let list_indexes_options = ListIndexesOptions::builder().build();
 //         let mut cursor = db
-//             .collection("users")
+//             .collection::<Document>("users")
 //             .list_indexes(list_indexes_options)
 //             .await
 //             .expect("Failed to find indexes.");
@@ -42,7 +42,7 @@ pub struct Indexes;
 //             .options(index_options)
 //             .build();
 
-//         db.collection::<User>("users")
+//         db.collection::<Document>("users")
 //             .create_index(index_model, None)
 //             .await
 //             .expect("Failed to create indexes.");
@@ -54,7 +54,7 @@ pub struct Indexes;
 //         let index_name = "email_1";
 
 //         let result = db
-//             .collection::<User>("users")
+//             .collection::<Document>("users")
 //             .drop_index("email_1", None)
 //             .await;
 

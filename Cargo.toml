@@ -3,16 +3,14 @@ name = "subgraph"
 version = "0.0.1"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 tokio = { version = "1.23.0", features = ["full"] }
 warp = "0.3.3"
 http = "0.2.8"
-# async-graphql = {version = "5.0.5", features= ["dynamic-schema"]}
-async-graphql = { path = "../async-graphql", features = ["dynamic-schema"] }
-async-graphql-warp = { path = "../async-graphql/integrations/warp" }
-# async-graphql-warp = "5.0.5"
+async-graphql = {version = "5.0.5", features= ["dynamic-schema"]}
+async-graphql-warp = "5.0.5"
+# async-graphql = { path = "../async-graphql", features = ["dynamic-schema"] }
+# async-graphql-warp = { path = "../async-graphql/integrations/warp" }
 serde = { version = "1.0", features = ["derive"] }
 bson = { version = "2", features = ["chrono-0_4"] }
 chrono = "0.4.23"
@@ -30,6 +28,6 @@ version = "2.3.1"
 default-features = false
 features = ["tokio-runtime"]
 
-[target.x86_64-unknown-linux-gnu]
-rustflags = ["-C", "linker=clang", "-C", "link-arg=-fuse-ld=lld"]
+# [target.x86_64-unknown-linux-gnu]
+# rustflags = ["-C", "linker=clang", "-C", "link-arg=-fuse-ld=lld"]
 

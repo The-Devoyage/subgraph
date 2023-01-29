@@ -1,12 +1,10 @@
 # @The-Devoyage/subgraph
 
-A dynamic GraphQL API Generator.
+Currently, a POC written in Rust in order to generate a functional API generated from a simple configuration/schema.
 
-_Advise: This is a work in progress and not yet intended for production use._
+## A Dynamic GraphQL Api Generator
 
-## Usage
-
-1. Define the entities.
+1. Define Entities
 
 ```toml
 # config.toml
@@ -14,12 +12,17 @@ _Advise: This is a work in progress and not yet intended for production use._
 [service]
 service_name = "pets"
 
+[service.database_config]
+mongo_uri = "mongodb://user:pass@127.0.0.1:27017/db"
+mongo_db = "myDb"
+
 [[service.entities]]
 name = "Dog"
 
 [[service.entities.fields]]
 name = "name"
 scalar = "string"
+required = true
 
 [[service.entities.fields]]
 name = "weight"
@@ -45,33 +48,34 @@ scalar = "number"
 
 3. Use the API
 
-- Sandbox runs on the specified port.
+- GraphQL Sandbox runs on the specified port.
 
 ```
+# In the browser:
 http://localhost:5011
 ```
 
-- Query from the `/graphql` endpoint.
+- Queries and Mutations to the `/graphql` endpoint.
 
 ## Features
 
 ### Simple Schema
 
-Define the entities that will be resolved and start the API.
+Simple TOML configuration to define the entities to be resolved. 
 
 ### CRUD
 
-There are four resolvers that are created for each entity.
+Resolvers are created for each defined entity.
 
 - Create Many
 - Find One
-- Find Many
-- Delete Many
-- Update Many
 
-### Database Management
+### Sandbox
 
-- Automatic indexing based off config file options.
+Once started, view the sandbox in the browser hosted at the specified port. For example `http://localhost:5011`.
+
+- View the generated schema using the schema tab.
+- Write and execute GraphQL queries in the playground.
 
 ## API
 
@@ -86,11 +90,23 @@ There are four resolvers that are created for each entity.
 
 - service: Table
 
+|----------------|----------------|
+|service_name    | String         |
+|----------------|----------------|
+|entities        | entity[]       |
+|----------------|----------------|
+|database_config | DatabaseConfig |
+|----------------|----------------|
+
+- database config
+
 |-------------|----------|
-|service_name | String   |
+|mongo_uri    | String   |
 |-------------|----------|
-|entities     | entity[] |
+|mongo_db     | String   |
 |-------------|----------|
+
+
 
 - entity
 
@@ -108,3 +124,6 @@ There are four resolvers that are created for each entity.
 |-------------|----------|
 |scalar       | String   |
 |-------------|----------|
+|required     | Boolean  |
+|-------------|----------|
+
