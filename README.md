@@ -43,7 +43,7 @@ scalar = "number"
 2. Start the Service
 
 ```bash
-./subgraph --config ./config.toml --port 5011 --log-level debug
+cargo run -- --config ./config.toml --port 5011 --log-level debug
 ```
 
 3. Use the API
