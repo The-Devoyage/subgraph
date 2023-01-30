@@ -61,7 +61,7 @@ http://localhost:5011
 
 ### Simple Schema
 
-Simple TOML configuration to define the entities to be resolved. 
+Simple TOML configuration to define the entities to be resolved.
 
 ### CRUD
 
@@ -82,42 +82,32 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 ### CLI Options
 
 - `--help` - View available commands.
-- `--config <path>` - Path to the config file. 
-- `--port <port>` -  The port for the service to run.
+- `--config <path>` - Path to the config file.
+- `--port <port>` - The port for the service to run.
 - `--log-level <level>` - Options include `info` or `debug`
 
 ### Config File Options
 
-- service: Table
+| Service         |                 |
+| --------------- | --------------- |
+| service_name    | String          |
+| entities        | Entity[]        |
+| database_config | Database Config |
 
-|key             | value          |
-|----------------|----------------|
-|service_name    | String         |
-|entities        | entity[]       |
-|database_config | DatabaseConfig |
+| Database Config |        |
+| --------------- | ------ |
+| mongo_uri       | String |
+| mongo_db        | String |
 
-- database config
+| Entity |         |
+| ------ | ------- |
+| key    | value   |
+| ------ | ------- |
+| name   | String  |
+| fields | Field[] |
 
-|key          | value    |
-|-------------|----------|
-|mongo_uri    | String   |
-|mongo_db     | String   |
-
-
-
-- entity
-
-|key          | value    |
-|-------------|----------|
-|name         | String   |
-|fields       | field[]  |
-
-
-- field
-
-|key          | value    |
-|-------------|----------|
-|name         | String   |
-|scalar       | String   |
-|required     | Boolean  |
-
+| Field    |         |
+| -------- | ------- |
+| name     | String  |
+| scalar   | String  |
+| required | Boolean |
