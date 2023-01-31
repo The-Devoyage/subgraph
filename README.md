@@ -24,23 +24,27 @@ mongo_collection = "dogs"
 
 [[service.entities.fields]]
 name = "name"
-scalar = "string"
+scalar = "String"
 required = true
 
 [[service.entities.fields]]
 name = "weight"
-scalar = "number"
+scalar = "Int"
 
 [[service.entities]]
 name = "Cat"
 
 [[service.entities.fields]]
 name = "name"
-scalar = "string"
+scalar = "String"
 
 [[service.entities.fields]]
 name = "weight"
-scalar = "number"
+scalar = "Int"
+
+[[service.entities.fields]]
+name = "has_nine_lives"
+scalar = "Boolean
 ```
 
 2. Start the Service
@@ -112,8 +116,14 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 | -------------------- | ------ |
 | mongo_collection     | String |
 
-| Field    |         |
-| -------- | ------- |
-| name     | String  |
-| scalar   | String  |
-| required | Boolean |
+| Field    |               |
+| -------- | ------------- |
+| name     | String        |
+| scalar   | ScalarOptions |
+| required | Boolean       |
+
+| ScalarOptions |
+| ------------- |
+| String        |
+| Int           |
+| Boolean       |
