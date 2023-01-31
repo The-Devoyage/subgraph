@@ -8,8 +8,9 @@ impl Services {
     pub async fn find_one(
         db: Database,
         filter: Document,
+        collection: String,
     ) -> Result<Document, async_graphql::Error> {
-        let collection = db.collection("users");
+        let collection = db.collection(&collection);
 
         let document = collection.find_one(filter, None).await;
 

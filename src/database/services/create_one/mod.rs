@@ -9,8 +9,9 @@ impl Services {
     pub async fn create_one(
         db: Database,
         new_struct: Document,
+        collection: String,
     ) -> Result<Document, async_graphql::Error> {
-        let coll = db.collection::<Document>("users");
+        let coll = db.collection::<Document>(&collection);
 
         let document = to_document(&new_struct).unwrap();
 
