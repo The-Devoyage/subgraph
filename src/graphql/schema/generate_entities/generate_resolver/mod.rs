@@ -31,10 +31,13 @@ impl ServiceSchema {
         info!("Creating Resolver, {}.", resolver_config.resolver_name);
         debug!("{:?}", resolver_config);
 
+        let cloned_entity = entity.clone();
+
         let field = Field::new(
             resolver_config.resolver_name,
             resolver_config.return_type,
             move |ctx| {
+                let cloned_entity = cloned_entity.clone();
                 FieldFuture::new(async move {
                     match resolver_type {
                         ResolverType::FindOne => {
@@ -50,10 +53,25 @@ impl ServiceSchema {
                             debug!("{:?}", query);
 
                             let filter = to_document(&query)?;
+
                             info!("Found Filter");
                             debug!("{:?}", filter);
 
-                            let document = Services::find_one(db, filter).await.unwrap();
+                            let collection_name =
+                                cloned_entity.database_config.unwrap().mongo_collection;
+
+                            let document = Services::find_one(
+                                db,
+                                filter,
+                                if collection_name.is_some() {
+                                    collection_name.unwrap()
+                                } else {
+                                    cloned_entity.name
+                                },
+                            )
+                            .await
+                            .unwrap();
+
                             info!("Found Document");
                             debug!("{:?}", document);
 
@@ -70,8 +88,21 @@ impl ServiceSchema {
                                 .deserialize::<Document>()?;
                             debug!("{:?}", new_entity);
 
+                            let collection_name =
+                                cloned_entity.database_config.unwrap().mongo_collection;
+
                             let document = to_document(&new_entity)?;
-                            let result = Services::create_one(db, document).await?;
+
+                            let result = Services::create_one(
+                                db,
+                                document,
+                                if collection_name.is_some() {
+                                    collection_name.unwrap()
+                                } else {
+                                    cloned_entity.name
+                                },
+                            )
+                            .await?;
 
                             info!("Returning Result Found");
                             Ok(Some(FieldValue::owned_any(result)))

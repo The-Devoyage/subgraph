@@ -19,6 +19,9 @@ mongo_db = "myDb"
 [[service.entities]]
 name = "Dog"
 
+[service.entities.database_config]
+mongo_collection = "dogs"
+
 [[service.entities.fields]]
 name = "name"
 scalar = "string"
@@ -67,7 +70,7 @@ Simple TOML configuration to define the entities to be resolved.
 
 Resolvers are created for each defined entity.
 
-- Create Many
+- Create One
 - Find One
 
 ### Sandbox
@@ -99,12 +102,15 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 | mongo_uri       | String |
 | mongo_db        | String |
 
-| Entity |         |
-| ------ | ------- |
-| key    | value   |
-| ------ | ------- |
-| name   | String  |
-| fields | Field[] |
+| Entity         |                     |
+| -------------- | ------------------- |
+| name           | String              |
+| fields         | Field[]             |
+| datbase_config | EntityDatbaseConfig |
+
+| EntityDatabaseConfig |        |
+| -------------------- | ------ |
+| mongo_collection     | String |
 
 | Field    |         |
 | -------- | ------- |
