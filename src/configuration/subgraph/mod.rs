@@ -19,9 +19,15 @@ pub struct ServiceEntityFieldOptions {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ServiceEntityDatabaseConfig {
+    pub mongo_collection: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceEntity {
     pub name: String,
     pub fields: Vec<ServiceEntityFieldOptions>,
+    pub database_config: Option<ServiceEntityDatabaseConfig>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

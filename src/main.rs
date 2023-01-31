@@ -6,7 +6,7 @@ use async_graphql_warp::{GraphQLBadRequest, GraphQLResponse};
 use clap::Parser;
 use env_logger::Env;
 use http::StatusCode;
-use log::{debug, error, info};
+use log::{debug, info};
 use std::convert::Infallible;
 use warp::{http::Response as HttpResponse, Filter, Rejection};
 
