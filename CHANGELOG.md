@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.0.3]
+
+### Added
+- Find Many Resolver
+
 ## [v0.0.2]
 
 ### Added

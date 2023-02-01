@@ -24,6 +24,10 @@ impl ServiceSchema {
                 resolver_name: format!("create_{}", &entity.name.to_lowercase()),
                 return_type: TypeRef::named_nn(&entity.name),
             },
+            ResolverType::FindMany => ResolverConfig {
+                resolver_name: format!("get_{}s", &entity.name.to_lowercase()),
+                return_type: TypeRef::named_nn_list_nn(&entity.name),
+            },
         };
 
         self = self.add_entity_type(&entity);
@@ -77,6 +81,44 @@ impl ServiceSchema {
 
                             info!("Returning Result Found");
                             Ok(Some(FieldValue::owned_any(document)))
+                        }
+                        ResolverType::FindMany => {
+                            let db = ctx.data_unchecked::<DataSource>().db.clone();
+
+                            let query = ctx
+                                .args
+                                .try_get(&format!("{}_input", ctx.field().name()))?
+                                .deserialize::<Document>()?;
+
+                            info!("Query Object Found.");
+                            debug!("{:?}", query);
+
+                            let filter = to_document(&query)?;
+
+                            let collection_name =
+                                cloned_entity.database_config.unwrap().mongo_collection;
+
+                            let documents = Services::find_many(
+                                db,
+                                filter,
+                                if collection_name.is_some() {
+                                    collection_name.unwrap()
+                                } else {
+                                    cloned_entity.name
+                                },
+                            )
+                            .await;
+
+                            info!("Found Documents");
+                            debug!("{:?}", documents);
+
+                            info!("Returning Results Found");
+                            Ok(Some(FieldValue::list(
+                                documents
+                                    .unwrap()
+                                    .into_iter()
+                                    .map(|doc| FieldValue::owned_any(doc)),
+                            )))
                         }
                         ResolverType::CreateOne => {
                             let db = ctx.data_unchecked::<DataSource>().db.clone();
