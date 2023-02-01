@@ -14,6 +14,7 @@ impl ServiceSchema {
             info!("Adding Resolvers");
             self = self.add_resolver(&entity, ResolverType::FindOne);
             self = self.add_resolver(&entity, ResolverType::CreateOne);
+            self = self.add_resolver(&entity, ResolverType::FindMany);
 
             // info!("Adding Entity Resolver");
             // schema = schema.entity_resolver(|_ctx| {

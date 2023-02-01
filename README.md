@@ -30,6 +30,7 @@ required = true
 [[service.entities.fields]]
 name = "weight"
 scalar = "Int"
+required = false
 
 [[service.entities]]
 name = "Cat"
@@ -37,14 +38,17 @@ name = "Cat"
 [[service.entities.fields]]
 name = "name"
 scalar = "String"
+required = false
 
 [[service.entities.fields]]
 name = "weight"
 scalar = "Int"
+required = false
 
 [[service.entities.fields]]
 name = "has_nine_lives"
 scalar = "Boolean
+required = false
 ```
 
 2. Start the Service
@@ -52,6 +56,8 @@ scalar = "Boolean
 ```bash
 cargo run -- --config ./config.toml --port 5011 --log-level debug
 ```
+
+Or, use cargo to create a binary and use as desired.
 
 3. Use the API
 
@@ -74,8 +80,9 @@ Simple TOML configuration to define the entities to be resolved.
 
 Resolvers are created for each defined entity.
 
-- Create One
 - Find One
+- Find Many
+- Create One
 
 ### Sandbox
 
