@@ -8,7 +8,7 @@ mod generate_entities;
 #[derive(Clone, Copy, Debug)]
 pub enum ResolverType {
     FindOne,
-    // FindMany,
+    FindMany,
     CreateOne,
     // CreateMany,
     // DeleteOne,
