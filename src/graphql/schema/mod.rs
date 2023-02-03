@@ -1,4 +1,4 @@
-use async_graphql::dynamic::{InputObject, Object, Schema, SchemaBuilder, TypeRef};
+use async_graphql::dynamic::{Object, Scalar, Schema, SchemaBuilder, TypeRef};
 use log::{debug, error, info};
 
 use crate::{configuration::subgraph::SubGraphConfig, database::data_source::DataSource};
@@ -43,11 +43,14 @@ impl ServiceSchema {
     }
 
     pub fn finish(mut self) -> Schema {
+        let object_id = Scalar::new("ObjectID");
+
         self = self.generate_entities();
         info!("Finishing Schema");
 
         let schema = self
             .schema_builder
+            .register(object_id)
             .register(self.query)
             .register(self.mutation)
             .finish();

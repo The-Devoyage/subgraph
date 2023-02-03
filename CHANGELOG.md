@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.0.4]
+
+### Added
+- ObjectID Scalar Type
+
 ## [v0.0.3]
 
 ### Added
