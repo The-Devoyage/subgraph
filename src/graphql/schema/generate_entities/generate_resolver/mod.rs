@@ -1,5 +1,7 @@
+use std::str::FromStr;
+
 use async_graphql::dynamic::{Field, FieldFuture, FieldValue, TypeRef};
-use bson::{to_document, Document};
+use bson::{oid::ObjectId, to_document, Document};
 use log::{debug, info};
 
 use crate::{
@@ -14,6 +16,13 @@ mod add_entity_type;
 mod generate_resolver_input_value;
 
 impl ServiceSchema {
+    pub fn convert_object_id_string_to_object_id(mut filter: Document) -> Document {
+        let object_id_string = filter.get_str("_id").unwrap();
+        let object_id = ObjectId::from_str(object_id_string).unwrap();
+        filter.insert("_id", object_id);
+        filter
+    }
+
     pub fn add_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
         let resolver_config = match resolver_type {
             ResolverType::FindOne => ResolverConfig {
@@ -53,10 +62,16 @@ impl ServiceSchema {
                                 .try_get(&format!("{}_input", ctx.field().name()))?
                                 .deserialize::<Document>()?;
 
-                            info!("Query Object Found");
+                            info!("Find One - Query Object Found");
                             debug!("{:?}", query);
 
-                            let filter = to_document(&query)?;
+                            let mut filter = to_document(&query)?;
+
+                            if filter.contains_key("_id") {
+                                info!("Converting `_id` To Object Id");
+                                filter =
+                                    ServiceSchema::convert_object_id_string_to_object_id(filter);
+                            }
 
                             info!("Found Filter");
                             debug!("{:?}", filter);
@@ -90,10 +105,18 @@ impl ServiceSchema {
                                 .try_get(&format!("{}_input", ctx.field().name()))?
                                 .deserialize::<Document>()?;
 
-                            info!("Query Object Found.");
+                            info!("Find Many - Query Object Found.");
                             debug!("{:?}", query);
 
-                            let filter = to_document(&query)?;
+                            let mut filter = to_document(&query)?;
+
+                            if filter.contains_key("_id") {
+                                info!("Converting `_id` To Object Id");
+                                filter =
+                                    ServiceSchema::convert_object_id_string_to_object_id(filter);
+                            }
+
+                            debug!("{:?}", filter);
 
                             let collection_name =
                                 cloned_entity.database_config.unwrap().mongo_collection;
@@ -123,11 +146,12 @@ impl ServiceSchema {
                         ResolverType::CreateOne => {
                             let db = ctx.data_unchecked::<DataSource>().db.clone();
 
-                            info!("Extracting Args");
                             let new_entity = ctx
                                 .args
                                 .try_get(&format!("{}_input", ctx.field().name()))?
                                 .deserialize::<Document>()?;
+
+                            info!("Found Args");
                             debug!("{:?}", new_entity);
 
                             let collection_name =

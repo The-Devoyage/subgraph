@@ -23,6 +23,11 @@ name = "Dog"
 mongo_collection = "dogs"
 
 [[service.entities.fields]]
+name = "_id"
+scalar = "ObjectID"
+required = true
+
+[[service.entities.fields]]
 name = "name"
 scalar = "String"
 required = true
@@ -34,6 +39,11 @@ required = false
 
 [[service.entities]]
 name = "Cat"
+
+[[service.entities.fields]]
+name = "_id"
+scalar = "ObjectID"
+required = true
 
 [[service.entities.fields]]
 name = "name"
@@ -134,3 +144,4 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 | String        |
 | Int           |
 | Boolean       |
+| ObjectID      |
