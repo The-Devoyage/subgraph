@@ -32,6 +32,13 @@ impl ServiceSchema {
                     false => TypeRef::named(TypeRef::BOOLEAN),
                 },
             },
+            ScalarOptions::ObjectID => match resolver_type {
+                ResolverType::FindOne | ResolverType::FindMany => TypeRef::named("ObjectID"),
+                ResolverType::CreateOne => match entity_field.required {
+                    true => TypeRef::named_nn("ObjectID"),
+                    false => TypeRef::named("ObjectID"),
+                },
+            },
         };
 
         field_type
@@ -111,26 +118,37 @@ impl ServiceSchema {
             }
             ResolverType::CreateOne => {
                 let resolver_input_name = format!("create_{}_input", &entity.name.to_lowercase());
-                info!("Adding Create One Resolver, {}", resolver_input_name);
+                info!("Creating Create One Resolver, {}", resolver_input_name);
+
                 let mut input = InputObject::new(&resolver_input_name);
+
                 for entity_field in &entity.fields {
-                    info!(
-                        "Getting {} Field Type for Create One Resolver",
-                        resolver_input_name
-                    );
-                    let field_type =
-                        ServiceSchema::get_entity_field_type(&entity_field, &resolver_type);
-                    input = input.field(InputValue::new(&entity_field.name, field_type));
+                    if entity_field.name != "_id" {
+                        info!(
+                            "Getting {} Field Type for Create One Resolver",
+                            resolver_input_name
+                        );
+
+                        let field_type =
+                            ServiceSchema::get_entity_field_type(&entity_field, &resolver_type);
+
+                        input = input.field(InputValue::new(&entity_field.name, field_type));
+                    }
                 }
+
                 field = field.argument(InputValue::new(
                     &resolver_input_name,
                     TypeRef::named_nn(input.type_name()),
                 ));
+
                 info!("Created Field, {:?}", resolver_input_name);
                 debug!("{:?}", field);
+
                 self.mutation = self.mutation.field(field);
+
                 info!("Updated Mutation");
                 debug!("{:?}", self.mutation);
+
                 self.schema_builder = self.schema_builder.register(input);
             }
         }

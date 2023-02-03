@@ -9,6 +9,7 @@ pub enum ScalarOptions {
     String,
     Int,
     Boolean,
+    ObjectID,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
