@@ -12,10 +12,12 @@ Currently, a POC written in Rust in order to generate a functional API generated
 [service]
 service_name = "pets"
 
+# Some Database Config
 [service.database_config]
 mongo_uri = "mongodb://user:pass@127.0.0.1:27017/db"
 mongo_db = "myDb"
 
+# First Entity
 [[service.entities]]
 name = "Dog"
 
@@ -37,28 +39,17 @@ name = "weight"
 scalar = "Int"
 required = false
 
+# Second Entity
 [[service.entities]]
 name = "Cat"
 
-[[service.entities.fields]]
-name = "_id"
-scalar = "ObjectID"
-required = true
+# ...entity config
 
-[[service.entities.fields]]
-name = "name"
-scalar = "String"
-required = false
+# Third Entity
+[[service.entities]]
+name = "Goat"
 
-[[service.entities.fields]]
-name = "weight"
-scalar = "Int"
-required = false
-
-[[service.entities.fields]]
-name = "has_nine_lives"
-scalar = "Boolean
-required = false
+# ...entity config
 ```
 
 2. Start the Service
@@ -117,11 +108,29 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 | service_name    | String          |
 | entities        | Entity[]        |
 | database_config | Database Config |
+| cors            | Cors Config     |
+
+#### Database
 
 | Database Config |        |
 | --------------- | ------ |
 | mongo_uri       | String |
 | mongo_db        | String |
+
+#### Cors
+
+| Cors Config      |                |
+| ---------------- | -------------- |
+| allow_any_origin | Boolean        |
+| allow_origins    | String[]       |
+| allow_headers    | String[]       |
+| allow_methods    | MethodOption[] |
+
+| Method Option   |        |
+| --------------- | ------ |
+| method          | String |
+
+#### Entities
 
 | Entity         |                     |
 | -------------- | ------------------- |
