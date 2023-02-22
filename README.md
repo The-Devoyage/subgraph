@@ -58,7 +58,7 @@ name = "Goat"
 cargo run -- --config ./config.toml --port 5011 --log-level debug
 ```
 
-Or, use cargo to create a binary and use as desired.
+Read below for binary/build options.
 
 3. Use the API
 
@@ -92,6 +92,14 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 - View the generated schema using the schema tab.
 - Write and execute GraphQL queries in the playground.
 
+## Build
+
+Running the `cargo run` command is useful while in development. When using in production, create a release to generate a executable binary.
+
+```bash
+cargo build --relesae
+```
+
 ## API
 
 ### CLI Options
@@ -103,19 +111,19 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 
 ### Config File Options
 
-| Service         |                 |
-| --------------- | --------------- |
-| service_name    | String          |
-| entities        | Entity[]        |
-| database_config | Database Config |
-| cors            | Cors Config     |
+| Service*         |                 |
+| ---------------- | --------------- |
+| service_name     | String          |
+| entities*        | Entity[]        |
+| database_config* | Database Config |
+| cors             | Cors Config     |
 
 #### Database
 
-| Database Config |        |
-| --------------- | ------ |
-| mongo_uri       | String |
-| mongo_db        | String |
+| Database Config* |        |
+| ---------------- | ------ |
+| mongo_uri*       | String |
+| mongo_db*        | String |
 
 #### Cors
 
@@ -132,21 +140,21 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 
 #### Entities
 
-| Entity         |                     |
+| Entity*        |                     |
 | -------------- | ------------------- |
-| name           | String              |
-| fields         | Field[]             |
+| name*          | String              |
+| fields*        | Field[]             |
 | datbase_config | EntityDatbaseConfig |
 
 | EntityDatabaseConfig |        |
 | -------------------- | ------ |
 | mongo_collection     | String |
 
-| Field    |               |
-| -------- | ------------- |
-| name     | String        |
-| scalar   | ScalarOptions |
-| required | Boolean       |
+| Field*    |               |
+| --------- | ------------- |
+| name*     | String        |
+| scalar*   | ScalarOptions |
+| required* | Boolean       |
 
 | ScalarOptions |
 | ------------- |
@@ -154,3 +162,4 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 | Int           |
 | Boolean       |
 | ObjectID      |
+
