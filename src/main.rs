@@ -12,6 +12,7 @@ use warp::{http::Response as HttpResponse, Filter, Rejection};
 
 mod cli_args;
 mod configuration;
+mod data_sources;
 mod database;
 mod graphql;
 
@@ -27,11 +28,10 @@ async fn main() {
     let environment = configuration::environment::Environment::init();
     let subgraph_config = configuration::subgraph::SubGraphConfig::init(&args);
 
-    let data_source = database::data_source::DataSource::init(&subgraph_config).await;
-    debug!("{:?}", data_source);
+    let data_sources = data_sources::DataSources::init(subgraph_config.service.data_sources).await;
 
     let schema =
-        graphql::schema::ServiceSchema::build(subgraph_config.clone(), data_source).finish();
+        graphql::schema::ServiceSchema::build(subgraph_config.clone(), data_sources).finish();
 
     let graphql_post = async_graphql_warp::graphql(schema).and_then(
         |(schema, request): (Schema, async_graphql::Request)| async move {

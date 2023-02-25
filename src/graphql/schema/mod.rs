@@ -1,7 +1,7 @@
 use async_graphql::dynamic::{Object, Scalar, Schema, SchemaBuilder, TypeRef};
 use log::{debug, error, info};
 
-use crate::{configuration::subgraph::SubGraphConfig, database::data_source::DataSource};
+use crate::{configuration::subgraph::SubGraphConfig, data_sources::DataSources};
 
 mod generate_entities;
 
@@ -31,11 +31,11 @@ pub struct ServiceSchema {
 }
 
 impl ServiceSchema {
-    pub fn build(subgraph_config: SubGraphConfig, data_source: DataSource) -> Self {
+    pub fn build(subgraph_config: SubGraphConfig, data_sources: DataSources) -> Self {
         ServiceSchema {
             subgraph_config,
             schema_builder: Schema::build("Query", Some("Mutation"), None)
-                .data(data_source)
+                .data(data_sources)
                 .enable_federation(),
             query: Object::new("Query").extends(),
             mutation: Object::new("Mutation"),
