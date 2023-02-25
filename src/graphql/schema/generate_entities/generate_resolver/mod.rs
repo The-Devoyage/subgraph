@@ -5,7 +5,7 @@ use bson::{oid::ObjectId, to_document, Document};
 use log::{debug, info};
 
 use crate::{
-    configuration::subgraph::ServiceEntity,
+    configuration::subgraph::entities::ServiceEntity,
     database::{data_source::DataSource, services::Services},
     graphql::schema::ResolverConfig,
 };
