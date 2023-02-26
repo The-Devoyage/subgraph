@@ -6,14 +6,13 @@ use async_graphql_warp::{GraphQLBadRequest, GraphQLResponse};
 use clap::Parser;
 use env_logger::Env;
 use http::StatusCode;
-use log::{debug, info};
+use log::info;
 use std::convert::Infallible;
 use warp::{http::Response as HttpResponse, Filter, Rejection};
 
 mod cli_args;
 mod configuration;
 mod data_sources;
-mod database;
 mod graphql;
 
 #[tokio::main]
@@ -25,10 +24,11 @@ async fn main() {
     )
     .init();
 
-    let environment = configuration::environment::Environment::init();
+    // let environment = configuration::environment::Environment::init();
     let subgraph_config = configuration::subgraph::SubGraphConfig::init(&args);
 
-    let data_sources = data_sources::DataSources::init(subgraph_config.service.data_sources).await;
+    let data_sources =
+        data_sources::DataSources::init(subgraph_config.service.data_sources.clone()).await;
 
     let schema =
         graphql::schema::ServiceSchema::build(subgraph_config.clone(), data_sources).finish();
