@@ -1,8 +1,8 @@
 # @The-Devoyage/subgraph
 
-Currently, a POC written in Rust in order to generate a functional API generated from a simple configuration/schema.
+Currently, a POC written in Rust in order to dynamically generate a functional API from a simple configuration/schema.
 
-## A Dynamic GraphQL Api Generator
+## Quick Start
 
 1. Define Entities
 
@@ -95,14 +95,6 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 - View the generated schema using the schema tab.
 - Write and execute GraphQL queries in the playground.
 
-## Build
-
-Running the `cargo run` command is useful while in development. When using in production, create a release to generate a executable binary.
-
-```bash
-cargo build --relesae
-```
-
 ## API
 
 ### CLI Options
@@ -176,13 +168,29 @@ cargo build --relesae
 
 ## Usage
 
+### Build
+
+If downloading from source, running the `cargo run` command as demonstrated in the quick start is useful. When using in production, create a release to generate a executable binary.
+
+```bash
+cargo build --relesae
+```
+
 ### Defining The Service
 
-<!-- To Do -->
+Define the service at the top of the config.
+
+```toml
+[service]
+service_name = "demo"
+
+...
+
+```
 
 ### Defining Data Sources
 
-You must define at least one Data Source and can define multiple data souces. 
+You must define at least one Data Source. See the `Data Source Enum` table in the `API` section of this readme for supported Data Sources. You may define multiple Data Sources.
 
 ```toml
 [service]
@@ -199,25 +207,41 @@ db = "local_db"
 name = "mongo_2"
 uri = "mongodb+srv://user:pass@cluster298.an37alj.mongodb.net/?retryWrites=true&w=majority"
 db = "remote_db"
-
 ```
 
 ### Defining Entities
 
-<!-- TODO -->
+Entities are the assets returned from the data source. You may define multiple entities. Entities require field definitions, to describe the properties of the entity.
 
-### Associating Entities With Data Sources
+```
+[[service.entities]]
+name = "Person"
 
-If not defined, entities default to using the first defined data source but can be assigned to a data source.
+[[service.entities.fields]]
+name = "_id"
+scalar = "ObjectID"
+required = true
 
-The `from` field is associated with the `name` field of top level data sources.
+[[service.entities.fields]]
+name = "name"
+scalar = "String"
+required = true
+```
+
+#### Entity Configuration
+
+__Entity Data Source__
+
+If not defined, entities are associated with the first defined data source but can be assigned to a data source.
+
+The `from` field is associated with the `name` of the data source associated with the entity.
 
 ```toml
 [[service.entities]]
 name = "Person"
 
 [service.entities.data_source]
-from = "mongo_1"
+from = "secondary_data_source" # The name of the data source to associate with.
 collection = "users"
 
 [[service.entities.fields]]
@@ -231,6 +255,19 @@ scalar = "String"
 required = true
 ```
 
-### Cors Options
+### CORS Options
 
-<!-- To Do -->
+Allow specific HTTP Methods, Origins, and Headers if needed. By default this server allows all origins, POST HTTP Methods (since it is a GraphQL server), and `Content-Type` Headers.
+
+```
+[service.cors]
+allow_any_origin = true
+allow_origins = ["http://localhost:3000"]
+allow_headers = ["Authorization", "Content-Type"]
+
+[[service.cors.allow_methods]]
+method = "POST"
+
+[[service.cors.allow_methods]]
+method = "GET"
+```
