@@ -12,17 +12,20 @@ Currently, a POC written in Rust in order to generate a functional API generated
 [service]
 service_name = "pets"
 
-# Some Database Config
-[service.database_config]
-mongo_uri = "mongodb://user:pass@127.0.0.1:27017/db"
-mongo_db = "myDb"
+# Multi Data Source Support
+[[service.data_sources]]
+[service.data_sources.Mongo]
+name = "mongo_one"
+uri = "mongodb://user:pass@127.0.0.1:27017/db"
+db = "prod_1"
 
 # First Entity
 [[service.entities]]
 name = "Dog"
 
-[service.entities.database_config]
-mongo_collection = "dogs"
+[service.entities.data_source]
+from = "mongo_1"
+collection = "users"
 
 [[service.entities.fields]]
 name = "_id"
@@ -115,15 +118,22 @@ cargo build --relesae
 | ---------------- | --------------- |
 | service_name     | String          |
 | entities*        | Entity[]        |
-| database_config* | Database Config |
+| data_sources     | Data Source[]   |
 | cors             | Cors Config     |
 
-#### Database
+#### Data Source Enum
 
-| Database Config* |        |
-| ---------------- | ------ |
-| mongo_uri*       | String |
-| mongo_db*        | String |
+| Data Source Enum*   |                   |
+| ------------------- | ----------------- |
+| Mongo               | Mongo Data Source |
+
+
+### Mongo Data Source
+| Data Source Enum*  |        |
+| ------------------ | ------ |
+| name*              | String |
+| uri*               | String |
+| db*                | String |
 
 #### Cors
 
@@ -163,3 +173,64 @@ cargo build --relesae
 | Boolean       |
 | ObjectID      |
 
+
+## Usage
+
+### Defining The Service
+
+<!-- To Do -->
+
+### Defining Data Sources
+
+You must define at least one Data Source and can define multiple data souces. 
+
+```toml
+[service]
+service_name = "demo"
+
+[[service.data_sources]]
+[service.data_sources.Mongo]
+name = "mongo_1"
+uri = "mongodb://user:pass127.0.0.1:27017/db_name"
+db = "local_db"
+
+[[service.data_sources]]
+[service.data_sources.Mongo]
+name = "mongo_2"
+uri = "mongodb+srv://user:pass@cluster298.an37alj.mongodb.net/?retryWrites=true&w=majority"
+db = "remote_db"
+
+```
+
+### Defining Entities
+
+<!-- TODO -->
+
+### Associating Entities With Data Sources
+
+If not defined, entities default to using the first defined data source but can be assigned to a data source.
+
+The `from` field is associated with the `name` field of top level data sources.
+
+```toml
+[[service.entities]]
+name = "Person"
+
+[service.entities.data_source]
+from = "mongo_1"
+collection = "users"
+
+[[service.entities.fields]]
+name = "_id"
+scalar = "ObjectID"
+required = true
+
+[[service.entities.fields]]
+name = "name"
+scalar = "String"
+required = true
+```
+
+### Cors Options
+
+<!-- To Do -->

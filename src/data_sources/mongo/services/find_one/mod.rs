@@ -10,7 +10,12 @@ impl Services {
         filter: Document,
         collection: String,
     ) -> Result<Document, async_graphql::Error> {
+        info!("Executing Find One");
+
         let collection = db.collection(&collection);
+
+        info!("Created Collection");
+        debug!("{:?}", collection);
 
         let document = collection.find_one(filter, None).await;
 
