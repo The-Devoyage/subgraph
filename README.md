@@ -183,9 +183,6 @@ Define the service at the top of the config.
 ```toml
 [service]
 service_name = "demo"
-
-...
-
 ```
 
 ### Defining Data Sources
