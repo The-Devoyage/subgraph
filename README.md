@@ -113,16 +113,14 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 | data_sources     | Data Source Enum[] |
 | cors             | Cors Config        |
 
-#### Data Source Enum
+#### Data Sources
 
 | Data Source Enum*   |                   |
 | ------------------- | ----------------- |
 | Mongo               | Mongo Data Source |
 
 
-__Mongo Data Source__
-
-| Data Source Enum*  |        |
+| Mongo Data Source  |        |
 | ------------------ | ------ |
 | name*              | String |
 | uri*               | String |
