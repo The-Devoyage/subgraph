@@ -210,7 +210,7 @@ db = "remote_db"
 
 Entities are the assets returned from the data source. You may define multiple entities. Entities require field definitions, to describe the properties of the entity.
 
-```
+```toml
 [[service.entities]]
 name = "Person"
 
@@ -256,7 +256,7 @@ required = true
 
 Allow specific HTTP Methods, Origins, and Headers if needed. By default this server allows all origins, POST HTTP Methods (since it is a GraphQL server), and `Content-Type` Headers.
 
-```
+```toml
 [service.cors]
 allow_any_origin = true
 allow_origins = ["http://localhost:3000"]
