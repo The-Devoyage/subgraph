@@ -1,3 +1,4 @@
+use http::Method;
 use log::{debug, error};
 use serde::{Deserialize, Serialize};
 use std::{fs::File, io::Read};
@@ -10,6 +11,11 @@ pub enum ScalarOptions {
     Int,
     Boolean,
     ObjectID,
+}
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MethodOption {
+    #[serde(with = "http_serde::method")]
+    pub method: Method,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -31,20 +37,29 @@ pub struct ServiceEntity {
     pub database_config: Option<ServiceEntityDatabaseConfig>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceDatabaseConfig {
     pub mongo_uri: Option<String>,
     pub mongo_db: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CorsConfigOptions {
+    pub allow_methods: Option<Vec<MethodOption>>,
+    pub allow_headers: Option<Vec<String>>,
+    pub allow_origins: Option<Vec<String>>,
+    pub allow_any_origin: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceConfig {
     pub service_name: String,
     pub entities: Vec<ServiceEntity>,
     pub database_config: Option<ServiceDatabaseConfig>,
+    pub cors: Option<CorsConfigOptions>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SubGraphConfig {
     pub service: ServiceConfig,
 }

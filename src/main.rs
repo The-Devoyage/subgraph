@@ -30,7 +30,8 @@ async fn main() {
     let data_source = database::data_source::DataSource::init(&subgraph_config).await;
     debug!("{:?}", data_source);
 
-    let schema = graphql::schema::ServiceSchema::build(subgraph_config, data_source).finish();
+    let schema =
+        graphql::schema::ServiceSchema::build(subgraph_config.clone(), data_source).finish();
 
     let graphql_post = async_graphql_warp::graphql(schema).and_then(
         |(schema, request): (Schema, async_graphql::Request)| async move {
@@ -46,21 +47,25 @@ async fn main() {
             .body(playground_source(GraphQLPlaygroundConfig::new("/")))
     });
 
-    let routes = graphql_playground
-        .or(graphql_post)
-        .recover(|err: Rejection| async move {
-            if let Some(GraphQLBadRequest(err)) = err.find() {
-                return Ok::<_, Infallible>(warp::reply::with_status(
-                    err.to_string(),
-                    StatusCode::BAD_REQUEST,
-                ));
-            }
+    let cors = configuration::cors_config::CorsConfig::create_cors(subgraph_config);
 
-            Ok(warp::reply::with_status(
-                "INTERNAL_SERVER_ERROR".to_string(),
-                StatusCode::INTERNAL_SERVER_ERROR,
-            ))
-        });
+    let routes =
+        graphql_playground
+            .or(graphql_post)
+            .with(cors)
+            .recover(|err: Rejection| async move {
+                if let Some(GraphQLBadRequest(err)) = err.find() {
+                    return Ok::<_, Infallible>(warp::reply::with_status(
+                        err.to_string(),
+                        StatusCode::BAD_REQUEST,
+                    ));
+                }
+
+                Ok(warp::reply::with_status(
+                    "INTERNAL_SERVER_ERROR".to_string(),
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                ))
+            });
 
     info!(
         "Playground: http://localhost:{:?}",

@@ -802,6 +802,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "http-serde"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e272971f774ba29341db2f686255ff8a979365a26fb9e4277f6b6d9ec0cdd5e"
+dependencies = [
+ "http",
+ "serde",
+]
+
+[[package]]
 name = "httparse"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1783,7 +1793,7 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "subgraph"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "async-graphql",
  "async-graphql-warp",
@@ -1793,6 +1803,7 @@ dependencies = [
  "env_logger",
  "envy",
  "http",
+ "http-serde",
  "log",
  "mongodb",
  "proc-macro2",
