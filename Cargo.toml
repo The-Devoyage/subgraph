@@ -20,7 +20,7 @@ log = "0.4.17"
 envy = "0.4.2"
 env_logger = "0.10.0"
 clap = { version = "4.1.1", features = ["derive"] }
-toml = "0.5.6"
+toml = "0.7.2"
 http-serde = "1.1.2"
 
 

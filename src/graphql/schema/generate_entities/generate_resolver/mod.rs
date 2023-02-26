@@ -1,12 +1,8 @@
-use std::str::FromStr;
-
-use async_graphql::dynamic::{Field, FieldFuture, FieldValue, TypeRef};
-use bson::{oid::ObjectId, to_document, Document};
+use async_graphql::dynamic::{Field, FieldFuture, TypeRef};
 use log::{debug, info};
 
 use crate::{
-    configuration::subgraph::ServiceEntity,
-    database::{data_source::DataSource, services::Services},
+    configuration::subgraph::entities::ServiceEntity, data_sources::DataSources,
     graphql::schema::ResolverConfig,
 };
 
@@ -16,13 +12,6 @@ mod add_entity_type;
 mod generate_resolver_input_value;
 
 impl ServiceSchema {
-    pub fn convert_object_id_string_to_object_id(mut filter: Document) -> Document {
-        let object_id_string = filter.get_str("_id").unwrap();
-        let object_id = ObjectId::from_str(object_id_string).unwrap();
-        filter.insert("_id", object_id);
-        filter
-    }
-
     pub fn add_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
         let resolver_config = match resolver_type {
             ResolverType::FindOne => ResolverConfig {
@@ -55,123 +44,70 @@ impl ServiceSchema {
                     match resolver_type {
                         ResolverType::FindOne => {
                             info!("Executing Find One");
-                            let db = ctx.data_unchecked::<DataSource>().db.clone();
-                            info!("Getting `query` Input");
-                            let query = ctx
-                                .args
-                                .try_get(&format!("{}_input", ctx.field().name()))?
-                                .deserialize::<Document>()?;
 
-                            info!("Find One - Query Object Found");
-                            debug!("{:?}", query);
+                            let data_sources = ctx.data_unchecked::<DataSources>().clone();
 
-                            let mut filter = to_document(&query)?;
+                            info!("Found Data Sources");
+                            debug!("{:?}", data_sources);
 
-                            if filter.contains_key("_id") {
-                                info!("Converting `_id` To Object Id");
-                                filter =
-                                    ServiceSchema::convert_object_id_string_to_object_id(filter);
-                            }
+                            let input =
+                                ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
 
-                            info!("Found Filter");
-                            debug!("{:?}", filter);
+                            info!("Found Input");
 
-                            let collection_name =
-                                cloned_entity.database_config.unwrap().mongo_collection;
-
-                            let document = Services::find_one(
-                                db,
-                                filter,
-                                if collection_name.is_some() {
-                                    collection_name.unwrap()
-                                } else {
-                                    cloned_entity.name
-                                },
-                            )
-                            .await
-                            .unwrap();
-
-                            info!("Found Document");
-                            debug!("{:?}", document);
-
-                            info!("Returning Result Found");
-                            Ok(Some(FieldValue::owned_any(document)))
-                        }
-                        ResolverType::FindMany => {
-                            let db = ctx.data_unchecked::<DataSource>().db.clone();
-
-                            let query = ctx
-                                .args
-                                .try_get(&format!("{}_input", ctx.field().name()))?
-                                .deserialize::<Document>()?;
-
-                            info!("Find Many - Query Object Found.");
-                            debug!("{:?}", query);
-
-                            let mut filter = to_document(&query)?;
-
-                            if filter.contains_key("_id") {
-                                info!("Converting `_id` To Object Id");
-                                filter =
-                                    ServiceSchema::convert_object_id_string_to_object_id(filter);
-                            }
-
-                            debug!("{:?}", filter);
-
-                            let collection_name =
-                                cloned_entity.database_config.unwrap().mongo_collection;
-
-                            let documents = Services::find_many(
-                                db,
-                                filter,
-                                if collection_name.is_some() {
-                                    collection_name.unwrap()
-                                } else {
-                                    cloned_entity.name
-                                },
+                            let result = DataSources::execute(
+                                data_sources,
+                                &input,
+                                cloned_entity,
+                                resolver_type,
                             )
                             .await;
 
-                            info!("Found Documents");
-                            debug!("{:?}", documents);
+                            info!("Found Results");
 
-                            info!("Returning Results Found");
-                            Ok(Some(FieldValue::list(
-                                documents
-                                    .unwrap()
-                                    .into_iter()
-                                    .map(|doc| FieldValue::owned_any(doc)),
-                            )))
+                            Ok(Some(result))
+                        }
+                        ResolverType::FindMany => {
+                            info!("Executing Find Many");
+
+                            let data_sources = ctx.data_unchecked::<DataSources>().clone();
+
+                            info!("Found Data Sources");
+                            debug!("{:?}", data_sources);
+
+                            let input =
+                                ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
+
+                            let results = DataSources::execute(
+                                data_sources,
+                                &input,
+                                cloned_entity,
+                                resolver_type,
+                            )
+                            .await;
+
+                            Ok(Some(results))
                         }
                         ResolverType::CreateOne => {
-                            let db = ctx.data_unchecked::<DataSource>().db.clone();
+                            info!("Executing Create One");
 
-                            let new_entity = ctx
-                                .args
-                                .try_get(&format!("{}_input", ctx.field().name()))?
-                                .deserialize::<Document>()?;
+                            let data_sources = ctx.data_unchecked::<DataSources>().clone();
 
-                            info!("Found Args");
-                            debug!("{:?}", new_entity);
+                            info!("Found Data Sources");
+                            debug!("{:?}", data_sources);
 
-                            let collection_name =
-                                cloned_entity.database_config.unwrap().mongo_collection;
+                            let input =
+                                ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
 
-                            let document = to_document(&new_entity)?;
-
-                            let result = Services::create_one(
-                                db,
-                                document,
-                                if collection_name.is_some() {
-                                    collection_name.unwrap()
-                                } else {
-                                    cloned_entity.name
-                                },
+                            let result = DataSources::execute(
+                                data_sources,
+                                &input,
+                                cloned_entity,
+                                resolver_type,
                             )
-                            .await?;
+                            .await;
 
-                            info!("Returning Result Found");
-                            Ok(Some(FieldValue::owned_any(result)))
+                            Ok(Some(result))
                         }
                     }
                 })
