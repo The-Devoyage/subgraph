@@ -120,7 +120,7 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 | Mongo               | Mongo Data Source |
 
 
-### Mongo Data Source
+__Mongo Data Source__
 
 | Data Source Enum*  |        |
 | ------------------ | ------ |
