@@ -106,12 +106,12 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 
 ### Config File Options
 
-| Service*         |                 |
-| ---------------- | --------------- |
-| service_name     | String          |
-| entities*        | Entity[]        |
-| data_sources     | Data Source[]   |
-| cors             | Cors Config     |
+| Service*         |                    |
+| ---------------- | ------------------ |
+| service_name     | String             |
+| entities*        | Entity[]           |
+| data_sources     | Data Source Enum[] |
+| cors             | Cors Config        |
 
 #### Data Source Enum
 
@@ -121,6 +121,7 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 
 
 ### Mongo Data Source
+
 | Data Source Enum*  |        |
 | ------------------ | ------ |
 | name*              | String |
