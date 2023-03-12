@@ -28,6 +28,7 @@ pub struct ServiceSchema {
     pub schema_builder: SchemaBuilder,
     pub query: Object,
     pub mutation: Object,
+    pub data_sources: DataSources,
 }
 
 impl ServiceSchema {
@@ -35,28 +36,31 @@ impl ServiceSchema {
         ServiceSchema {
             subgraph_config,
             schema_builder: Schema::build("Query", Some("Mutation"), None)
-                .data(data_sources)
+                .data(data_sources.clone())
                 .enable_federation(),
             query: Object::new("Query").extends(),
             mutation: Object::new("Mutation"),
+            data_sources,
         }
     }
 
     pub fn finish(mut self) -> Schema {
+        info!("Finishing Schema");
+
         let object_id = Scalar::new("ObjectID");
 
         self = self.generate_entities();
-        info!("Finishing Schema");
 
-        let schema = self
+        let schema_result = self
             .schema_builder
             .register(object_id)
             .register(self.query)
             .register(self.mutation)
             .finish();
-        debug!("{:?}", schema);
 
-        let finished = match schema {
+        debug!("{:?}", schema_result);
+
+        let finished = match schema_result {
             Ok(sch) => sch,
             Err(err) => {
                 error!("{}", err);
