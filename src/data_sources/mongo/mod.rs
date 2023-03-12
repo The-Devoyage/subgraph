@@ -5,7 +5,9 @@ use mongodb::{options::ClientOptions, Client, Database};
 use std::str::FromStr;
 
 use crate::{
-    configuration::subgraph::{data_sources::MongoDataSourceConfig, entities::ServiceEntity},
+    configuration::subgraph::{
+        data_sources::mongo::MongoDataSourceConfig, entities::ServiceEntity,
+    },
     graphql::schema::ResolverType,
 };
 
@@ -13,7 +15,7 @@ use super::DataSource;
 
 pub mod services;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MongoDataSource {
     pub client: Client,
     pub db: Database,
@@ -70,7 +72,7 @@ impl MongoDataSource {
         input: &ValueAccessor<'_>,
         entity: ServiceEntity,
         resolver_type: ResolverType,
-    ) -> FieldValue<'a> {
+    ) -> Result<FieldValue<'a>, async_graphql::Error> {
         info!("Executing Mongo Data Source Operation");
 
         let mut filter = input.deserialize::<Document>().unwrap();
@@ -82,6 +84,7 @@ impl MongoDataSource {
 
         let db = match data_source {
             DataSource::Mongo(ds) => ds.db.clone(),
+            _ => unreachable!(),
         };
 
         info!("Found DB");
@@ -99,25 +102,18 @@ impl MongoDataSource {
 
         match resolver_type {
             ResolverType::FindOne => {
-                let result = services::Services::find_one(db, filter, collection_name)
-                    .await
-                    .unwrap();
-                FieldValue::owned_any(result)
+                let result = services::Services::find_one(db, filter, collection_name).await?;
+                Ok(FieldValue::owned_any(result))
             }
             ResolverType::FindMany => {
-                let results = services::Services::find_many(db, filter, collection_name).await;
-                FieldValue::list(
-                    results
-                        .unwrap()
-                        .into_iter()
-                        .map(|doc| FieldValue::owned_any(doc)),
-                )
+                let results = services::Services::find_many(db, filter, collection_name).await?;
+                Ok(FieldValue::list(
+                    results.into_iter().map(|doc| FieldValue::owned_any(doc)),
+                ))
             }
             ResolverType::CreateOne => {
-                let result = services::Services::create_one(db, filter, collection_name)
-                    .await
-                    .unwrap();
-                FieldValue::owned_any(result)
+                let result = services::Services::create_one(db, filter, collection_name).await?;
+                Ok(FieldValue::owned_any(result))
             }
         }
     }

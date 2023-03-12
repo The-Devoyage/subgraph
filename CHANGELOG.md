@@ -1,5 +1,7 @@
 # Changelog
 
+- HTTP Data Source Added
+
 ## [v0.0.6]
 - Multi data sources and entity data source mapping.
 
