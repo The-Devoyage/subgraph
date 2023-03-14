@@ -9,6 +9,7 @@ use crate::{configuration::subgraph::entities::ServiceEntity, graphql::schema::R
 
 use super::HttpDataSource;
 
+#[derive(Debug)]
 pub struct HttpDataSourceFilter {
     pub url: Url,
 }
@@ -25,8 +26,10 @@ impl HttpDataSource {
 
         debug!("Created Url: {:?}", url);
 
-        url = HttpDataSource::create_parameratized_path(url, &entity, resolver_type).await?;
+        url = HttpDataSource::create_parameratized_path(url, entity, resolver_type).await?;
         url = HttpDataSource::create_path_filters(url, input).await?;
+        url = HttpDataSource::create_parameratized_search_query(url, entity, resolver_type).await?;
+        url = HttpDataSource::create_query_string_filters(url, input).await?;
 
         Ok(HttpDataSourceFilter { url })
     }

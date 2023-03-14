@@ -14,20 +14,14 @@ impl HttpDataSource {
         entity: &ServiceEntity,
         resolver_type: ResolverType,
     ) -> Result<Url, async_graphql::Error> {
-        info!("Creating Parameratized Endpoint");
+        info!("Creating Parameratized Path");
         debug!("{:?}", resolver_type);
 
-        let entity_endpoint = entity
-            .data_source
-            .as_ref()
-            .unwrap()
-            .endpoint
-            .as_ref()
-            .unwrap();
+        let entity_path = entity.data_source.as_ref().unwrap().path.as_ref().unwrap();
 
-        debug!("Entity Endpoint Defined: {:?}", entity_endpoint);
+        debug!("Entity Path Defined: {:?}", entity_path);
 
-        url.set_path(entity_endpoint);
+        url.set_path(entity_path);
 
         debug!("Set Path: {:?}", url);
 
@@ -63,14 +57,14 @@ impl HttpDataSource {
                     };
 
                     debug!(
-                        "Resolver Endpoint Defined: {:?}",
-                        find_one_resolver.endpoint.as_ref().unwrap()
+                        "Resolver Path Defined: {:?}",
+                        find_one_resolver.path.as_ref().unwrap()
                     );
                     debug!("Current URL: {:?}", url);
-                    let resolver_endpoint = find_one_resolver.endpoint.as_ref().unwrap();
-                    let endpoint = format!("{}{}", url.path(), resolver_endpoint);
+                    let resolver_path = find_one_resolver.path.as_ref().unwrap();
+                    let path = format!("{}{}", url.path(), resolver_path);
 
-                    url.set_path(&endpoint);
+                    url.set_path(&path);
                     return Ok(url);
                 }
                 url
@@ -87,22 +81,20 @@ impl HttpDataSource {
                         _ => panic!("Unable To Locate Find Many Resolver Data Source Config"),
                     };
 
-                    debug!(
-                        "Resolver Endpoint Defined: {:?}",
-                        find_many_resolver.endpoint.as_ref().unwrap()
-                    );
                     debug!("Current URL: {:?}", url);
-                    let resolver_endpoint = find_many_resolver.endpoint.as_ref().unwrap();
-                    let endpoint = format!("{}{}", url.path(), resolver_endpoint);
+                    let resolver_path = find_many_resolver.path.as_ref();
 
-                    url.set_path(&endpoint);
+                    if resolver_path.is_some() {
+                        let path = format!("{}{}", url.path(), resolver_path.unwrap());
+                        url.set_path(&path);
+                    }
                     return Ok(url);
                 }
                 url
             }
             _ => unreachable!(),
         };
-        debug!("Created Parameratized Endpoint, {:?}", url);
+        debug!("Created Parameratized Path, {:?}", url);
         Ok(url)
     }
 

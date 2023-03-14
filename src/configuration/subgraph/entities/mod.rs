@@ -16,6 +16,9 @@ pub enum ScalarOptions {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct QueryPair(pub String, pub String);
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceEntityFieldOptions {
     pub name: String,
     pub scalar: ScalarOptions,
@@ -26,14 +29,16 @@ pub struct ServiceEntityFieldOptions {
 pub struct ServiceEntityDataSource {
     pub from: Option<String>,
     pub collection: Option<String>,
-    pub endpoint: Option<String>,
+    pub path: Option<String>,
+    pub search_query: Option<Vec<QueryPair>>,
     pub resolvers: Option<Vec<ServiceEntityResolver>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceEntityResolverOptions {
     pub fields: Option<Vec<ServiceEntityFieldOptions>>,
-    pub endpoint: Option<String>,
+    pub path: Option<String>,
+    pub search_query: Option<Vec<QueryPair>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
