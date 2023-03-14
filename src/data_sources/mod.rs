@@ -1,5 +1,5 @@
 use async_graphql::dynamic::{FieldValue, ValueAccessor};
-use log::{debug, info};
+use log::info;
 
 use crate::{
     configuration::subgraph::{data_sources::ServiceDataSourceConfig, entities::ServiceEntity},

@@ -1,7 +1,7 @@
 use async_graphql::dynamic::{FieldValue, ValueAccessor};
 use http::{header::HeaderName, HeaderMap, HeaderValue};
 use log::{debug, info};
-use reqwest::{Client, Url};
+use reqwest::Client;
 
 use crate::{
     configuration::subgraph::{
@@ -74,6 +74,8 @@ impl HttpDataSource {
 
         let filter =
             HttpDataSource::create_filter(data_source, input, &entity, resolver_type).await?;
+
+        debug!("Filter Created: {:?}", filter);
 
         match resolver_type {
             ResolverType::FindOne => {
