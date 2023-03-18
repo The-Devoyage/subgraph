@@ -12,10 +12,12 @@ Currently, a POC written in Rust in order to generate a functional API generated
 [service]
 service_name = "pets"
 
+# Some Database Config
 [service.database_config]
 mongo_uri = "mongodb://user:pass@127.0.0.1:27017/db"
 mongo_db = "myDb"
 
+# First Entity
 [[service.entities]]
 name = "Dog"
 
@@ -37,28 +39,17 @@ name = "weight"
 scalar = "Int"
 required = false
 
+# Second Entity
 [[service.entities]]
 name = "Cat"
 
-[[service.entities.fields]]
-name = "_id"
-scalar = "ObjectID"
-required = true
+# ...entity config
 
-[[service.entities.fields]]
-name = "name"
-scalar = "String"
-required = false
+# Third Entity
+[[service.entities]]
+name = "Goat"
 
-[[service.entities.fields]]
-name = "weight"
-scalar = "Int"
-required = false
-
-[[service.entities.fields]]
-name = "has_nine_lives"
-scalar = "Boolean
-required = false
+# ...entity config
 ```
 
 2. Start the Service
@@ -67,7 +58,7 @@ required = false
 cargo run -- --config ./config.toml --port 5011 --log-level debug
 ```
 
-Or, use cargo to create a binary and use as desired.
+Read below for binary/build options.
 
 3. Use the API
 
@@ -101,6 +92,14 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 - View the generated schema using the schema tab.
 - Write and execute GraphQL queries in the playground.
 
+## Build
+
+Running the `cargo run` command is useful while in development. When using in production, create a release to generate a executable binary.
+
+```bash
+cargo build --relesae
+```
+
 ## API
 
 ### CLI Options
@@ -112,32 +111,50 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 
 ### Config File Options
 
-| Service         |                 |
-| --------------- | --------------- |
-| service_name    | String          |
-| entities        | Entity[]        |
-| database_config | Database Config |
+| Service*         |                 |
+| ---------------- | --------------- |
+| service_name     | String          |
+| entities*        | Entity[]        |
+| database_config* | Database Config |
+| cors             | Cors Config     |
 
-| Database Config |        |
+#### Database
+
+| Database Config* |        |
+| ---------------- | ------ |
+| mongo_uri*       | String |
+| mongo_db*        | String |
+
+#### Cors
+
+| Cors Config      |                |
+| ---------------- | -------------- |
+| allow_any_origin | Boolean        |
+| allow_origins    | String[]       |
+| allow_headers    | String[]       |
+| allow_methods    | MethodOption[] |
+
+| Method Option   |        |
 | --------------- | ------ |
-| mongo_uri       | String |
-| mongo_db        | String |
+| method          | String |
 
-| Entity         |                     |
+#### Entities
+
+| Entity*        |                     |
 | -------------- | ------------------- |
-| name           | String              |
-| fields         | Field[]             |
+| name*          | String              |
+| fields*        | Field[]             |
 | datbase_config | EntityDatbaseConfig |
 
 | EntityDatabaseConfig |        |
 | -------------------- | ------ |
 | mongo_collection     | String |
 
-| Field    |               |
-| -------- | ------------- |
-| name     | String        |
-| scalar   | ScalarOptions |
-| required | Boolean       |
+| Field*    |               |
+| --------- | ------------- |
+| name*     | String        |
+| scalar*   | ScalarOptions |
+| required* | Boolean       |
 
 | ScalarOptions |
 | ------------- |
@@ -145,3 +162,4 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 | Int           |
 | Boolean       |
 | ObjectID      |
+
