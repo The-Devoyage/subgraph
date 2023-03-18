@@ -1,11 +1,13 @@
-use crate::configuration::subgraph::{ScalarOptions, ServiceEntity, ServiceEntityFieldOptions};
+use crate::configuration::subgraph::entities::{
+    ScalarOptions, ServiceEntity, ServiceEntityFieldOptions,
+};
 
 use super::ServiceSchema;
 use async_graphql::{
     dynamic::{Field, FieldFuture, Object, TypeRef},
     Value,
 };
-use bson::{spec::ElementType, Document};
+use bson::Document;
 use log::{debug, info};
 
 impl ServiceSchema {
