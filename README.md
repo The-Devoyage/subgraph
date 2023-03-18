@@ -8,45 +8,52 @@ Currently, a POC written in Rust in order to dynamically generate a functional A
 
 ```toml
 [service]
-service_name = "GeneratedAPI"
+# This is the name of the service
+service_name = "pets"
 
+# This is a list of data sources used by the service
 [[service.data_sources]]
 
-# MongoDB data source that connects to a MongoDB instance
+# This is a data source that connects to a MongoDB instance
 [service.data_sources.Mongo]
+# This is the name of the data source
 name = "mongo_1"
+# This is the connection URI for the MongoDB instance
 uri = "mongodb://users:users@127.0.0.1:27017/users"
+# This is the name of the database in the MongoDB instance
 db = "sun"
 
-# Another MongoDB data source
+# This is another MongoDB data source using Mongo Atlas
 [[service.data_sources]]
 [service.data_sources.Mongo]
 name = "mongo_2"
 uri = "mongodb+srv://dogs:dogs@cluster0.dog1234.mongodb.net/?retryWrites=true&w=majority"
 db = "dogs"
 
-# HTTP data source
+# This is an HTTP data source connecting to an external API
 [[service.data_sources]]
 [service.data_sources.HTTP]
 name = "todos"
 url = "https://jsonplaceholder.typicode.com"
 
+# This is the CORS configuration for the service
 [service.cors]
-# Allows any origin to access the service
 allow_any_origin = true
-# Allowed headers
 allow_headers = ["Authorization", "Content-Type"]
 
 [[service.cors.allow_methods]]
 method = "POST"
 
+# This is a list of entities used by the service
 [[service.entities]]
-# Person entity
 name = "Person"
+
+# This is the data source for the entity
 [service.entities.data_source]
 from = "mongo_1"
 collection = "users"
 
+# These are the fields of the entity
 [[service.entities.fields]]
 name = "_id"
 scalar = "ObjectID"
@@ -67,58 +74,49 @@ name = "married"
 scalar = "Boolean"
 required = true
 
-# Dog entity from a second mongo database, hosted elsewhere
+# This is another entity
 [[service.entities]]
 name = "Dog"
 [service.entities.data_source]
 from = "mongo_2"
 collection = "users"
-
 [[service.entities.fields]]
 name = "_id"
 scalar = "ObjectID"
 required = true
-
 [[service.entities.fields]]
 name = "name"
 scalar = "String"
 required = true
-
 [[service.entities.fields]]
 name = "breed"
 scalar = "String"
 required = true
 
-# Todo entity from a HTTP data source (external API)
+# This is another entity
 [[service.entities]]
 name = "todo"
 [service.entities.data_source]
 from = "todos"
 path = "/todos"
-
 [[service.entities.data_source.resolvers]]
 [service.entities.data_source.resolvers.FindOne]
 path = "/:id"
-
 [[service.entities.data_source.resolvers]]
 [service.entities.data_source.resolvers.FindMany]
 search_query = [["userId", ":userId"], ["completed", ":completed"], ["id", ":id"]]
-
 [[service.entities.fields]]
 name = "userId"
 scalar = "Int"
 required = true
-
 [[service.entities.fields]]
 name = "id"
 scalar = "Int"
 required = true
-
 [[service.entities.fields]]
 name = "title"
 scalar = "String"
 required = true
-
 [[service.entities.fields]]
 name = "completed"
 scalar = "Boolean"
