@@ -2,8 +2,7 @@ use async_graphql::dynamic::{Field, FieldFuture, FieldValue, TypeRef, ValueAcces
 use log::{debug, info};
 
 use crate::{
-    configuration::subgraph::{data_sources::ServiceDataSourceConfig, entities::ServiceEntity},
-    data_sources::DataSources,
+    configuration::subgraph::entities::ServiceEntity, data_sources::DataSources,
     graphql::schema::ResolverConfig,
 };
 

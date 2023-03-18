@@ -1,4 +1,4 @@
-use async_graphql::{futures_util::StreamExt, Error, ErrorExtensions, Result};
+use async_graphql::{Error, ErrorExtensions, Result};
 use bson::{doc, to_document, Document};
 use log::{debug, info};
 use mongodb::Database;
