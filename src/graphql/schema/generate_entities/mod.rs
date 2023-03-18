@@ -1,6 +1,4 @@
-use crate::{
-    configuration::subgraph::data_sources::ServiceDataSourceConfig, graphql::schema::ResolverType,
-};
+use crate::graphql::schema::ResolverType;
 
 use super::ServiceSchema;
 use log::info;

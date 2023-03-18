@@ -101,11 +101,10 @@ name = "todo"
 [service.entities.data_source]
 from = "todos"
 path = "/todos"
-[[service.entities.data_source.resolvers]]
-[service.entities.data_source.resolvers.FindOne]
+[service.entities.data_source.resolvers]
+[service.entities.data_source.resolvers.find_one]
 path = "/:id"
-[[service.entities.data_source.resolvers]]
-[service.entities.data_source.resolvers.FindMany]
+[service.entities.data_source.resolvers.find_many]
 search_query = [["userId", ":userId"], ["completed", ":completed"], ["id", ":id"]]
 [[service.entities.fields]]
 name = "userId"
@@ -331,11 +330,10 @@ from = "secondary_data_source" # The name of the data source to associate with.
 collection = "users" # For use with Mongo Data Source
 path = "/users" # For use with HTTP Data Source
 
-[[service.entities.data_source.resolvers]]
-[service.entities.data_source.resolvers.FindOne]
+[service.entities.data_source.resolvers]
+[service.entities.data_source.resolvers.find_many]
 path = "/:id"  # Converts the ID property of the GraphQL Input into the ID Path Parameter for HTTP Data Sources.
-[[service.entities.data_source.resolvers]]
-[service.entities.data_source.resolvers.FindMany]
+[service.entities.data_source.resolvers.find_many]
 search_query = [["userId", ":userId"], ["completed", ":completed"], ["id", ":id"]] #Append Search Query to Path for HTTP Data Sources.
 
 [[service.entities.fields]]

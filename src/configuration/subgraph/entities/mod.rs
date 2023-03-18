@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum ServiceEntityResolver {
-    FindOne(ServiceEntityResolverOptions),
-    FindMany(ServiceEntityResolverOptions),
-    CreateOne(ServiceEntityResolverOptions),
+pub struct ServiceEntityResolverConfig {
+    pub find_one: Option<ServiceEntityResolverOptions>,
+    pub find_many: Option<ServiceEntityResolverOptions>,
+    pub create_one: Option<ServiceEntityResolverOptions>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -31,7 +31,7 @@ pub struct ServiceEntityDataSource {
     pub collection: Option<String>,
     pub path: Option<String>,
     pub search_query: Option<Vec<QueryPair>>,
-    pub resolvers: Option<Vec<ServiceEntityResolver>>,
+    pub resolvers: Option<ServiceEntityResolverConfig>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
