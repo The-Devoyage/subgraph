@@ -1,7 +1,9 @@
-use async_graphql::dynamic::ValueAccessor;
+use async_graphql::{dynamic::ValueAccessor, Json};
+use bson::Document;
 use log::{debug, info};
 use reqwest::Url;
 
+pub mod request_body;
 pub mod url_path;
 pub mod url_search_query;
 
@@ -12,6 +14,7 @@ use super::HttpDataSource;
 #[derive(Debug)]
 pub struct HttpDataSourceFilter {
     pub url: Url,
+    pub request_body: Option<Json<Document>>,
 }
 
 impl HttpDataSource {
@@ -30,7 +33,8 @@ impl HttpDataSource {
         url = HttpDataSource::create_path_filters(url, input).await?;
         url = HttpDataSource::create_parameratized_search_query(url, entity, resolver_type).await?;
         url = HttpDataSource::create_query_string_filters(url, input).await?;
+        let request_body = HttpDataSource::create_body_filters(input, resolver_type);
 
-        Ok(HttpDataSourceFilter { url })
+        Ok(HttpDataSourceFilter { url, request_body })
     }
 }
