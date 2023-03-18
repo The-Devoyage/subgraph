@@ -1,8 +1,9 @@
-use async_graphql::dynamic::{Field, FieldFuture, TypeRef};
+use async_graphql::dynamic::{Field, FieldFuture, FieldValue, TypeRef, ValueAccessor};
 use log::{debug, info};
 
 use crate::{
-    configuration::subgraph::entities::ServiceEntity, data_sources::DataSources,
+    configuration::subgraph::{data_sources::ServiceDataSourceConfig, entities::ServiceEntity},
+    data_sources::DataSources,
     graphql::schema::ResolverConfig,
 };
 
@@ -12,8 +13,13 @@ mod add_entity_type;
 mod generate_resolver_input_value;
 
 impl ServiceSchema {
-    pub fn add_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
-        let resolver_config = match resolver_type {
+    pub fn create_resolver_config(
+        entity: &ServiceEntity,
+        resolver_type: ResolverType,
+    ) -> ResolverConfig {
+        info!("Creating Resolver Config");
+
+        let resolver_type = match resolver_type {
             ResolverType::FindOne => ResolverConfig {
                 resolver_name: format!("get_{}", &entity.name.to_lowercase()),
                 return_type: TypeRef::named_nn(&entity.name),
@@ -28,10 +34,75 @@ impl ServiceSchema {
             },
         };
 
-        self = self.add_entity_type(&entity);
+        debug!("Resolver Type: {:?}", resolver_type);
 
-        info!("Creating Resolver, {}.", resolver_config.resolver_name);
-        debug!("{:?}", resolver_config);
+        resolver_type
+    }
+
+    pub async fn resolve_find_one<'a>(
+        data_sources: &DataSources,
+        input: &ValueAccessor<'_>,
+        entity: ServiceEntity,
+        resolver_type: ResolverType,
+    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
+        info!("Resolving Find One");
+        let result = DataSources::execute(data_sources, &input, entity, resolver_type).await?;
+
+        Ok(Some(result))
+    }
+
+    pub async fn resolve_find_many<'a>(
+        data_sources: &DataSources,
+        input: &ValueAccessor<'_>,
+        entity: ServiceEntity,
+        resolver_type: ResolverType,
+    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
+        info!("Resolving Find Many");
+
+        let results = DataSources::execute(data_sources, &input, entity, resolver_type).await?;
+
+        Ok(Some(results))
+    }
+
+    pub async fn resolve_create_one<'a>(
+        data_sources: &DataSources,
+        input: &ValueAccessor<'_>,
+        entity: ServiceEntity,
+        resolver_type: ResolverType,
+    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
+        info!("Resolving Create One");
+
+        let result = DataSources::execute(data_sources, &input, entity, resolver_type).await?;
+
+        Ok(Some(result))
+    }
+
+    pub async fn handle_resolve<'a>(
+        data_sources: &DataSources,
+        input: &ValueAccessor<'_>,
+        entity: ServiceEntity,
+        resolver_type: ResolverType,
+    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
+        info!("Resolving Entity");
+        match resolver_type {
+            ResolverType::FindOne => {
+                ServiceSchema::resolve_find_one(data_sources, &input, entity, resolver_type).await
+            }
+            ResolverType::FindMany => {
+                ServiceSchema::resolve_find_many(data_sources, &input, entity, resolver_type).await
+            }
+            ResolverType::CreateOne => {
+                ServiceSchema::resolve_create_one(data_sources, &input, entity, resolver_type).await
+            }
+        }
+    }
+
+    pub fn add_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
+        info!("Creating Resolver");
+
+        let resolver_config = ServiceSchema::create_resolver_config(entity, resolver_type);
+
+        self = self.add_entity_type(&entity);
 
         let cloned_entity = entity.clone();
 
@@ -41,75 +112,16 @@ impl ServiceSchema {
             move |ctx| {
                 let cloned_entity = cloned_entity.clone();
                 FieldFuture::new(async move {
-                    match resolver_type {
-                        ResolverType::FindOne => {
-                            info!("Executing Find One");
+                    let data_sources = ctx.data_unchecked::<DataSources>().clone();
+                    let input = ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
 
-                            let data_sources = ctx.data_unchecked::<DataSources>().clone();
-
-                            info!("Found Data Sources");
-                            debug!("{:?}", data_sources);
-
-                            let input =
-                                ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
-
-                            info!("Found Input");
-
-                            let result = DataSources::execute(
-                                data_sources,
-                                &input,
-                                cloned_entity,
-                                resolver_type,
-                            )
-                            .await;
-
-                            info!("Found Results");
-
-                            Ok(Some(result))
-                        }
-                        ResolverType::FindMany => {
-                            info!("Executing Find Many");
-
-                            let data_sources = ctx.data_unchecked::<DataSources>().clone();
-
-                            info!("Found Data Sources");
-                            debug!("{:?}", data_sources);
-
-                            let input =
-                                ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
-
-                            let results = DataSources::execute(
-                                data_sources,
-                                &input,
-                                cloned_entity,
-                                resolver_type,
-                            )
-                            .await;
-
-                            Ok(Some(results))
-                        }
-                        ResolverType::CreateOne => {
-                            info!("Executing Create One");
-
-                            let data_sources = ctx.data_unchecked::<DataSources>().clone();
-
-                            info!("Found Data Sources");
-                            debug!("{:?}", data_sources);
-
-                            let input =
-                                ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
-
-                            let result = DataSources::execute(
-                                data_sources,
-                                &input,
-                                cloned_entity,
-                                resolver_type,
-                            )
-                            .await;
-
-                            Ok(Some(result))
-                        }
-                    }
+                    ServiceSchema::handle_resolve(
+                        &data_sources,
+                        &input,
+                        cloned_entity,
+                        resolver_type,
+                    )
+                    .await
                 })
             },
         );
@@ -118,7 +130,6 @@ impl ServiceSchema {
         debug!("{:?}", field);
 
         self = self.generate_resolver_input_value(&entity, field, &resolver_type);
-
         self
     }
 }
