@@ -2,7 +2,10 @@ use http::{header::CONTENT_TYPE, Method};
 use log::{debug, info};
 use warp::cors::Cors;
 
-use crate::configuration::subgraph::{CorsConfigOptions, MethodOption, SubGraphConfig};
+use crate::configuration::subgraph::{
+    cors::{CorsConfigOptions, MethodOption},
+    SubGraphConfig,
+};
 
 pub struct CorsConfig;
 

@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.0.6]
+- Multi data sources and entity data source mapping.
+
 ## [v0.0.5]
 - Simple CORS Configuration including Headers, Methods, and Allowed Origins.
 
