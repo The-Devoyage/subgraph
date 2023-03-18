@@ -1,9 +1,18 @@
 # Changelog
 
+## [v0.0.7]
+
+### Added
+- HTTP Data Source Added with Find One, Create One, and Find Many Resolvers
+
 ## [v0.0.6]
+
+### Added
 - Multi data sources and entity data source mapping.
 
 ## [v0.0.5]
+
+###
 - Simple CORS Configuration including Headers, Methods, and Allowed Origins.
 
 ## [v0.0.4]
