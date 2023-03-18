@@ -4,7 +4,9 @@ use log::{debug, info};
 use reqwest::Url;
 
 use crate::configuration::subgraph::entities::ServiceEntity;
-use crate::configuration::subgraph::entities::ServiceEntityResolver::{FindMany, FindOne};
+use crate::configuration::subgraph::entities::ServiceEntityResolver::{
+    CreateOne, FindMany, FindOne,
+};
 use crate::data_sources::http::HttpDataSource;
 use crate::graphql::schema::ResolverType;
 
@@ -15,7 +17,7 @@ impl HttpDataSource {
         resolver_type: ResolverType,
     ) -> Result<Url, async_graphql::Error> {
         info!("Creating Parameratized Path");
-        debug!("{:?}", resolver_type);
+        debug!("For Resolver Type: {:?}", resolver_type);
 
         let entity_path = entity.data_source.as_ref().unwrap().path.as_ref().unwrap();
 
@@ -77,7 +79,7 @@ impl HttpDataSource {
 
                 if entity_resolver.is_some() {
                     let find_many_resolver = match entity_resolver.unwrap() {
-                        FindMany(find_one_resolver) => find_one_resolver,
+                        FindMany(find_many_resolver) => find_many_resolver,
                         _ => panic!("Unable To Locate Find Many Resolver Data Source Config"),
                     };
 
@@ -92,7 +94,29 @@ impl HttpDataSource {
                 }
                 url
             }
-            _ => unreachable!(),
+            ResolverType::CreateOne => {
+                let entity_resolver = entity_resolvers.iter().find(|resolver| match resolver {
+                    CreateOne(_create_one_resolver) => true,
+                    _ => false,
+                });
+
+                if entity_resolver.is_some() {
+                    let create_one_resolver = match entity_resolver.unwrap() {
+                        CreateOne(create_one_resolver) => create_one_resolver,
+                        _ => panic!("Unable To Locate Create One Resolver Data Source Config"),
+                    };
+
+                    debug!("Current URL: {:?}", url);
+                    let resolver_path = create_one_resolver.path.as_ref();
+
+                    if resolver_path.is_some() {
+                        let path = format!("{}{}", url.path(), resolver_path.unwrap());
+                        url.set_path(&path);
+                    }
+                    return Ok(url);
+                }
+                url
+            }
         };
         debug!("Created Parameratized Path, {:?}", url);
         Ok(url)

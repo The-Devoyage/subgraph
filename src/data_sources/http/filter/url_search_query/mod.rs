@@ -3,7 +3,9 @@ use bson::Document;
 use log::{debug, info};
 use reqwest::Url;
 
-use crate::configuration::subgraph::entities::ServiceEntityResolver::{FindMany, FindOne};
+use crate::configuration::subgraph::entities::ServiceEntityResolver::{
+    CreateOne, FindMany, FindOne,
+};
 use crate::{
     configuration::subgraph::entities::ServiceEntity, data_sources::http::HttpDataSource,
     graphql::schema::ResolverType,
@@ -100,7 +102,34 @@ impl HttpDataSource {
                 }
                 url
             }
-            _ => unreachable!(),
+            ResolverType::CreateOne => {
+                let entity_resolver = entity_resolvers.iter().find(|resolver| match resolver {
+                    CreateOne(_create_one_resolver) => true,
+                    _ => false,
+                });
+
+                if entity_resolver.is_some() {
+                    let create_one_resolver = match entity_resolver.unwrap() {
+                        CreateOne(create_one_resolver) => create_one_resolver,
+                        _ => unreachable!(),
+                    };
+
+                    debug!(
+                        "Resolver Query Pairs Defined: {:?}",
+                        create_one_resolver.search_query.as_ref().unwrap()
+                    );
+
+                    let resolver_query_pairs = create_one_resolver.search_query.as_ref().unwrap();
+
+                    for query_pair in resolver_query_pairs {
+                        url.query_pairs_mut()
+                            .append_pair(&query_pair.0, &query_pair.1);
+                    }
+
+                    return Ok(url);
+                }
+                url
+            }
         };
         Ok(url)
     }
