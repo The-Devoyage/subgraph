@@ -7,22 +7,42 @@ Currently, a POC written in Rust in order to dynamically generate a functional A
 1. Define Entities
 
 ```toml
-# config.toml
-
 [service]
-service_name = "pets"
+service_name = "GeneratedAPI"
 
-# Multi Data Source Support
+[[service.data_sources]]
+
+# MongoDB data source that connects to a MongoDB instance
+[service.data_sources.Mongo]
+name = "mongo_1"
+uri = "mongodb://users:users@127.0.0.1:27017/users"
+db = "sun"
+
+# Another MongoDB data source
 [[service.data_sources]]
 [service.data_sources.Mongo]
-name = "mongo_one"
-uri = "mongodb://user:pass@127.0.0.1:27017/db"
-db = "prod_1"
+name = "mongo_2"
+uri = "mongodb+srv://dogs:dogs@cluster0.dog1234.mongodb.net/?retryWrites=true&w=majority"
+db = "dogs"
 
-# First Entity
+# HTTP data source
+[[service.data_sources]]
+[service.data_sources.HTTP]
+name = "todos"
+url = "https://jsonplaceholder.typicode.com"
+
+[service.cors]
+# Allows any origin to access the service
+allow_any_origin = true
+# Allowed headers
+allow_headers = ["Authorization", "Content-Type"]
+
+[[service.cors.allow_methods]]
+method = "POST"
+
 [[service.entities]]
-name = "Dog"
-
+# Person entity
+name = "Person"
 [service.entities.data_source]
 from = "mongo_1"
 collection = "users"
@@ -38,21 +58,71 @@ scalar = "String"
 required = true
 
 [[service.entities.fields]]
-name = "weight"
+name = "age"
 scalar = "Int"
 required = false
 
-# Second Entity
+[[service.entities.fields]]
+name = "married"
+scalar = "Boolean"
+required = true
+
+# Dog entity from a second mongo database, hosted elsewhere
 [[service.entities]]
-name = "Cat"
+name = "Dog"
+[service.entities.data_source]
+from = "mongo_2"
+collection = "users"
 
-# ...entity config
+[[service.entities.fields]]
+name = "_id"
+scalar = "ObjectID"
+required = true
 
-# Third Entity
+[[service.entities.fields]]
+name = "name"
+scalar = "String"
+required = true
+
+[[service.entities.fields]]
+name = "breed"
+scalar = "String"
+required = true
+
+# Todo entity from a HTTP data source (external API)
 [[service.entities]]
-name = "Goat"
+name = "todo"
+[service.entities.data_source]
+from = "todos"
+path = "/todos"
 
-# ...entity config
+[[service.entities.data_source.resolvers]]
+[service.entities.data_source.resolvers.FindOne]
+path = "/:id"
+
+[[service.entities.data_source.resolvers]]
+[service.entities.data_source.resolvers.FindMany]
+search_query = [["userId", ":userId"], ["completed", ":completed"], ["id", ":id"]]
+
+[[service.entities.fields]]
+name = "userId"
+scalar = "Int"
+required = true
+
+[[service.entities.fields]]
+name = "id"
+scalar = "Int"
+required = true
+
+[[service.entities.fields]]
+name = "title"
+scalar = "String"
+required = true
+
+[[service.entities.fields]]
+name = "completed"
+scalar = "Boolean"
+required = true
 ```
 
 2. Start the Service
@@ -106,25 +176,32 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 
 ### Config File Options
 
-| Service*         |                    |
-| ---------------- | ------------------ |
-| service_name     | String             |
-| entities*        | Entity[]           |
-| data_sources     | Data Source Enum[] |
-| cors             | Cors Config        |
+### Config File Options
+
+| Service\*    |                    |
+| ------------ | ------------------ |
+| service_name | String             |
+| entities\*   | Entity[]           |
+| data_sources | Data Source Enum[] |
+| cors         | Cors Config        |
 
 #### Data Sources
 
-| Data Source Enum*   |                   |
-| ------------------- | ----------------- |
-| Mongo               | Mongo Data Source |
+| Data Source Enum\* |                   |
+| ------------------ | ----------------- |
+| Mongo              | Mongo Data Source |
+| HTTP               | HTTP Data Source  |
 
+| Mongo Data Source |        |
+| ----------------- | ------ |
+| name\*            | String |
+| uri\*             | String |
+| db\*              | String |
 
-| Mongo Data Source  |        |
-| ------------------ | ------ |
-| name*              | String |
-| uri*               | String |
-| db*                | String |
+| HTTP Data Source |        |
+| ---------------- | ------ |
+| name\*           | String |
+| url\*            | String |
 
 #### Cors
 
@@ -135,27 +212,41 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 | allow_headers    | String[]       |
 | allow_methods    | MethodOption[] |
 
-| Method Option   |        |
-| --------------- | ------ |
-| method          | String |
+| Method Option |        |
+| ------------- | ------ |
+| method        | String |
 
 #### Entities
 
-| Entity*        |                     |
-| -------------- | ------------------- |
-| name*          | String              |
-| fields*        | Field[]             |
-| datbase_config | EntityDatbaseConfig |
+| Entity\*    |                           |
+| ----------- | ------------------------- |
+| name\*      | String                    |
+| fields\*    | Field[]                   |
+| data_source | Entity Data Source Config |
 
-| EntityDatabaseConfig |        |
-| -------------------- | ------ |
-| mongo_collection     | String |
+| EntityDataSourceConfig | Description                                                         | Type             |
+| ---------------------- | ------------------------------------------------------------------- | ---------------- |
+| collection             | The name of the associated mongo collection                         | String           |
+| from                   | The name of the associated data source.                             | String           |
+| path                   | The path/endpoint relative to the associated HTTP Data Source Path. | String           |
+| resolvers              | Configuration to apply per generated resolver.                      | EntityResolver[] |
 
-| Field*    |               |
-| --------- | ------------- |
-| name*     | String        |
-| scalar*   | ScalarOptions |
-| required* | Boolean       |
+| EntityResolver | Description                               | Type                 |
+| -------------- | ----------------------------------------- | -------------------- |
+| FindOne        | Configuration for the Find One Resolver   | EntityResolverConfig |
+| FindMany       | Configuration for the Find Many Resolver  | EntityResolverConfig |
+| CreateOne      | Configuration for the Create One Resolver | EntityResolverConfig |
+
+| EntityResolverConfig | Description                                                               | Type   |
+| -------------------- | ------------------------------------------------------------------------- | ------ |
+| search_query         | A parameterized search query to append to the entity path.                | String |
+| path                 | A parameterized url path (endpoint) to append to the HTTP datasource url. | String |
+
+| Field\*    |               |
+| ---------- | ------------- |
+| name\*     | String        |
+| scalar\*   | ScalarOptions |
+| required\* | Boolean       |
 
 | ScalarOptions |
 | ------------- |
@@ -163,7 +254,6 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 | Int           |
 | Boolean       |
 | ObjectID      |
-
 
 ## Usage
 
@@ -226,7 +316,7 @@ required = true
 
 #### Entity Configuration
 
-__Entity Data Source__
+**Entity Data Source**
 
 If not defined, entities are associated with the first defined data source but can be assigned to a data source.
 
