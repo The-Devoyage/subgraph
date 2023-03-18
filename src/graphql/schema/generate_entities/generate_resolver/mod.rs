@@ -1,12 +1,9 @@
-use std::str::FromStr;
-
-use async_graphql::dynamic::{Field, FieldFuture, FieldValue, TypeRef};
-use bson::{oid::ObjectId, to_document, Document};
+use async_graphql::dynamic::{Field, FieldFuture, FieldValue, TypeRef, ValueAccessor};
 use log::{debug, info};
 
 use crate::{
-    configuration::subgraph::ServiceEntity,
-    database::{data_source::DataSource, services::Services},
+    configuration::subgraph::{data_sources::ServiceDataSourceConfig, entities::ServiceEntity},
+    data_sources::DataSources,
     graphql::schema::ResolverConfig,
 };
 
@@ -16,15 +13,13 @@ mod add_entity_type;
 mod generate_resolver_input_value;
 
 impl ServiceSchema {
-    pub fn convert_object_id_string_to_object_id(mut filter: Document) -> Document {
-        let object_id_string = filter.get_str("_id").unwrap();
-        let object_id = ObjectId::from_str(object_id_string).unwrap();
-        filter.insert("_id", object_id);
-        filter
-    }
+    pub fn create_resolver_config(
+        entity: &ServiceEntity,
+        resolver_type: ResolverType,
+    ) -> ResolverConfig {
+        info!("Creating Resolver Config");
 
-    pub fn add_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
-        let resolver_config = match resolver_type {
+        let resolver_type = match resolver_type {
             ResolverType::FindOne => ResolverConfig {
                 resolver_name: format!("get_{}", &entity.name.to_lowercase()),
                 return_type: TypeRef::named_nn(&entity.name),
@@ -39,10 +34,75 @@ impl ServiceSchema {
             },
         };
 
-        self = self.add_entity_type(&entity);
+        debug!("Resolver Type: {:?}", resolver_type);
 
-        info!("Creating Resolver, {}.", resolver_config.resolver_name);
-        debug!("{:?}", resolver_config);
+        resolver_type
+    }
+
+    pub async fn resolve_find_one<'a>(
+        data_sources: &DataSources,
+        input: &ValueAccessor<'_>,
+        entity: ServiceEntity,
+        resolver_type: ResolverType,
+    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
+        info!("Resolving Find One");
+        let result = DataSources::execute(data_sources, &input, entity, resolver_type).await?;
+
+        Ok(Some(result))
+    }
+
+    pub async fn resolve_find_many<'a>(
+        data_sources: &DataSources,
+        input: &ValueAccessor<'_>,
+        entity: ServiceEntity,
+        resolver_type: ResolverType,
+    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
+        info!("Resolving Find Many");
+
+        let results = DataSources::execute(data_sources, &input, entity, resolver_type).await?;
+
+        Ok(Some(results))
+    }
+
+    pub async fn resolve_create_one<'a>(
+        data_sources: &DataSources,
+        input: &ValueAccessor<'_>,
+        entity: ServiceEntity,
+        resolver_type: ResolverType,
+    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
+        info!("Resolving Create One");
+
+        let result = DataSources::execute(data_sources, &input, entity, resolver_type).await?;
+
+        Ok(Some(result))
+    }
+
+    pub async fn handle_resolve<'a>(
+        data_sources: &DataSources,
+        input: &ValueAccessor<'_>,
+        entity: ServiceEntity,
+        resolver_type: ResolverType,
+    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
+        info!("Resolving Entity");
+        match resolver_type {
+            ResolverType::FindOne => {
+                ServiceSchema::resolve_find_one(data_sources, &input, entity, resolver_type).await
+            }
+            ResolverType::FindMany => {
+                ServiceSchema::resolve_find_many(data_sources, &input, entity, resolver_type).await
+            }
+            ResolverType::CreateOne => {
+                ServiceSchema::resolve_create_one(data_sources, &input, entity, resolver_type).await
+            }
+        }
+    }
+
+    pub fn add_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
+        info!("Creating Resolver");
+
+        let resolver_config = ServiceSchema::create_resolver_config(entity, resolver_type);
+
+        self = self.add_entity_type(&entity);
 
         let cloned_entity = entity.clone();
 
@@ -52,128 +112,16 @@ impl ServiceSchema {
             move |ctx| {
                 let cloned_entity = cloned_entity.clone();
                 FieldFuture::new(async move {
-                    match resolver_type {
-                        ResolverType::FindOne => {
-                            info!("Executing Find One");
-                            let db = ctx.data_unchecked::<DataSource>().db.clone();
-                            info!("Getting `query` Input");
-                            let query = ctx
-                                .args
-                                .try_get(&format!("{}_input", ctx.field().name()))?
-                                .deserialize::<Document>()?;
+                    let data_sources = ctx.data_unchecked::<DataSources>().clone();
+                    let input = ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
 
-                            info!("Find One - Query Object Found");
-                            debug!("{:?}", query);
-
-                            let mut filter = to_document(&query)?;
-
-                            if filter.contains_key("_id") {
-                                info!("Converting `_id` To Object Id");
-                                filter =
-                                    ServiceSchema::convert_object_id_string_to_object_id(filter);
-                            }
-
-                            info!("Found Filter");
-                            debug!("{:?}", filter);
-
-                            let collection_name =
-                                cloned_entity.database_config.unwrap().mongo_collection;
-
-                            let document = Services::find_one(
-                                db,
-                                filter,
-                                if collection_name.is_some() {
-                                    collection_name.unwrap()
-                                } else {
-                                    cloned_entity.name
-                                },
-                            )
-                            .await
-                            .unwrap();
-
-                            info!("Found Document");
-                            debug!("{:?}", document);
-
-                            info!("Returning Result Found");
-                            Ok(Some(FieldValue::owned_any(document)))
-                        }
-                        ResolverType::FindMany => {
-                            let db = ctx.data_unchecked::<DataSource>().db.clone();
-
-                            let query = ctx
-                                .args
-                                .try_get(&format!("{}_input", ctx.field().name()))?
-                                .deserialize::<Document>()?;
-
-                            info!("Find Many - Query Object Found.");
-                            debug!("{:?}", query);
-
-                            let mut filter = to_document(&query)?;
-
-                            if filter.contains_key("_id") {
-                                info!("Converting `_id` To Object Id");
-                                filter =
-                                    ServiceSchema::convert_object_id_string_to_object_id(filter);
-                            }
-
-                            debug!("{:?}", filter);
-
-                            let collection_name =
-                                cloned_entity.database_config.unwrap().mongo_collection;
-
-                            let documents = Services::find_many(
-                                db,
-                                filter,
-                                if collection_name.is_some() {
-                                    collection_name.unwrap()
-                                } else {
-                                    cloned_entity.name
-                                },
-                            )
-                            .await;
-
-                            info!("Found Documents");
-                            debug!("{:?}", documents);
-
-                            info!("Returning Results Found");
-                            Ok(Some(FieldValue::list(
-                                documents
-                                    .unwrap()
-                                    .into_iter()
-                                    .map(|doc| FieldValue::owned_any(doc)),
-                            )))
-                        }
-                        ResolverType::CreateOne => {
-                            let db = ctx.data_unchecked::<DataSource>().db.clone();
-
-                            let new_entity = ctx
-                                .args
-                                .try_get(&format!("{}_input", ctx.field().name()))?
-                                .deserialize::<Document>()?;
-
-                            info!("Found Args");
-                            debug!("{:?}", new_entity);
-
-                            let collection_name =
-                                cloned_entity.database_config.unwrap().mongo_collection;
-
-                            let document = to_document(&new_entity)?;
-
-                            let result = Services::create_one(
-                                db,
-                                document,
-                                if collection_name.is_some() {
-                                    collection_name.unwrap()
-                                } else {
-                                    cloned_entity.name
-                                },
-                            )
-                            .await?;
-
-                            info!("Returning Result Found");
-                            Ok(Some(FieldValue::owned_any(result)))
-                        }
-                    }
+                    ServiceSchema::handle_resolve(
+                        &data_sources,
+                        &input,
+                        cloned_entity,
+                        resolver_type,
+                    )
+                    .await
                 })
             },
         );
@@ -182,7 +130,6 @@ impl ServiceSchema {
         debug!("{:?}", field);
 
         self = self.generate_resolver_input_value(&entity, field, &resolver_type);
-
         self
     }
 }

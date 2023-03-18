@@ -19,7 +19,7 @@ impl Services {
         while let Some(result) = cursor.next().await {
             match result {
                 Ok(document) => documents.push(document),
-                Err(error) => Err(Error::new("Can't find results.")
+                Err(_error) => Err(Error::new("Can't find results.")
                     .extend_with(|err, e| e.set("details", err.message.as_str())))?,
             }
         }
