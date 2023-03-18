@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.0.5]
+- Simple CORS Configuration including Headers, Methods, and Allowed Origins.
+
 ## [v0.0.4]
 
 ### Added
