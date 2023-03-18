@@ -1,5 +1,5 @@
 use crate::{
-    configuration::subgraph::{ScalarOptions, ServiceEntity, ServiceEntityFieldOptions},
+    configuration::subgraph::entities::{ScalarOptions, ServiceEntity, ServiceEntityFieldOptions},
     graphql::schema::{ResolverType, ServiceSchema},
 };
 use async_graphql::dynamic::{Field, InputObject, InputValue, TypeRef};
