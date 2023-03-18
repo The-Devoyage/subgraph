@@ -4,7 +4,9 @@ Currently, a POC written in Rust in order to dynamically generate a functional A
 
 ## Quick Start
 
-1. Define Entities
+Define a configuration to run the service. The configuration tells subgraph how to generate the API around the data you need.
+
+1. An example configuration with two Mongo databases and a connection to a RESTful API providing 3 entities.
 
 ```toml
 [service]
@@ -316,7 +318,7 @@ required = true
 
 **Entity Data Source**
 
-If not defined, entities are associated with the first defined data source but can be assigned to a data source.
+If not defined, entities are associated with the first defined data source but can be assigned to any data source defined.
 
 The `from` field is associated with the `name` of the data source associated with the entity.
 
@@ -326,7 +328,15 @@ name = "Person"
 
 [service.entities.data_source]
 from = "secondary_data_source" # The name of the data source to associate with.
-collection = "users"
+collection = "users" # For use with Mongo Data Source
+path = "/users" # For use with HTTP Data Source
+
+[[service.entities.data_source.resolvers]]
+[service.entities.data_source.resolvers.FindOne]
+path = "/:id"  # Converts the ID property of the GraphQL Input into the ID Path Parameter for HTTP Data Sources.
+[[service.entities.data_source.resolvers]]
+[service.entities.data_source.resolvers.FindMany]
+search_query = [["userId", ":userId"], ["completed", ":completed"], ["id", ":id"]] #Append Search Query to Path for HTTP Data Sources.
 
 [[service.entities.fields]]
 name = "_id"
