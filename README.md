@@ -8,7 +8,7 @@ Define a configuration to run the service. The configuration tells subgraph how 
 
 1. Define your configuration file.
 
-- [Basic Mongo]("examples/basic-mongo.toml")
+- [Basic Mongo](examples/basic-mongo.toml)
 
 2. Start the Service
 
