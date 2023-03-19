@@ -1,0 +1,43 @@
+[service]
+service_name = "todos"
+
+# Define the HTTP Data Source
+[[service.data_sources]]
+[service.data_sources.HTTP]
+name = "todos"
+url = "https://jsonplaceholder.typicode.com"
+
+
+# Define the Entity
+[[service.entities]]
+name = "todo"
+
+# Define Unique Endpoints and Input Mapping
+[service.entities.data_source]
+from = "todos"
+path = "/todos"
+[service.entities.data_source.resolvers]
+[service.entities.data_source.resolvers.find_one]
+path = "/:id"
+[service.entities.data_source.resolvers.find_many]
+search_query = [["userId", ":userId"], ["completed", ":completed"], ["id", ":id"]]
+# No need to define options for create_one, as it will use the default endpoint from the data source, "/todos"
+# [service.entities.data_source.resolvers.create_one]
+# path = "/"
+
+[[service.entities.fields]]
+name = "userId"
+scalar = "Int"
+required = true
+[[service.entities.fields]]
+name = "id"
+scalar = "Int"
+required = true
+[[service.entities.fields]]
+name = "title"
+scalar = "String"
+required = true
+[[service.entities.fields]]
+name = "completed"
+scalar = "Boolean"
+required = true
