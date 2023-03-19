@@ -222,7 +222,7 @@ required = true
 
 **Entity Data Source**
 
-If not defined, entities are associated with the first data source in the config file but can be assigned to any data source defined.
+If not defined, entities are associated with the first data source in the config file but can be assigned to any data source.
 
 The `from` field is associated with the `name` of the data source associated with the entity.
 
