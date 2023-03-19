@@ -8,7 +8,10 @@ Define a configuration to run the service. The configuration tells subgraph how 
 
 1. Define your configuration file.
 
-- [Basic Mongo](examples/basic-mongo.toml)
+- [Basic Mongo Example](examples/basic-mongo.toml)
+- [Two Mongo Data Sources](examples/two-mongo-dbs.toml)
+- [HTTP Data Source (External API)](examples/basic-http.toml)
+- [Advanced Mixed Data Sources](examples/advanced-mixed.toml)
 
 2. Start the Service
 
