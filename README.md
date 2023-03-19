@@ -203,7 +203,7 @@ url = "https://jsonplaceholder.typicode.com"
 
 ### Defining Entities
 
-Entities are the assets returned from the data source. You may define multiple entities. Entities require field definitions, to describe the properties of the entity.
+Entities are the assets returned from the data source. You may define multiple entities. Entities require field definitions to describe the properties of the entity.
 
 ```toml
 [[service.entities]]
