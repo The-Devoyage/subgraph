@@ -238,10 +238,10 @@ collection = "users" # For use with Mongo Data Source
 path = "/users" # For use with HTTP Data Source to define the endpoint relative to the url of the associated HTTP Data Source.
 
 [service.entities.data_source.resolvers]
-[service.entities.data_source.resolvers.find_many]
+[service.entities.data_source.resolvers.find_one]
 path = "/:id"  # Converts the ID property from the GraphQL Input into the ID Path Parameter for HTTP Data Sources.
 [service.entities.data_source.resolvers.find_many]
-search_query = [["userId", ":userId"], ["completed", ":completed"], ["id", ":id"]] #Append Search Query to Path for HTTP Data Sources.
+search_query = [["userId", ":userId"], ["completed", ":completed"]] #Append Search Query to Path for HTTP Data Sources.
 
 [[service.entities.fields]]
 name = "_id"
@@ -253,6 +253,20 @@ name = "name"
 scalar = "String"
 required = true
 ```
+
+**HTTP Data Source - Parameterized Variables**
+
+As you can see above, defining a path or search query can be done at the entity level and at the resolver level, allowing you to customize the endpoint/search query to be used. 
+
+1. Specify the `path` or `search_query` on the entity at `service.entities.data_source` to provide a shared path or search query for all resolvers.
+2. Specify the same properties within each resolver config to extend the options set at the entity level. 
+
+For example, the configuration directly above would result in:
+
+- Find One - `/users/12` 
+- Find Many - `/users?userId=1&completed=true`
+
+Note, defining a variable uses the prefix `:`. The variable is extracted from the GraphQL Input. If excluded from the GraphQL Input, the path or query string excludes the definition. You may set hard coded values in the config.
 
 ### CORS Options
 
