@@ -90,9 +90,17 @@ impl MongoDataSource {
         info!("Found DB");
         debug!("{:?}", db);
 
-        let entity_collection_name = entity.data_source.unwrap().collection;
-        let collection_name = if entity_collection_name.is_some() {
-            entity_collection_name.unwrap()
+        let collection_name = if entity.data_source.is_some() {
+            info!("Found Entity Data Source");
+            debug!("{:?}", entity.data_source);
+
+            let entity_collection_name = entity.data_source.unwrap().collection;
+
+            if entity_collection_name.is_some() {
+                entity_collection_name.unwrap()
+            } else {
+                entity.name
+            }
         } else {
             entity.name
         };
