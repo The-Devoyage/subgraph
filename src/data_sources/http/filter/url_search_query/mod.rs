@@ -134,7 +134,7 @@ impl HttpDataSource {
     pub async fn replace_identifier(
         identifier_variable: String,
         input: &Document,
-    ) -> Result<String, async_graphql::Error> {
+    ) -> Result<Option<String>, async_graphql::Error> {
         info!("Replacing Identifier");
         debug!("Identifier Variable {:?}", identifier_variable);
 
@@ -150,18 +150,18 @@ impl HttpDataSource {
 
                 if param.is_some() {
                     debug!("Returning Replaced Identifier");
-                    Ok(param.unwrap().to_string())
+                    Ok(Some(param.unwrap().to_string()))
                 } else {
-                    debug!("No Param Found, Returning Original Identifier");
-                    Ok(identifier_variable)
+                    debug!("No Param Found, Returning None Identifier");
+                    Ok(None)
                 }
             } else {
                 debug!("Not Valid Identifier, Returning Original Identifier");
-                Ok(identifier_variable)
+                Ok(Some(identifier_variable))
             }
         } else {
             debug!("Valid Identifier, Returning Original Identifier");
-            Ok(identifier_variable)
+            Ok(Some(identifier_variable))
         }
     }
 
@@ -183,12 +183,15 @@ impl HttpDataSource {
 
         while let Some(query_pair) = query_pairs.next() {
             debug!("Query Pair: {:?}", query_pair);
-            let name =
-                HttpDataSource::replace_identifier(query_pair.0.to_string(), &document).await?;
             let value =
                 HttpDataSource::replace_identifier(query_pair.1.to_string(), &document).await?;
 
-            url.query_pairs_mut().append_pair(&name, &value);
+            if value.is_none() {
+                continue;
+            }
+
+            url.query_pairs_mut()
+                .append_pair(&query_pair.0.to_string(), &value.unwrap());
         }
 
         Ok(url)
