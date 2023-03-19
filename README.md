@@ -220,8 +220,6 @@ scalar = "String"
 required = true
 ```
 
-#### Entity Configuration
-
 **Entity Data Source**
 
 If not defined, entities are associated with the first data source in the config file but can be assigned to any data source defined.
