@@ -4,6 +4,10 @@
 
 ### Added
 - HTTP Data Source Added with Find One, Create One, and Find Many Resolvers
+- Optional property `exclude_from_input` is now a part of a Field definition.
+
+### Fixed
+- The `_id` property will no longer be removed automatically from input generation.
 
 ## [v0.0.6]
 
