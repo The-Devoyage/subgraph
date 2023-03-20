@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::graphql::schema::ResolverType;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceEntityResolverConfig {
     pub find_one: Option<ServiceEntityResolverOptions>,
@@ -23,6 +25,8 @@ pub struct ServiceEntityFieldOptions {
     pub name: String,
     pub scalar: ScalarOptions,
     pub required: bool,
+    pub exclude_from_input: Option<Vec<ResolverType>>,
+    pub exclude_from_output: Option<Vec<ResolverType>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
