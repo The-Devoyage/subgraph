@@ -44,6 +44,23 @@ impl ServiceSchema {
         field_type
     }
 
+    pub fn exclude_field_from_input(
+        entity_field: &ServiceEntityFieldOptions,
+        resolver_type: &ResolverType,
+    ) -> bool {
+        info!("Checking If Field Should Be Excluded From Input");
+        let exclude_from_input = entity_field.exclude_from_input.clone();
+        debug!("Exclude From Input Config: {:?}", exclude_from_input);
+        let mut exclude = false;
+        if exclude_from_input.is_some() {
+            if exclude_from_input.unwrap().contains(&resolver_type) {
+                exclude = true;
+            }
+        }
+        debug!("Exclude {}: {}", entity_field.name, exclude);
+        exclude
+    }
+
     pub fn generate_resolver_input_value(
         mut self,
         entity: &ServiceEntity,
@@ -60,14 +77,18 @@ impl ServiceSchema {
                 let mut input = InputObject::new(&resolver_input_name);
 
                 for entity_field in &entity.fields {
-                    info!(
-                        "Getting {} Field Type For Find One Resolver",
-                        resolver_input_name
-                    );
-                    let field_type =
-                        ServiceSchema::get_entity_field_type(&entity_field, &resolver_type);
-                    debug!("Field Type: {:?}", field_type);
-                    input = input.field(InputValue::new(&entity_field.name, field_type));
+                    if !ServiceSchema::exclude_field_from_input(&entity_field, &resolver_type) {
+                        info!(
+                            "Getting {} Field Type For Find One Resolver",
+                            resolver_input_name
+                        );
+
+                        let field_type =
+                            ServiceSchema::get_entity_field_type(&entity_field, &resolver_type);
+
+                        info!("Adding {} Field To Input", entity_field.name);
+                        input = input.field(InputValue::new(&entity_field.name, field_type));
+                    }
                 }
                 field = field.argument(InputValue::new(
                     &resolver_input_name,
@@ -90,16 +111,18 @@ impl ServiceSchema {
                 let mut input = InputObject::new(&resolver_input_name);
 
                 for entity_field in &entity.fields {
-                    info!(
-                        "Getting {}, Field Type For Find Many Resolver",
-                        resolver_input_name
-                    );
+                    if !ServiceSchema::exclude_field_from_input(&entity_field, &resolver_type) {
+                        info!(
+                            "Getting {} Field Type For Find Many Resolver",
+                            resolver_input_name
+                        );
 
-                    let field_type =
-                        ServiceSchema::get_entity_field_type(&entity_field, &resolver_type);
-                    debug!("{:?}", field_type);
+                        let field_type =
+                            ServiceSchema::get_entity_field_type(&entity_field, &resolver_type);
+                        debug!("{:?}", field_type);
 
-                    input = input.field(InputValue::new(&entity_field.name, field_type));
+                        input = input.field(InputValue::new(&entity_field.name, field_type));
+                    }
                 }
                 field = field.argument(InputValue::new(
                     &resolver_input_name,
@@ -123,7 +146,7 @@ impl ServiceSchema {
                 let mut input = InputObject::new(&resolver_input_name);
 
                 for entity_field in &entity.fields {
-                    if entity_field.name != "_id" {
+                    if !ServiceSchema::exclude_field_from_input(&entity_field, &resolver_type) {
                         info!(
                             "Getting {} Field Type for Create One Resolver",
                             resolver_input_name

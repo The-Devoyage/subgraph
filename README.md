@@ -143,18 +143,19 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 
 #### Field
 
-| Field\*    | Description                           | Type           |
-| ---------- | ------------------------------------- | -------------- |
-| name\*     | The name of the field.                | String         |
-| scalar\*   | The scalar type of the field.         | Scalar Options |
-| required\* | Whether or not the field is required. | Boolean        |
+| Field\*             | Description                                                                | Type           |
+| ------------------- | -------------------------------------------------------------------------- | -------------- |
+| name\*              | The name of the field.                                                     | String         |
+| scalar\*            | The scalar type of the field.                                              | Scalar Options |
+| required\*          | Whether or not the field is required.                                      | Boolean        |
+| exclude_from_input  | A list of resolvers of which not to apply to the associated input.         | ResolverType[] |
 
-| Scalar Options |
-| -------------- |
-| String         |
-| Int            |
-| Boolean        |
-| ObjectID       |
+| Scalar Options | ResolverType  |
+| -------------- | ------------- |
+| String         | FindOne       |
+| Int            | FindMany      |
+| Boolean        | CreateOne     |
+| ObjectID       |               |
 
 ## Usage
 

@@ -1,11 +1,12 @@
 use async_graphql::dynamic::{Object, Scalar, Schema, SchemaBuilder, TypeRef};
 use log::{debug, error, info};
+use serde::{Deserialize, Serialize};
 
 use crate::{configuration::subgraph::SubGraphConfig, data_sources::DataSources};
 
 mod generate_entities;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 pub enum ResolverType {
     FindOne,
     FindMany,
