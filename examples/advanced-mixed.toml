@@ -70,7 +70,7 @@ required = true
 name = "Dog"
 [service.entities.data_source]
 from = "mongo_2"
-collection = "users"
+collection = "dogs"
 [[service.entities.fields]]
 name = "_id"
 scalar = "ObjectID"

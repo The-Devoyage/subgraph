@@ -13,6 +13,7 @@ impl ServiceSchema {
             self = self.add_resolver(&entity, ResolverType::FindOne);
             self = self.add_resolver(&entity, ResolverType::CreateOne);
             self = self.add_resolver(&entity, ResolverType::FindMany);
+            self = self.add_resolver(&entity, ResolverType::UpdateOne);
         }
         self
     }

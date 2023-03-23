@@ -31,6 +31,10 @@ impl ServiceSchema {
                 resolver_name: format!("get_{}s", &entity.name.to_lowercase()),
                 return_type: TypeRef::named_nn_list_nn(&entity.name),
             },
+            ResolverType::UpdateOne => ResolverConfig {
+                resolver_name: format!("update_{}", &entity.name.to_lowercase()),
+                return_type: TypeRef::named_nn(&entity.name),
+            },
         };
 
         debug!("Resolver Type: {:?}", resolver_type);
@@ -76,6 +80,19 @@ impl ServiceSchema {
         Ok(Some(result))
     }
 
+    pub async fn resolve_update_one<'a>(
+        data_sources: &DataSources,
+        input: &ValueAccessor<'_>,
+        entity: ServiceEntity,
+        resolver_type: ResolverType,
+    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
+        info!("Resolving Update One");
+
+        let result = DataSources::execute(data_sources, &input, entity, resolver_type).await?;
+
+        Ok(Some(result))
+    }
+
     pub async fn handle_resolve<'a>(
         data_sources: &DataSources,
         input: &ValueAccessor<'_>,
@@ -93,6 +110,9 @@ impl ServiceSchema {
             ResolverType::CreateOne => {
                 ServiceSchema::resolve_create_one(data_sources, &input, entity, resolver_type).await
             }
+            ResolverType::UpdateOne => {
+                ServiceSchema::resolve_update_one(data_sources, &input, entity, resolver_type).await
+            }
         }
     }
 
@@ -105,7 +125,7 @@ impl ServiceSchema {
 
         let cloned_entity = entity.clone();
 
-        let field = Field::new(
+        let resolver = Field::new(
             resolver_config.resolver_name,
             resolver_config.return_type,
             move |ctx| {
@@ -126,9 +146,9 @@ impl ServiceSchema {
         );
 
         info!("Field Created");
-        debug!("{:?}", field);
+        debug!("{:?}", resolver);
 
-        self = self.generate_resolver_input_value(&entity, field, &resolver_type);
+        self = self.generate_resolver_input_value(&entity, resolver, &resolver_type);
         self
     }
 }

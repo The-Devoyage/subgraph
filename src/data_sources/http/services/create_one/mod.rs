@@ -14,13 +14,7 @@ impl Services {
     ) -> Result<JsonValue, Error> {
         info!("Executing Create One - HTTP Data Source");
 
-        let result = client
-            .post(filter.url)
-            .json(&filter.request_body)
-            .send()
-            .await?
-            .text()
-            .await?;
+        let result = Services::request(client, filter).await?;
 
         let json = json::parse(&result);
 

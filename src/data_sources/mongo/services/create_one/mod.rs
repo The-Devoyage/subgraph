@@ -23,16 +23,16 @@ impl Services {
         info!("Converted New Document");
         debug!("{:?}", document);
 
-        let insert_many_result = coll
+        let insert_one_result = coll
             .insert_one(document, None)
             .await
             .expect("Failed to create document.");
 
         info!("Document Inserted");
-        debug!("{:?}", insert_many_result);
+        debug!("{:?}", insert_one_result);
 
         let document = coll
-            .find_one(doc! {"_id": insert_many_result.inserted_id }, None)
+            .find_one(doc! {"_id": insert_one_result.inserted_id }, None)
             .await;
 
         info!("Found Newly Inserted Document");
