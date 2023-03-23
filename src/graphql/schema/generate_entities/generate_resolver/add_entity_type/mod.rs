@@ -46,21 +46,31 @@ impl ServiceSchema {
 
         match scalar {
             ScalarOptions::String => {
-                info!("Found String Value");
+                debug!("Found String Value: {:?}", value);
+                if value.is_null() || value == "null" {
+                    return Ok(Value::Null);
+                }
                 Ok(Value::from(value.to_string()))
             }
             ScalarOptions::Int => {
-                info!("Found Int Value");
-                let value = value.as_i32().unwrap();
-                Ok(Value::from(value))
+                debug!("Found Int Value: {:?}", value);
+                let value = value.as_i32();
+                match value {
+                    Some(value) => Ok(Value::from(value)),
+                    None => Ok(Value::Null),
+                }
             }
             ScalarOptions::Boolean => {
-                info!("Found Boolean Value");
-                let value = value.as_bool().unwrap();
-                Ok(Value::from(value))
+                info!("Found Boolean Value: {:?}", value);
+                let value = value.as_bool();
+
+                match value {
+                    Some(value) => Ok(Value::from(value)),
+                    None => Ok(Value::Null),
+                }
             }
             ScalarOptions::ObjectID => {
-                info!("Found ObjectID Value");
+                debug!("Found ObjectID Value: {:?}", value);
                 let value = value.to_string();
                 Ok(Value::from(value))
             }

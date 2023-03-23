@@ -127,6 +127,33 @@ impl HttpDataSource {
 
                 url
             }
+            ResolverType::UpdateOne => {
+                let update_one_resolver = entity_resolvers.update_one.as_ref();
+
+                if update_one_resolver.is_none() {
+                    return Ok(url);
+                }
+
+                let search_query = update_one_resolver.unwrap().search_query.as_ref();
+
+                if search_query.is_none() {
+                    return Ok(url);
+                }
+
+                debug!(
+                    "Resolver Query Pairs Defined: {:?}",
+                    search_query.as_ref().unwrap()
+                );
+
+                let resolver_query_pairs = search_query.as_ref().unwrap();
+
+                for query_pair in resolver_query_pairs.iter() {
+                    url.query_pairs_mut()
+                        .append_pair(&query_pair.0, &query_pair.1);
+                }
+
+                url
+            }
         };
         Ok(url)
     }

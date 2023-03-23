@@ -75,12 +75,12 @@ impl MongoDataSource {
     ) -> Result<FieldValue<'a>, async_graphql::Error> {
         info!("Executing Mongo Data Source Operation");
 
-        let mut filter = input.deserialize::<Document>().unwrap();
+        let mut input = input.deserialize::<Document>().unwrap();
 
-        info!("Found Filter");
-        debug!("{:?}", filter);
+        info!("Found Input");
+        debug!("{:?}", input);
 
-        filter = MongoDataSource::finalize_filter(filter);
+        input = MongoDataSource::finalize_filter(input);
 
         let db = match data_source {
             DataSource::Mongo(ds) => ds.db.clone(),
@@ -110,17 +110,21 @@ impl MongoDataSource {
 
         match resolver_type {
             ResolverType::FindOne => {
-                let result = services::Services::find_one(db, filter, collection_name).await?;
+                let result = services::Services::find_one(db, input, collection_name).await?;
                 Ok(FieldValue::owned_any(result))
             }
             ResolverType::FindMany => {
-                let results = services::Services::find_many(db, filter, collection_name).await?;
+                let results = services::Services::find_many(db, input, collection_name).await?;
                 Ok(FieldValue::list(
                     results.into_iter().map(|doc| FieldValue::owned_any(doc)),
                 ))
             }
             ResolverType::CreateOne => {
-                let result = services::Services::create_one(db, filter, collection_name).await?;
+                let result = services::Services::create_one(db, input, collection_name).await?;
+                Ok(FieldValue::owned_any(result))
+            }
+            ResolverType::UpdateOne => {
+                let result = services::Services::update_one(db, input, collection_name).await?;
                 Ok(FieldValue::owned_any(result))
             }
         }

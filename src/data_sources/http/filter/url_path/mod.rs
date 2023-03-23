@@ -1,5 +1,5 @@
 use async_graphql::dynamic::ValueAccessor;
-use bson::Document;
+use bson::{to_document, Document};
 use log::{debug, info};
 use reqwest::Url;
 
@@ -115,6 +115,30 @@ impl HttpDataSource {
                 url.set_path(&path);
                 url
             }
+            ResolverType::UpdateOne => {
+                let update_one_resolver = entity_resolvers.update_one.as_ref();
+
+                if update_one_resolver.is_none() {
+                    return Ok(url);
+                }
+
+                debug!("Current URL: {:?}", url);
+
+                let resolver_path = update_one_resolver.unwrap().path.as_ref();
+
+                if resolver_path.is_none() {
+                    return Ok(url);
+                }
+
+                debug!(
+                    "Resolver Path Defined: {:?}",
+                    update_one_resolver.unwrap().path.as_ref()
+                );
+
+                let path = format!("{}{}", url.path(), resolver_path.unwrap());
+                url.set_path(&path);
+                url
+            }
         };
         Ok(url)
     }
@@ -122,13 +146,21 @@ impl HttpDataSource {
     pub async fn create_path_filters(
         url: Url,
         input: &ValueAccessor<'_>,
+        resolver_type: ResolverType,
     ) -> Result<Url, async_graphql::Error> {
         debug!("Creating Path Filters");
 
         let mut path_segments = url.path_segments().ok_or_else(|| "URL Has no path.")?;
-        let document = input.deserialize::<Document>()?;
+        let mut document = input.deserialize::<Document>()?;
         debug!("Deserialized Input {:?}", document);
         let mut url = Url::parse(url.as_str())?;
+
+        document = match resolver_type {
+            ResolverType::FindOne => document,
+            ResolverType::FindMany => document,
+            ResolverType::CreateOne => document,
+            ResolverType::UpdateOne => to_document(document.get("query").unwrap())?,
+        };
 
         while let Some(path_segment) = path_segments.next() {
             debug!("Path Segment: {:?}", path_segment);

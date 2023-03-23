@@ -14,7 +14,7 @@ pub enum ResolverType {
     // CreateMany,
     // DeleteOne,
     // DeleteMany,
-    // UpdateOne,
+    UpdateOne,
     // UpdateMany,
 }
 
