@@ -2,11 +2,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::graphql::schema::ResolverType;
 
+use super::cors::MethodOption;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceEntityResolverConfig {
     pub find_one: Option<ServiceEntityResolverOptions>,
     pub find_many: Option<ServiceEntityResolverOptions>,
     pub create_one: Option<ServiceEntityResolverOptions>,
+    pub update_one: Option<ServiceEntityResolverOptions>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -43,6 +46,7 @@ pub struct ServiceEntityResolverOptions {
     pub fields: Option<Vec<ServiceEntityFieldOptions>>,
     pub path: Option<String>,
     pub search_query: Option<Vec<QueryPair>>,
+    pub http_method: Option<MethodOption>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

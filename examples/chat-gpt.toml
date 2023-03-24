@@ -1,0 +1,44 @@
+[service]
+service_name = "chat_gpt"
+
+[[service.data_sources]]
+[service.data_sources.HTTP]
+name = "chat_gpt"
+url = "https://api.openai.com/v1"
+
+[[service.entities]]
+name = "chat_completion"
+
+[service.entities.data_source]
+from = "chat_gpt"
+path = "/chat/completion"
+
+[[service.entities.fields]]
+name = "id"
+scalar = "String"
+required = true
+
+[[service.entities.fields]]
+name = "object"
+scalar = "String"
+required = true
+
+[[service.entities.fields]]
+name = "created"
+scalar = "Int"
+required = true
+
+[[service.entities.fields]]
+name = "model"
+scalar = "String"
+required = true
+
+[[service.entities.fields]]
+name = "usage"
+scalar = "String"
+required = true
+
+[[service.entities.fields]]
+name = "choices"
+scalar = "String"
+required = true

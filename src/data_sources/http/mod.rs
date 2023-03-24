@@ -98,6 +98,12 @@ impl HttpDataSource {
 
                 Ok(FieldValue::owned_any(result))
             }
+            ResolverType::UpdateOne => {
+                let result =
+                    services::Services::update_one(data_source.client.clone(), filter).await?;
+
+                Ok(FieldValue::owned_any(result))
+            }
         }
     }
 }
