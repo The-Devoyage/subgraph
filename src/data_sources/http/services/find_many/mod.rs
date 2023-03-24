@@ -14,10 +14,10 @@ impl Services {
     ) -> Result<Vec<JsonValue>, async_graphql::Error> {
         info!("Executing Find Many - HTTP Data Source");
 
-        let response = &client.get(filter.url).send().await?.text().await?;
+        let response = Services::request(client, filter).await?;
         debug!("Response Received: {:?}", response);
 
-        let json = json::parse(response);
+        let json = json::parse(&response);
         debug!("JSON Parsed: {:?}", json);
 
         let mut results = Vec::new();

@@ -53,110 +53,6 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 - View the generated schema using the schema tab.
 - Write and execute GraphQL queries in the playground.
 
-## API
-
-### CLI Options
-
-- `--help` - View available commands.
-- `--config <path>` - Path to the config file.
-- `--port <port>` - The port for the service to run.
-- `--log-level <level>` - Options include `info` or `debug`
-
-### Config File Options
-
-| Service\*    | Description                          | Type          |
-| ------------ | ------------------------------------ | ------------- |
-| service_name | The name of this service.            | String        |
-| data_sources | Where the data is located.           | Data Source[] |
-| entities\*   | The data to be defined.              | Entity[]      |
-| cors         | Cors options for the GraphQL Server. | Cors Config   |
-
-#### Data Sources
-
-| Data Source\* | Description       | Type         |
-| ------------- | ----------------- | ------------ |
-| Mongo         | Mongo Data Source | Mongo Config |
-| HTTP          | HTTP Data Source  | HTTP Config  |
-
-| Mongo Config | Description                         | Type   |
-| ------------ | ----------------------------------- | ------ |
-| name\*       | The name of the mongo data source.  | String |
-| uri\*        | The connection string for the mongo | String |
-| db\*         | The name of the mongo database.     | String |
-
-| HTTP Config | Description                            | Type   |
-| ----------- | -------------------------------------- | ------ |
-| name\*      | The name of the HTTP data source.      | String |
-| url\*       | The base URL for the HTTP data source. | String |
-
-#### Cors Config
-
-| Cors Config      | Description                                              | Type            |
-| ---------------- | -------------------------------------------------------- | --------------- |
-| allow_any_origin | A boolean value indicating whether any origin is allowed | Boolean         |
-| allow_origins    | A list of allowed origins                                | String[]        |
-| allow_headers    | A list of allowed headers                                | String[]        |
-| allow_methods    | A list of allowed HTTP methods                           | MethodConfig [] |
-
-| MethodConfig | Description                                     | Type         |
-| ------------ | ------------------------------------------------| ------------ |
-| method       | A string representation of the method to allow. | MethodOption |
-
-| MethodOption |
-| ------------ |
-| GET          |
-| Options      |
-| Get          |
-| Post         |
-| Put          |
-| Delete       |
-| Head         |
-| Trace        |
-| Connect      |
-| Patch        |
-
-#### Entity
-
-| Entity\*    | Description                      | Type                      |
-| ----------- | -------------------------------- | ------------------------- |
-| name\*      | The name of the entity.          | String                    |
-| fields\*    | The fields of the entity.        | Field[]                   |
-| data_source | The source of the entity's data. | Entity Data Source Config |
-
-| Entity Data Source Config | Description                                                         | Type              |
-| ------------------------- | ------------------------------------------------------------------- | ----------------- |
-| from                      | The name of the associated HTTP Data Source.                        | String            |
-| collection                | The name of the associated Mongo collection.                        | String            |
-| path                      | The path/endpoint relative to the associated HTTP Data Source Path. | String            |
-| resolvers                 | Configuration to apply per generated resolver.                      | Entity Resolver[] |
-
-| Entity Resolver | Description                               | Type                   |
-| --------------- | ----------------------------------------- | ---------------------- |
-| FindOne         | Configuration for the Find One Resolver   | Entity Resolver Config |
-| FindMany        | Configuration for the Find Many Resolver  | Entity Resolver Config |
-| CreateOne       | Configuration for the Create One Resolver | Entity Resolver Config |
-
-| Entity Resolver Config | Description                                                               | Type   |
-| ---------------------- | ------------------------------------------------------------------------- | ------ |
-| search_query           | A parameterized search query to append to the entity path.                | String |
-| path                   | A parameterized url path (endpoint) to append to the HTTP datasource url. | String |
-
-#### Field
-
-| Field\*             | Description                                                                | Type           |
-| ------------------- | -------------------------------------------------------------------------- | -------------- |
-| name\*              | The name of the field.                                                     | String         |
-| scalar\*            | The scalar type of the field.                                              | Scalar Options |
-| required\*          | Whether or not the field is required.                                      | Boolean        |
-| exclude_from_input  | A list of resolvers of which not to apply to the associated input.         | ResolverType[] |
-
-| Scalar Options | ResolverType  |
-| -------------- | ------------- |
-| String         | FindOne       |
-| Int            | FindMany      |
-| Boolean        | CreateOne     |
-| ObjectID       |               |
-
 ## Usage
 
 ### Build
@@ -283,3 +179,110 @@ method = "POST"
 [[service.cors.allow_methods]]
 method = "GET"
 ```
+
+## API
+
+### CLI Options
+
+- `--help` - View available commands.
+- `--config <path>` - Path to the config file.
+- `--port <port>` - The port for the service to run.
+- `--log-level <level>` - Options include `info` or `debug`
+
+### Config File Options
+
+| Service\*    | Description                          | Type          |
+| ------------ | ------------------------------------ | ------------- |
+| service_name | The name of this service.            | String        |
+| data_sources | Where the data is located.           | Data Source[] |
+| entities\*   | The data to be defined.              | Entity[]      |
+| cors         | Cors options for the GraphQL Server. | Cors Config   |
+
+#### Data Sources
+
+| Data Source\* | Description       | Type         |
+| ------------- | ----------------- | ------------ |
+| Mongo         | Mongo Data Source | Mongo Config |
+| HTTP          | HTTP Data Source  | HTTP Config  |
+
+| Mongo Config | Description                         | Type   |
+| ------------ | ----------------------------------- | ------ |
+| name\*       | The name of the mongo data source.  | String |
+| uri\*        | The connection string for the mongo | String |
+| db\*         | The name of the mongo database.     | String |
+
+| HTTP Config | Description                            | Type   |
+| ----------- | -------------------------------------- | ------ |
+| name\*      | The name of the HTTP data source.      | String |
+| url\*       | The base URL for the HTTP data source. | String |
+
+#### Cors Config
+
+| Cors Config      | Description                                              | Type            |
+| ---------------- | -------------------------------------------------------- | --------------- |
+| allow_any_origin | A boolean value indicating whether any origin is allowed | Boolean         |
+| allow_origins    | A list of allowed origins                                | String[]        |
+| allow_headers    | A list of allowed headers                                | String[]        |
+| allow_methods    | A list of allowed HTTP methods                           | MethodConfig [] |
+
+| MethodConfig | Description                                     | Type         |
+| ------------ | ------------------------------------------------| ------------ |
+| method       | A string representation of the method to allow. | MethodOption |
+
+| MethodOption |
+| ------------ |
+| GET          |
+| Options      |
+| Get          |
+| Post         |
+| Put          |
+| Delete       |
+| Head         |
+| Trace        |
+| Connect      |
+| Patch        |
+
+#### Entity
+
+| Entity\*    | Description                      | Type                      |
+| ----------- | -------------------------------- | ------------------------- |
+| name\*      | The name of the entity.          | String                    |
+| fields\*    | The fields of the entity.        | Field[]                   |
+| data_source | The source of the entity's data. | Entity Data Source Config |
+
+| Entity Data Source Config | Description                                                         | Type              |
+| ------------------------- | ------------------------------------------------------------------- | ----------------- |
+| from                      | The name of the associated HTTP Data Source.                        | String            |
+| collection                | The name of the associated Mongo collection.                        | String            |
+| path                      | The path/endpoint relative to the associated HTTP Data Source Path. | String            |
+| resolvers                 | Configuration to apply per generated resolver.                      | Entity Resolver[] |
+
+| Entity Resolver | Description                               | Type                   |
+| --------------- | ----------------------------------------- | ---------------------- |
+| FindOne         | Configuration for the Find One Resolver   | Entity Resolver Config |
+| FindMany        | Configuration for the Find Many Resolver  | Entity Resolver Config |
+| CreateOne       | Configuration for the Create One Resolver | Entity Resolver Config |
+
+| Entity Resolver Config | Description                                                              | Type         |
+| ---------------------- | ------------------------------------------------------------------------ | ------------ |
+| search_query           | A parameterized search query to append to the entity path.               | String       |
+| path                   | A parameterized url path (endpoint) to append to the (HTTP Data Source). | String       |
+| method                 | Override the default method for the resolver (HTTP Data Source)          | MethodOption |
+
+
+#### Field
+
+| Field\*             | Description                                                                | Type           |
+| ------------------- | -------------------------------------------------------------------------- | -------------- |
+| name\*              | The name of the field.                                                     | String         |
+| scalar\*            | The scalar type of the field.                                              | Scalar Options |
+| required\*          | Whether or not the field is required.                                      | Boolean        |
+| exclude_from_input  | A list of resolvers of which not to apply to the associated input.         | ResolverType[] |
+
+| Scalar Options | ResolverType  |
+| -------------- | ------------- |
+| String         | FindOne       |
+| Int            | FindMany      |
+| Boolean        | CreateOne     |
+| ObjectID       |               |
+
