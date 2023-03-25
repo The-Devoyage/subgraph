@@ -4,18 +4,15 @@ use crate::{
 };
 
 use super::ServiceSchema;
-use async_graphql::{
-    dynamic::{Field, FieldFuture, Object, TypeRef},
-    Value,
-};
+use async_graphql::dynamic::{Field, FieldFuture, Object, TypeRef};
 use bson::Document;
 use json::JsonValue;
 use log::{debug, info};
 
+pub mod resolve_fields;
+
 impl ServiceSchema {
-    pub fn get_entity_field_resolver_field_type(
-        entity_field: &ServiceEntityFieldOptions,
-    ) -> TypeRef {
+    pub fn get_field_type_ref(entity_field: &ServiceEntityFieldOptions) -> TypeRef {
         let entity_field_type = match entity_field.required {
             true => match entity_field.scalar {
                 ScalarOptions::String => TypeRef::named_nn(TypeRef::STRING),
@@ -33,83 +30,66 @@ impl ServiceSchema {
         entity_field_type
     }
 
-    pub async fn resolve_http_field(
-        json_value: &JsonValue,
-        field_name: &str,
-        scalar: ScalarOptions,
-    ) -> Result<Value, async_graphql::Error> {
-        info!("Resolving HTTP Field");
+    pub fn add_field(
+        mut entity_type: Object,
+        entity_field: ServiceEntityFieldOptions,
+        entity_field_type: TypeRef,
+        entity: ServiceEntity,
+        data_sources: DataSources,
+    ) -> Object {
+        let cloned_entity_field = entity_field.clone();
+        entity_type = entity_type
+            .field(Field::new(
+                &entity_field.name,
+                entity_field_type,
+                move |ctx| {
+                    let cloned_entity_field = cloned_entity_field.clone();
+                    let entity = entity.clone();
+                    let data_sources = data_sources.clone();
 
-        let value = &json_value[field_name];
+                    FieldFuture::new(async move {
+                        info!("Resolving Entity Field");
+                        let scalar = cloned_entity_field.scalar;
+                        let entity = entity.clone();
+                        let data_sources = data_sources.clone();
 
-        debug!("Accessed Field '{}': {:?}", field_name, value);
+                        let field_name = ctx.field().name();
+                        debug!("Field Name: {:?}", field_name);
 
-        match scalar {
-            ScalarOptions::String => {
-                debug!("Found String Value: {:?}", value);
-                if value.is_null() || value == "null" {
-                    return Ok(Value::Null);
-                }
-                Ok(Value::from(value.to_string()))
-            }
-            ScalarOptions::Int => {
-                debug!("Found Int Value: {:?}", value);
-                let value = value.as_i32();
-                match value {
-                    Some(value) => Ok(Value::from(value)),
-                    None => Ok(Value::Null),
-                }
-            }
-            ScalarOptions::Boolean => {
-                info!("Found Boolean Value: {:?}", value);
-                let value = value.as_bool();
+                        let data_source =
+                            DataSources::get_entity_data_source(&entity, &data_sources);
 
-                match value {
-                    Some(value) => Ok(Value::from(value)),
-                    None => Ok(Value::Null),
-                }
-            }
-            ScalarOptions::ObjectID => {
-                debug!("Found ObjectID Value: {:?}", value);
-                let value = value.to_string();
-                Ok(Value::from(value))
-            }
-        }
-    }
+                        match data_source {
+                            DataSource::Mongo(_ds) => {
+                                let doc = ctx.parent_value.try_downcast_ref::<Document>().unwrap();
+                                debug!("Found Document: {:?}", doc);
 
-    pub async fn resolve_document_field(
-        doc: &Document,
-        field_name: &str,
-        scalar: ScalarOptions,
-    ) -> Result<Value, async_graphql::Error> {
-        info!("Resolving Mongo Field");
+                                let value =
+                                    ServiceSchema::resolve_document_field(doc, field_name, scalar)
+                                        .await;
+                                Ok(Some(value.unwrap()))
+                            }
+                            DataSource::HTTP(_ds) => {
+                                let json_value =
+                                    ctx.parent_value.try_downcast_ref::<JsonValue>().unwrap();
 
-        match scalar {
-            ScalarOptions::String => {
-                let value = doc.get_str(field_name)?;
-                debug!("Found String Value: {:?}", value);
-                Ok(Value::from(value))
-            }
-            ScalarOptions::Int => {
-                let value = doc.get_i32(field_name)?;
-                debug!("Found Int Value: {:?}", value);
-                Ok(Value::from(value))
-            }
-            ScalarOptions::Boolean => {
-                let value = doc.get_bool(field_name)?;
-                debug!("Found Boolean Value: {:?}", value);
-                Ok(Value::from(value))
-            }
-            ScalarOptions::ObjectID => {
-                let value = doc.get_object_id(field_name)?;
-                debug!("Found ObjectID Value: {:?}", value);
-                Ok(Value::from(value.to_string()))
-            }
-        }
+                                let value = ServiceSchema::resolve_http_field(
+                                    json_value, field_name, scalar,
+                                )
+                                .await;
+                                Ok(Some(value.unwrap()))
+                            }
+                        }
+                    })
+                },
+            ))
+            .key(&entity_field.name);
+        entity_type
     }
 
     pub fn add_entity_type(mut self, entity: &ServiceEntity) -> Self {
         info!("Generating Type For {}", &entity.name);
+
         let mut entity_type = Object::new(&entity.name);
         debug!("Entity Type: {:?}", entity_type);
 
@@ -117,63 +97,19 @@ impl ServiceSchema {
         let data_sources = &self.data_sources.clone();
 
         for entity_field in &entity.fields {
-            info!("Entity Field Found");
             debug!("Adding Field: {:?}", entity_field);
-            let entity_field_type =
-                ServiceSchema::get_entity_field_resolver_field_type(&entity_field).clone();
+            let entity_field_type = ServiceSchema::get_field_type_ref(&entity_field).clone();
 
             let cloned_entity_field = entity_field.clone();
             let entity = entity.clone();
             let data_sources = data_sources.clone();
-
-            entity_type = entity_type
-                .field(Field::new(
-                    &entity_field.name,
-                    entity_field_type,
-                    move |ctx| {
-                        let cloned_entity_field = cloned_entity_field.clone();
-                        let entity = entity.clone();
-                        let data_sources = data_sources.clone();
-
-                        FieldFuture::new(async move {
-                            info!("Resolving Entity Field");
-                            let scalar = cloned_entity_field.scalar;
-                            let entity = entity.clone();
-                            let data_sources = data_sources.clone();
-
-                            let field_name = ctx.field().name();
-                            debug!("Field Name: {:?}", field_name);
-
-                            let data_source =
-                                DataSources::get_entity_data_source(&entity, &data_sources);
-
-                            match data_source {
-                                DataSource::Mongo(_ds) => {
-                                    let doc =
-                                        ctx.parent_value.try_downcast_ref::<Document>().unwrap();
-                                    debug!("Found Document: {:?}", doc);
-
-                                    let value = ServiceSchema::resolve_document_field(
-                                        doc, field_name, scalar,
-                                    )
-                                    .await;
-                                    Ok(Some(value.unwrap()))
-                                }
-                                DataSource::HTTP(_ds) => {
-                                    let json_value =
-                                        ctx.parent_value.try_downcast_ref::<JsonValue>().unwrap();
-
-                                    let value = ServiceSchema::resolve_http_field(
-                                        json_value, field_name, scalar,
-                                    )
-                                    .await;
-                                    Ok(Some(value.unwrap()))
-                                }
-                            }
-                        })
-                    },
-                ))
-                .key(&entity_field.name);
+            entity_type = ServiceSchema::add_field(
+                entity_type,
+                cloned_entity_field,
+                entity_field_type,
+                entity,
+                data_sources,
+            )
         }
 
         info!("Entity Fields Added.");
