@@ -30,6 +30,7 @@ pub struct ServiceEntityFieldOptions {
     pub required: bool,
     pub exclude_from_input: Option<Vec<ResolverType>>,
     pub exclude_from_output: Option<Vec<ResolverType>>,
+    pub fields: Option<Vec<ServiceEntityFieldOptions>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

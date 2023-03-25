@@ -35,8 +35,13 @@ required = true
 
 [[service.entities.fields]]
 name = "usage"
-scalar = "String"
+scalar = "Usage"
 required = true
+fields = [
+    { name = "prompt_tokens", scalar = "Int", required = true },
+    { name = "completion_tokens", scalar = "Int", required = true },
+    { name = "total_tokens", scalar = "Int", required = true },
+]
 
 [[service.entities.fields]]
 name = "choices"
