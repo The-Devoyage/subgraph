@@ -1,12 +1,12 @@
 use crate::configuration::subgraph::entities::ScalarOptions;
-use crate::graphql::schema::ServiceSchema;
+use crate::graphql::schema::ServiceSchemaBuilder;
 
 use async_graphql::Value;
 use bson::Document;
 use json::JsonValue;
 use log::{debug, info};
 
-impl ServiceSchema {
+impl ServiceSchemaBuilder {
     pub async fn resolve_http_field(
         json_value: &JsonValue,
         field_name: &str,

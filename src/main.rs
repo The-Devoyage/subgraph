@@ -31,7 +31,7 @@ async fn main() {
         data_sources::DataSources::init(subgraph_config.service.data_sources.clone()).await;
 
     let schema =
-        graphql::schema::ServiceSchema::build(subgraph_config.clone(), data_sources).finish();
+        graphql::schema::ServiceSchemaBuilder::new(subgraph_config.clone(), data_sources).build();
 
     let graphql_post = async_graphql_warp::graphql(schema).and_then(
         |(schema, request): (Schema, async_graphql::Request)| async move {
