@@ -1,11 +1,11 @@
 use crate::{
     configuration::subgraph::entities::{ScalarOptions, ServiceEntity, ServiceEntityFieldOptions},
-    graphql::schema::{ResolverType, ServiceSchema},
+    graphql::schema::{ResolverType, ServiceSchemaBuilder},
 };
 use async_graphql::dynamic::{Field, InputObject, InputValue, TypeRef};
 use log::{debug, info};
 
-impl ServiceSchema {
+impl ServiceSchemaBuilder {
     pub fn get_entity_field_type(
         entity_field: &ServiceEntityFieldOptions,
         resolver_type: &ResolverType,
@@ -52,7 +52,7 @@ impl ServiceSchema {
         field_type
     }
 
-    pub fn exclude_field_from_input(
+    pub fn is_excluded_input_field(
         entity_field: &ServiceEntityFieldOptions,
         resolver_type: &ResolverType,
     ) -> bool {
@@ -69,20 +69,21 @@ impl ServiceSchema {
         exclude
     }
 
-    pub fn generate_find_one_input(
+    pub fn create_find_one_input(
         mut self,
         entity: &ServiceEntity,
         mut resolver: Field,
         resolver_type: &ResolverType,
     ) -> Self {
         let resolver_input_name = format!("get_{}_input", &entity.name.to_lowercase());
-        info!("Creating Find One Resolver: {}", resolver_input_name);
+        debug!("Creating Find One Resolver Input: {}", resolver_input_name);
 
         let mut input = InputObject::new(&resolver_input_name);
 
         for entity_field in &entity.fields {
-            if !ServiceSchema::exclude_field_from_input(&entity_field, resolver_type) {
-                let field_type = ServiceSchema::get_entity_field_type(&entity_field, resolver_type);
+            if !ServiceSchemaBuilder::is_excluded_input_field(&entity_field, resolver_type) {
+                let field_type =
+                    ServiceSchemaBuilder::get_entity_field_type(&entity_field, resolver_type);
                 input = input.field(InputValue::new(&entity_field.name, field_type));
             }
         }
@@ -97,20 +98,21 @@ impl ServiceSchema {
         self
     }
 
-    pub fn generate_find_many_input(
+    pub fn create_find_many_input(
         mut self,
         entity: &ServiceEntity,
         mut resolver: Field,
         resolver_type: &ResolverType,
     ) -> Self {
         let resolver_input_name = format!("get_{}s_input", &entity.name.to_lowercase());
-        info!("Creating Find Many Resolver: {}", resolver_input_name);
+        info!("Creating Find Many Resolver Input: {}", resolver_input_name);
 
         let mut input = InputObject::new(&resolver_input_name);
 
         for entity_field in &entity.fields {
-            if !ServiceSchema::exclude_field_from_input(&entity_field, resolver_type) {
-                let field_type = ServiceSchema::get_entity_field_type(&entity_field, resolver_type);
+            if !ServiceSchemaBuilder::is_excluded_input_field(&entity_field, resolver_type) {
+                let field_type =
+                    ServiceSchemaBuilder::get_entity_field_type(&entity_field, resolver_type);
                 input = input.field(InputValue::new(&entity_field.name, field_type));
             }
         }
@@ -125,20 +127,24 @@ impl ServiceSchema {
         self
     }
 
-    pub fn generate_create_one_input(
+    pub fn create_create_one_input(
         mut self,
         entity: &ServiceEntity,
         mut resolver: Field,
         resolver_type: &ResolverType,
     ) -> Self {
         let resolver_input_name = format!("create_{}_input", &entity.name.to_lowercase());
-        info!("Creating Create One Resolver: {}", resolver_input_name);
+        info!(
+            "Creating Create One Resolver Input: {}",
+            resolver_input_name
+        );
 
         let mut input = InputObject::new(&resolver_input_name);
 
         for entity_field in &entity.fields {
-            if !ServiceSchema::exclude_field_from_input(&entity_field, resolver_type) {
-                let field_type = ServiceSchema::get_entity_field_type(&entity_field, resolver_type);
+            if !ServiceSchemaBuilder::is_excluded_input_field(&entity_field, resolver_type) {
+                let field_type =
+                    ServiceSchemaBuilder::get_entity_field_type(&entity_field, resolver_type);
                 input = input.field(InputValue::new(&entity_field.name, field_type));
             }
         }
@@ -153,21 +159,24 @@ impl ServiceSchema {
         self
     }
 
-    pub fn generate_update_one_input(
+    pub fn create_update_one_input(
         mut self,
         entity: &ServiceEntity,
         mut resolver: Field,
         resolver_type: &ResolverType,
     ) -> Self {
-        info!("Creating Update One Resolver Input");
         let resolver_input_name = format!("update_{}_input", &entity.name.to_lowercase());
-        debug!("Input Name: {}", resolver_input_name);
+        debug!(
+            "Creating Create One Resolver Input : {}",
+            resolver_input_name
+        );
 
         let mut input = InputObject::new(&resolver_input_name);
 
         for entity_field in &entity.fields {
-            if !ServiceSchema::exclude_field_from_input(&entity_field, resolver_type) {
-                let field_type = ServiceSchema::get_entity_field_type(&entity_field, resolver_type);
+            if !ServiceSchemaBuilder::is_excluded_input_field(&entity_field, resolver_type) {
+                let field_type =
+                    ServiceSchemaBuilder::get_entity_field_type(&entity_field, resolver_type);
                 input = input.field(InputValue::new(&entity_field.name, field_type));
             }
         }
@@ -187,26 +196,26 @@ impl ServiceSchema {
         self
     }
 
-    pub fn generate_resolver_input_value(
+    pub fn create_resolver_input_value(
         mut self,
         entity: &ServiceEntity,
         resolver: Field,
         resolver_type: &ResolverType,
     ) -> Self {
-        info!("Generate Resolver Input Value");
+        debug!("Creating Resolver Input Value");
 
         match resolver_type {
             ResolverType::FindOne => {
-                self = self.generate_find_one_input(&entity, resolver, &resolver_type);
+                self = self.create_find_one_input(&entity, resolver, &resolver_type);
             }
             ResolverType::FindMany => {
-                self = self.generate_find_many_input(&entity, resolver, &resolver_type);
+                self = self.create_find_many_input(&entity, resolver, &resolver_type);
             }
             ResolverType::CreateOne => {
-                self = self.generate_create_one_input(&entity, resolver, &resolver_type);
+                self = self.create_create_one_input(&entity, resolver, &resolver_type);
             }
             ResolverType::UpdateOne => {
-                self = self.generate_update_one_input(&entity, resolver, &resolver_type);
+                self = self.create_update_one_input(&entity, resolver, &resolver_type);
             }
         }
         self

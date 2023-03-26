@@ -3,7 +3,7 @@ use crate::{
     data_sources::{DataSource, DataSources},
 };
 
-use super::ServiceSchema;
+use super::ServiceSchemaBuilder;
 use async_graphql::dynamic::{Field, FieldFuture, Object, TypeRef};
 use bson::Document;
 use json::JsonValue;
@@ -11,7 +11,7 @@ use log::{debug, info};
 
 pub mod resolve_fields;
 
-impl ServiceSchema {
+impl ServiceSchemaBuilder {
     pub fn get_field_type_ref(entity_field: &ServiceEntityFieldOptions) -> TypeRef {
         let entity_field_type = match entity_field.required {
             true => match entity_field.scalar {
@@ -64,16 +64,17 @@ impl ServiceSchema {
                                 let doc = ctx.parent_value.try_downcast_ref::<Document>().unwrap();
                                 debug!("Found Document: {:?}", doc);
 
-                                let value =
-                                    ServiceSchema::resolve_document_field(doc, field_name, scalar)
-                                        .await;
+                                let value = ServiceSchemaBuilder::resolve_document_field(
+                                    doc, field_name, scalar,
+                                )
+                                .await;
                                 Ok(Some(value.unwrap()))
                             }
                             DataSource::HTTP(_ds) => {
                                 let json_value =
                                     ctx.parent_value.try_downcast_ref::<JsonValue>().unwrap();
 
-                                let value = ServiceSchema::resolve_http_field(
+                                let value = ServiceSchemaBuilder::resolve_http_field(
                                     json_value, field_name, scalar,
                                 )
                                 .await;
@@ -87,23 +88,23 @@ impl ServiceSchema {
         entity_type
     }
 
-    pub fn add_entity_type(mut self, entity: &ServiceEntity) -> Self {
-        info!("Generating Type For {}", &entity.name);
+    pub fn create_entity_type_def(mut self, entity: &ServiceEntity) -> Self {
+        debug!("Generating Type For {}", &entity.name);
 
         let mut entity_type = Object::new(&entity.name);
         debug!("Entity Type: {:?}", entity_type);
 
-        let entity = entity.clone();
+        // let entity = entity.clone();
         let data_sources = &self.data_sources.clone();
 
         for entity_field in &entity.fields {
             debug!("Adding Field: {:?}", entity_field);
-            let entity_field_type = ServiceSchema::get_field_type_ref(&entity_field).clone();
+            let entity_field_type = ServiceSchemaBuilder::get_field_type_ref(&entity_field).clone();
 
             let cloned_entity_field = entity_field.clone();
             let entity = entity.clone();
             let data_sources = data_sources.clone();
-            entity_type = ServiceSchema::add_field(
+            entity_type = ServiceSchemaBuilder::add_field(
                 entity_type,
                 cloned_entity_field,
                 entity_field_type,
@@ -111,9 +112,6 @@ impl ServiceSchema {
                 data_sources,
             )
         }
-
-        info!("Entity Fields Added.");
-        debug!("{:?}", entity_type);
 
         self.schema_builder = self.schema_builder.register(entity_type);
         self
