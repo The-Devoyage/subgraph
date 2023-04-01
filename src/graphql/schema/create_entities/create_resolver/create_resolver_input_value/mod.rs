@@ -1,16 +1,23 @@
 use crate::{
-    configuration::subgraph::entities::{ScalarOptions, ServiceEntity, ServiceEntityFieldOptions},
+    configuration::subgraph::entities::{ScalarOptions, ServiceEntity, ServiceEntityField},
     graphql::schema::{ResolverType, ServiceSchemaBuilder},
 };
 use async_graphql::dynamic::{Field, InputObject, InputValue, TypeRef};
 use log::{debug, info};
 
+pub struct TypeRefWithInputs {
+    pub type_ref: TypeRef,
+    pub inputs: Vec<InputObject>,
+}
+
 impl ServiceSchemaBuilder {
     pub fn get_entity_field_type(
-        entity_field: &ServiceEntityFieldOptions,
+        entity_field: &ServiceEntityField,
         resolver_type: &ResolverType,
-    ) -> TypeRef {
-        let field_type = match &entity_field.scalar {
+    ) -> TypeRefWithInputs {
+        let mut inputs = Vec::new();
+
+        let type_ref = match &entity_field.scalar {
             ScalarOptions::String => match resolver_type {
                 ResolverType::FindOne | ResolverType::FindMany | ResolverType::UpdateOne => {
                     TypeRef::named(TypeRef::STRING)
@@ -47,13 +54,69 @@ impl ServiceSchemaBuilder {
                     false => TypeRef::named("ObjectID"),
                 },
             },
+            ScalarOptions::Object => match resolver_type {
+                ResolverType::FindOne => {
+                    //HACK: This will prevent the ability to create multiple inputs with same
+                    //name. Need to be able to create multiple inputs with same name based on
+                    //parent object. For example, use Prefix argument to specify.
+                    let input_name = format!("get_{}_input", entity_field.name.clone());
+                    let object_inputs = ServiceSchemaBuilder::create_input(
+                        input_name.clone(),
+                        entity_field.fields.clone().unwrap_or(Vec::new()),
+                        resolver_type,
+                    );
+                    for input in object_inputs {
+                        inputs.push(input);
+                    }
+                    TypeRef::named(input_name)
+                }
+                ResolverType::FindMany => {
+                    let input_name = format!("get_{}s_input", entity_field.name.clone());
+                    let object_inputs = ServiceSchemaBuilder::create_input(
+                        input_name.clone(),
+                        entity_field.fields.clone().unwrap_or(Vec::new()),
+                        resolver_type,
+                    );
+                    for input in object_inputs {
+                        inputs.push(input);
+                    }
+                    TypeRef::named(input_name)
+                }
+                ResolverType::UpdateOne => {
+                    let input_name = format!("update_{}_input", entity_field.name.clone());
+                    let object_inputs = ServiceSchemaBuilder::create_input(
+                        input_name.clone(),
+                        entity_field.fields.clone().unwrap_or(Vec::new()),
+                        resolver_type,
+                    );
+                    for input in object_inputs {
+                        inputs.push(input);
+                    }
+                    TypeRef::named(input_name)
+                }
+                ResolverType::CreateOne => {
+                    let input_name = format!("create_{}_input", entity_field.name.clone());
+                    let object_inputs = ServiceSchemaBuilder::create_input(
+                        input_name.clone(),
+                        entity_field.fields.clone().unwrap_or(Vec::new()),
+                        resolver_type,
+                    );
+                    for input in object_inputs {
+                        inputs.push(input);
+                    }
+                    match entity_field.required {
+                        true => TypeRef::named_nn(input_name),
+                        false => TypeRef::named(input_name),
+                    }
+                }
+            },
         };
 
-        field_type
+        TypeRefWithInputs { type_ref, inputs }
     }
 
     pub fn is_excluded_input_field(
-        entity_field: &ServiceEntityFieldOptions,
+        entity_field: &ServiceEntityField,
         resolver_type: &ResolverType,
     ) -> bool {
         info!("Checking If Field Should Be Excluded From Input");
@@ -78,23 +141,19 @@ impl ServiceSchemaBuilder {
         let resolver_input_name = format!("get_{}_input", &entity.name.to_lowercase());
         debug!("Creating Find One Resolver Input: {}", resolver_input_name);
 
-        let mut input = InputObject::new(&resolver_input_name);
-
-        for entity_field in &entity.fields {
-            if !ServiceSchemaBuilder::is_excluded_input_field(&entity_field, resolver_type) {
-                let field_type =
-                    ServiceSchemaBuilder::get_entity_field_type(&entity_field, resolver_type);
-                input = input.field(InputValue::new(&entity_field.name, field_type));
-            }
-        }
+        let inputs = ServiceSchemaBuilder::create_input(
+            resolver_input_name.clone(),
+            entity.fields.clone(),
+            resolver_type,
+        );
 
         resolver = resolver.argument(InputValue::new(
             &resolver_input_name,
-            TypeRef::named_nn(input.type_name()),
+            TypeRef::named_nn(resolver_input_name.clone()),
         ));
 
         self.query = self.query.field(resolver);
-        self.schema_builder = self.schema_builder.register(input);
+        self = self.register_inputs(inputs);
         self
     }
 
@@ -107,23 +166,19 @@ impl ServiceSchemaBuilder {
         let resolver_input_name = format!("get_{}s_input", &entity.name.to_lowercase());
         info!("Creating Find Many Resolver Input: {}", resolver_input_name);
 
-        let mut input = InputObject::new(&resolver_input_name);
-
-        for entity_field in &entity.fields {
-            if !ServiceSchemaBuilder::is_excluded_input_field(&entity_field, resolver_type) {
-                let field_type =
-                    ServiceSchemaBuilder::get_entity_field_type(&entity_field, resolver_type);
-                input = input.field(InputValue::new(&entity_field.name, field_type));
-            }
-        }
+        let inputs = ServiceSchemaBuilder::create_input(
+            resolver_input_name.clone(),
+            entity.fields.clone(),
+            resolver_type,
+        );
 
         resolver = resolver.argument(InputValue::new(
             &resolver_input_name,
-            TypeRef::named_nn(input.type_name()),
+            TypeRef::named_nn(resolver_input_name.clone()),
         ));
 
         self.query = self.query.field(resolver);
-        self.schema_builder = self.schema_builder.register(input);
+        self = self.register_inputs(inputs);
         self
     }
 
@@ -139,23 +194,19 @@ impl ServiceSchemaBuilder {
             resolver_input_name
         );
 
-        let mut input = InputObject::new(&resolver_input_name);
-
-        for entity_field in &entity.fields {
-            if !ServiceSchemaBuilder::is_excluded_input_field(&entity_field, resolver_type) {
-                let field_type =
-                    ServiceSchemaBuilder::get_entity_field_type(&entity_field, resolver_type);
-                input = input.field(InputValue::new(&entity_field.name, field_type));
-            }
-        }
+        let inputs = ServiceSchemaBuilder::create_input(
+            resolver_input_name.clone(),
+            entity.fields.clone(),
+            resolver_type,
+        );
 
         resolver = resolver.argument(InputValue::new(
             &resolver_input_name,
-            TypeRef::named_nn(input.type_name()),
+            TypeRef::named_nn(resolver_input_name.clone()),
         ));
 
         self.mutation = self.mutation.field(resolver);
-        self.schema_builder = self.schema_builder.register(input);
+        self = self.register_inputs(inputs);
         self
     }
 
@@ -167,32 +218,67 @@ impl ServiceSchemaBuilder {
     ) -> Self {
         let resolver_input_name = format!("update_{}_input", &entity.name.to_lowercase());
         debug!(
-            "Creating Create One Resolver Input : {}",
+            "Creating Create One Resolver Input: {}",
             resolver_input_name
         );
 
-        let mut input = InputObject::new(&resolver_input_name);
+        let mut inputs = ServiceSchemaBuilder::create_input(
+            resolver_input_name.clone(),
+            entity.fields.clone(),
+            resolver_type,
+        );
 
-        for entity_field in &entity.fields {
-            if !ServiceSchemaBuilder::is_excluded_input_field(&entity_field, resolver_type) {
-                let field_type =
-                    ServiceSchemaBuilder::get_entity_field_type(&entity_field, resolver_type);
-                input = input.field(InputValue::new(&entity_field.name, field_type));
-            }
-        }
-
+        //Update the first input in the inputs vector to include the query field
+        let mut input = inputs.remove(0);
         input = input.field(InputValue::new(
             "query",
             TypeRef::named_nn(format!("get_{}_input", &entity.name.to_lowercase())),
         ));
+        inputs.insert(0, input);
 
         resolver = resolver.argument(InputValue::new(
             &resolver_input_name,
-            TypeRef::named_nn(input.type_name()),
+            TypeRef::named_nn(resolver_input_name.clone()),
         ));
 
         self.mutation = self.mutation.field(resolver);
-        self.schema_builder = self.schema_builder.register(input);
+        self = self.register_inputs(inputs);
+        self
+    }
+
+    pub fn create_input(
+        input_name: String,
+        fields: Vec<ServiceEntityField>,
+        resolver_type: &ResolverType,
+    ) -> Vec<InputObject> {
+        debug!("Creating Input: {}", input_name);
+        let mut inputs = Vec::new();
+        let mut input = InputObject::new(&input_name);
+        for field in &fields {
+            if !ServiceSchemaBuilder::is_excluded_input_field(field, resolver_type) {
+                let type_ref_with_inputs =
+                    ServiceSchemaBuilder::get_entity_field_type(field, resolver_type);
+
+                for input in type_ref_with_inputs.inputs {
+                    inputs.push(input);
+                }
+
+                input = input.field(InputValue::new(
+                    field.name.clone(),
+                    type_ref_with_inputs.type_ref,
+                ));
+            }
+        }
+        inputs.push(input);
+        inputs
+    }
+
+    pub fn register_inputs(mut self, inputs: Vec<InputObject>) -> Self {
+        debug!("Registering Inputs");
+        for input in inputs {
+            debug!("Registering Input: {}", input.type_name());
+            self.schema_builder = self.schema_builder.register(input);
+        }
         self
     }
 

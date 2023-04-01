@@ -24,27 +24,15 @@ impl HttpDataSource {
 
         debug!("Set Path: {:?}", url);
 
-        debug!(
-            "Entity Resolver Config: {:?}",
-            entity
-                .data_source
-                .as_ref()
-                .unwrap()
-                .resolvers
-                .as_ref()
-                .unwrap()
-        );
-        let entity_resolvers = entity
-            .data_source
-            .as_ref()
-            .unwrap()
-            .resolvers
-            .as_ref()
-            .unwrap();
+        let entity_resolvers = ServiceEntity::get_resolvers(entity.clone());
+
+        if entity_resolvers.is_none() {
+            return Ok(url);
+        }
 
         url = match resolver_type {
             ResolverType::FindOne => {
-                let find_one_resolver = entity_resolvers.find_one.as_ref();
+                let find_one_resolver = entity_resolvers.as_ref().unwrap().find_one.as_ref();
 
                 if find_one_resolver.is_none() {
                     return Ok(url);
@@ -68,7 +56,7 @@ impl HttpDataSource {
                 url
             }
             ResolverType::FindMany => {
-                let find_many_resolver = entity_resolvers.find_many.as_ref();
+                let find_many_resolver = entity_resolvers.as_ref().unwrap().find_many.as_ref();
 
                 if find_many_resolver.is_none() {
                     return Ok(url);
@@ -92,7 +80,7 @@ impl HttpDataSource {
                 url
             }
             ResolverType::CreateOne => {
-                let create_one_resolver = entity_resolvers.create_one.as_ref();
+                let create_one_resolver = entity_resolvers.as_ref().unwrap().create_one.as_ref();
 
                 if create_one_resolver.is_none() {
                     return Ok(url);
@@ -116,7 +104,7 @@ impl HttpDataSource {
                 url
             }
             ResolverType::UpdateOne => {
-                let update_one_resolver = entity_resolvers.update_one.as_ref();
+                let update_one_resolver = entity_resolvers.as_ref().unwrap().update_one.as_ref();
 
                 if update_one_resolver.is_none() {
                     return Ok(url);
