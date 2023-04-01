@@ -48,6 +48,11 @@ impl ServiceSchemaBuilder {
                 let value = value.to_string();
                 Ok(Value::from(value))
             }
+            ScalarOptions::Object => {
+                debug!("Found Object Value: {:?}", value);
+                let value = value.to_string();
+                Ok(Value::from(value))
+            }
         }
     }
 
@@ -78,6 +83,11 @@ impl ServiceSchemaBuilder {
                 let value = doc.get_object_id(field_name)?;
                 debug!("Found ObjectID Value: {:?}", value);
                 Ok(Value::from(value.to_string()))
+            }
+            ScalarOptions::Object => {
+                let value = doc.get_str(field_name)?;
+                debug!("Found Object Value: {:?}", value);
+                Ok(Value::from(value))
             }
         }
     }
