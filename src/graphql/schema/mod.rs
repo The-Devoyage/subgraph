@@ -1,30 +1,20 @@
-use async_graphql::dynamic::{Object, Scalar, Schema, SchemaBuilder, TypeRef};
+use async_graphql::dynamic::{Object, Scalar, Schema, SchemaBuilder};
 use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 
 use crate::{configuration::subgraph::SubGraphConfig, data_sources::DataSources};
 
-mod generate_entities;
+mod create_entities;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 pub enum ResolverType {
     FindOne,
     FindMany,
     CreateOne,
-    // CreateMany,
-    // DeleteOne,
-    // DeleteMany,
     UpdateOne,
-    // UpdateMany,
 }
 
-#[derive(Debug)]
-pub struct ResolverConfig {
-    resolver_name: String,
-    return_type: TypeRef,
-}
-
-pub struct ServiceSchema {
+pub struct ServiceSchemaBuilder {
     pub subgraph_config: SubGraphConfig,
     pub schema_builder: SchemaBuilder,
     pub query: Object,
@@ -32,9 +22,10 @@ pub struct ServiceSchema {
     pub data_sources: DataSources,
 }
 
-impl ServiceSchema {
-    pub fn build(subgraph_config: SubGraphConfig, data_sources: DataSources) -> Self {
-        ServiceSchema {
+impl ServiceSchemaBuilder {
+    pub fn new(subgraph_config: SubGraphConfig, data_sources: DataSources) -> Self {
+        info!("Creating Service Schema");
+        ServiceSchemaBuilder {
             subgraph_config,
             schema_builder: Schema::build("Query", Some("Mutation"), None)
                 .data(data_sources.clone())
@@ -45,30 +36,28 @@ impl ServiceSchema {
         }
     }
 
-    pub fn finish(mut self) -> Schema {
-        info!("Finishing Schema");
+    pub fn build(mut self) -> Schema {
+        info!("Building Schema");
 
         let object_id = Scalar::new("ObjectID");
 
-        self = self.generate_entities();
+        self = self.create_entities();
 
-        let schema_result = self
+        let schema = self
             .schema_builder
             .register(object_id)
             .register(self.query)
             .register(self.mutation)
             .finish();
 
-        debug!("{:?}", schema_result);
+        debug!("Schema Created: {:?}", schema);
 
-        let finished = match schema_result {
+        match schema {
             Ok(sch) => sch,
             Err(err) => {
                 error!("{}", err);
                 panic!("Failed to build schema.")
             }
-        };
-
-        finished
+        }
     }
 }

@@ -12,6 +12,8 @@ impl Services {
     ) -> Result<Vec<Document>, async_graphql::Error> {
         let coll = db.collection::<Document>(&collection);
 
+        let filter = Services::set_nested_fields(&filter);
+
         let mut cursor = coll.find(filter, None).await?;
 
         let mut documents = Vec::new();
