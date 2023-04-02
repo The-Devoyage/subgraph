@@ -5,7 +5,7 @@ use crate::{
 
 use super::ServiceSchemaBuilder;
 use async_graphql::dynamic::{Field, FieldFuture, Object, TypeRef};
-use bson::Document;
+use bson::{to_document, Document};
 use json::JsonValue;
 use log::debug;
 
@@ -38,6 +38,7 @@ impl ServiceSchemaBuilder {
                         entity,
                         entity_field.name.clone(),
                         entity_field.fields.clone().unwrap_or(Vec::new()),
+                        false,
                     );
 
                     for object in object_type_defs {
@@ -58,6 +59,7 @@ impl ServiceSchemaBuilder {
                         entity,
                         entity_field.name.clone(),
                         entity_field.fields.clone().unwrap_or(vec![]),
+                        false,
                     );
 
                     for object in object_type_defs {
@@ -82,6 +84,7 @@ impl ServiceSchemaBuilder {
         entity_field: ServiceEntityField,
         type_ref: TypeRef,
         data_source: &DataSource,
+        is_root_object: bool,
     ) -> Field {
         debug!("Creating Field, {:?}", entity_field.name);
         let cloned_entity_field = entity_field.clone();
@@ -91,35 +94,71 @@ impl ServiceSchemaBuilder {
             let cloned_entity_field = cloned_entity_field.clone();
             let data_source = cloned_data_source.clone();
 
+            // Resolve Field
             FieldFuture::new(async move {
                 debug!("Resolving Entity Field");
                 let scalar = cloned_entity_field.scalar;
 
                 let field_name = ctx.field().name();
-                debug!("Field Name: {:?}", field_name);
+                debug!("Field Name: {:?} as {:?}", field_name, scalar);
+                debug!("Is Root Object: {:?}", is_root_object);
 
-                match data_source {
-                    DataSource::Mongo(_ds) => {
-                        let doc = ctx.parent_value.try_downcast_ref::<Document>().unwrap();
-                        debug!("Found Document: {:?}", doc);
+                match is_root_object {
+                    false => {
+                        //MOVE THIS and RETURN CONST VALUE
+                        let object = ctx.parent_value.as_value().unwrap();
+                        let json = object.clone().into_json().unwrap();
 
-                        let value =
-                            ServiceSchemaBuilder::resolve_document_field(doc, field_name, scalar)
-                                .await;
+                        //convert json to document
+                        let document = to_document(&json).unwrap();
+                        debug!("Converted To Document: {:?}", document);
 
-                        Ok(Some(value.unwrap()))
-                    }
-                    DataSource::HTTP(_ds) => {
-                        let json_value = ctx.parent_value.try_downcast_ref::<JsonValue>().unwrap();
-                        debug!("Found Json Value: {:?}", json_value);
-
-                        let value = ServiceSchemaBuilder::resolve_http_field(
-                            json_value, field_name, scalar,
+                        let value = ServiceSchemaBuilder::resolve_document_field(
+                            &document,
+                            field_name,
+                            scalar.clone(),
                         )
-                        .await;
+                        .unwrap();
 
-                        Ok(Some(value.unwrap()))
+                        debug!(
+                            "Found Document Field Value: {:?}: {:?} - {:?}",
+                            field_name, value, scalar
+                        );
+
+                        Ok(Some(value.clone()))
                     }
+                    true => match data_source {
+                        DataSource::Mongo(_ds) => {
+                            let doc = ctx.parent_value.try_downcast_ref::<Document>().unwrap();
+                            debug!("Found Document: {:?}", doc);
+
+                            let value = ServiceSchemaBuilder::resolve_document_field(
+                                doc,
+                                field_name,
+                                scalar.clone(),
+                            )
+                            .unwrap();
+
+                            debug!(
+                                "Found Document Field Value: {:?}: {:?} - {:?}",
+                                field_name, value, scalar
+                            );
+
+                            Ok(Some(value))
+                        }
+                        DataSource::HTTP(_ds) => {
+                            let json_value =
+                                ctx.parent_value.try_downcast_ref::<JsonValue>().unwrap();
+                            debug!("Found Json Value: {:?}", json_value);
+
+                            let value = ServiceSchemaBuilder::resolve_http_field(
+                                json_value, field_name, scalar,
+                            )
+                            .await;
+
+                            Ok(Some(value.unwrap()))
+                        }
+                    },
                 }
             })
         });
@@ -132,6 +171,7 @@ impl ServiceSchemaBuilder {
         entity_field: ServiceEntityField,
         type_ref: TypeRef,
         data_source: DataSource,
+        is_root_object: bool,
     ) -> Object {
         debug!("Adding Field: {:?}", entity_field.name);
         let cloned_entity_field = entity_field.clone();
@@ -140,6 +180,7 @@ impl ServiceSchemaBuilder {
                 cloned_entity_field,
                 type_ref,
                 &data_source,
+                is_root_object,
             ))
             .key(&entity_field.name);
 
@@ -153,6 +194,7 @@ impl ServiceSchemaBuilder {
         entity: &ServiceEntity,
         type_name: String,
         fields: Vec<ServiceEntityField>,
+        is_root_object: bool,
     ) -> Vec<Object> {
         let mut type_defs = Vec::new();
         debug!("Creating Type For: `{}`", type_name);
@@ -177,6 +219,7 @@ impl ServiceSchemaBuilder {
                 cloned_entity_field,
                 type_defs_and_refs.type_ref,
                 data_source.clone(),
+                is_root_object,
             )
         }
 
@@ -203,6 +246,7 @@ impl ServiceSchemaBuilder {
             entity,
             entity.name.clone(),
             entity.fields.clone(),
+            true,
         );
 
         self = self.register_types(entity_type_defs);

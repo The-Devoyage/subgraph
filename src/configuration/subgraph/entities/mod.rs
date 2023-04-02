@@ -1,3 +1,4 @@
+use bson::spec::ElementType;
 use log::debug;
 use serde::{Deserialize, Serialize};
 
@@ -20,6 +21,19 @@ pub enum ScalarOptions {
     Boolean,
     ObjectID,
     Object,
+}
+
+impl ScalarOptions {
+    pub fn to_bson_type(self) -> ElementType {
+        debug!("Converting Scalar To BSON Element Type: {:?}", self);
+        match self {
+            ScalarOptions::String => ElementType::String,
+            ScalarOptions::Int => ElementType::Int32,
+            ScalarOptions::Boolean => ElementType::Boolean,
+            ScalarOptions::ObjectID => ElementType::ObjectId,
+            ScalarOptions::Object => ElementType::EmbeddedDocument,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
