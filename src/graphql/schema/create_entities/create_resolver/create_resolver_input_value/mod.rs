@@ -24,8 +24,8 @@ impl ServiceSchemaBuilder {
                     TypeRef::named(TypeRef::STRING)
                 }
                 ResolverType::CreateOne => match entity_field.required {
-                    true => TypeRef::named_nn(TypeRef::STRING),
-                    false => TypeRef::named(TypeRef::STRING),
+                    Some(true) => TypeRef::named_nn(TypeRef::STRING),
+                    _ => TypeRef::named(TypeRef::STRING),
                 },
             },
             ScalarOptions::Int => match resolver_type {
@@ -33,8 +33,8 @@ impl ServiceSchemaBuilder {
                     TypeRef::named(TypeRef::INT)
                 }
                 ResolverType::CreateOne => match entity_field.required {
-                    true => TypeRef::named_nn(TypeRef::INT),
-                    false => TypeRef::named(TypeRef::INT),
+                    Some(true) => TypeRef::named_nn(TypeRef::INT),
+                    _ => TypeRef::named(TypeRef::INT),
                 },
             },
             ScalarOptions::Boolean => match resolver_type {
@@ -42,8 +42,8 @@ impl ServiceSchemaBuilder {
                     TypeRef::named(TypeRef::BOOLEAN)
                 }
                 ResolverType::CreateOne => match entity_field.required {
-                    true => TypeRef::named_nn(TypeRef::BOOLEAN),
-                    false => TypeRef::named(TypeRef::BOOLEAN),
+                    Some(true) => TypeRef::named_nn(TypeRef::BOOLEAN),
+                    _ => TypeRef::named(TypeRef::BOOLEAN),
                 },
             },
             ScalarOptions::ObjectID => match resolver_type {
@@ -51,16 +51,17 @@ impl ServiceSchemaBuilder {
                     TypeRef::named("ObjectID")
                 }
                 ResolverType::CreateOne => match entity_field.required {
-                    true => TypeRef::named_nn("ObjectID"),
-                    false => TypeRef::named("ObjectID"),
+                    Some(true) => TypeRef::named_nn("ObjectID"),
+                    _ => TypeRef::named("ObjectID"),
                 },
             },
             ScalarOptions::Object => match resolver_type {
                 ResolverType::FindOne => {
-                    //HACK: This will prevent the ability to create multiple inputs with same
-                    //name. Need to be able to create multiple inputs with same name based on
-                    //parent object. For example, use Prefix argument to specify.
-                    let input_name = format!("{}_{}_input", parent_input_prefix, entity_field.name.clone());
+                    let input_name = format!(
+                        "{}_{}_input",
+                        parent_input_prefix,
+                        entity_field.name.clone()
+                    );
                     let object_inputs = ServiceSchemaBuilder::create_input(
                         input_name.clone(),
                         entity_field.fields.clone().unwrap_or(Vec::new()),
@@ -72,7 +73,11 @@ impl ServiceSchemaBuilder {
                     TypeRef::named(input_name)
                 }
                 ResolverType::FindMany => {
-                    let input_name = format!("{}_{}s_input", parent_input_prefix, entity_field.name.clone());
+                    let input_name = format!(
+                        "{}_{}s_input",
+                        parent_input_prefix,
+                        entity_field.name.clone()
+                    );
                     let object_inputs = ServiceSchemaBuilder::create_input(
                         input_name.clone(),
                         entity_field.fields.clone().unwrap_or(Vec::new()),
@@ -84,7 +89,11 @@ impl ServiceSchemaBuilder {
                     TypeRef::named(input_name)
                 }
                 ResolverType::UpdateOne => {
-                    let input_name = format!("{}_{}_input", parent_input_prefix, entity_field.name.clone());
+                    let input_name = format!(
+                        "{}_{}_input",
+                        parent_input_prefix,
+                        entity_field.name.clone()
+                    );
                     let object_inputs = ServiceSchemaBuilder::create_input(
                         input_name.clone(),
                         entity_field.fields.clone().unwrap_or(Vec::new()),
@@ -96,7 +105,11 @@ impl ServiceSchemaBuilder {
                     TypeRef::named(input_name)
                 }
                 ResolverType::CreateOne => {
-                    let input_name = format!("{}_{}_input",parent_input_prefix, entity_field.name.clone());
+                    let input_name = format!(
+                        "{}_{}_input",
+                        parent_input_prefix,
+                        entity_field.name.clone()
+                    );
                     let object_inputs = ServiceSchemaBuilder::create_input(
                         input_name.clone(),
                         entity_field.fields.clone().unwrap_or(Vec::new()),
@@ -106,8 +119,8 @@ impl ServiceSchemaBuilder {
                         inputs.push(input);
                     }
                     match entity_field.required {
-                        true => TypeRef::named_nn(input_name),
-                        false => TypeRef::named(input_name),
+                        Some(true) => TypeRef::named_nn(input_name),
+                        _ => TypeRef::named(input_name),
                     }
                 }
             },
@@ -262,8 +275,11 @@ impl ServiceSchemaBuilder {
         for field in &fields {
             if !ServiceSchemaBuilder::is_excluded_input_field(field, resolver_type) {
                 let parent_input_name = input_name.clone().replace("_input", "");
-                let type_ref_with_inputs =
-                    ServiceSchemaBuilder::get_entity_field_type(field, resolver_type, &parent_input_name);
+                let type_ref_with_inputs = ServiceSchemaBuilder::get_entity_field_type(
+                    field,
+                    resolver_type,
+                    &parent_input_name,
+                );
 
                 for input in type_ref_with_inputs.inputs {
                     inputs.push(input);

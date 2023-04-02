@@ -27,7 +27,7 @@ impl ServiceSchemaBuilder {
         let mut type_defs = Vec::new();
 
         let type_ref = match entity_field.required {
-            true => match entity_field.scalar.clone() {
+            Some(true) => match entity_field.scalar.clone() {
                 ScalarOptions::String => TypeRef::named_nn(TypeRef::STRING),
                 ScalarOptions::Int => TypeRef::named_nn(TypeRef::INT),
                 ScalarOptions::Boolean => TypeRef::named_nn(TypeRef::BOOLEAN),
@@ -48,7 +48,7 @@ impl ServiceSchemaBuilder {
                     TypeRef::named_nn(entity_field.name.clone())
                 }
             },
-            false => match entity_field.scalar.clone() {
+            _ => match entity_field.scalar.clone() {
                 ScalarOptions::String => TypeRef::named(TypeRef::STRING),
                 ScalarOptions::Int => TypeRef::named(TypeRef::INT),
                 ScalarOptions::Boolean => TypeRef::named(TypeRef::BOOLEAN),

@@ -10,6 +10,7 @@
 
 ### Fixed
 - The `_id` property will no longer be removed automatically from input generation.
+- The `required` property will now default to false when defining fields in the configuration.
 
 ## [v0.0.6]
 

@@ -43,7 +43,7 @@ pub struct QueryPair(pub String, pub String);
 pub struct ServiceEntityField {
     pub name: String,
     pub scalar: ScalarOptions,
-    pub required: bool,
+    pub required: Option<bool>,
     pub exclude_from_input: Option<Vec<ResolverType>>,
     pub fields: Option<Vec<ServiceEntityField>>,
 }
