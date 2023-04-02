@@ -42,7 +42,7 @@ impl Services {
             if let Some(user_document) = doc_exists {
                 Ok(user_document)
             } else {
-                Err(Error::new("User not found")
+                Err(Error::new("Document not found")
                     .extend_with(|err, e| e.set("details", err.message.as_str())))
             }
         } else {

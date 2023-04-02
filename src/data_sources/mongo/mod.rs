@@ -45,8 +45,11 @@ impl MongoDataSource {
 
     pub fn convert_object_id_string_to_object_id(mut filter: Document) -> Document {
         info!("Converting String, `_id`, In Filter to Object ID");
-        let object_id_string = filter.get_str("_id").unwrap();
-        let object_id = ObjectId::from_str(object_id_string).unwrap();
+        let object_id_string = filter.get_str("_id");
+        if object_id_string.is_err() {
+            return filter;
+        }
+        let object_id = ObjectId::from_str(object_id_string.unwrap()).unwrap();
         filter.insert("_id", object_id);
         filter
     }

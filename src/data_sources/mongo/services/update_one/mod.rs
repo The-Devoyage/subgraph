@@ -36,8 +36,12 @@ impl Services {
             .upsert(true)
             .build();
 
+        let update_doc = Services::set_nested_fields(&input);
+
+        debug!("Update Doc: {:?}", update_doc);
+
         let document = coll
-            .find_one_and_update(filter, doc! {"$set": input }, options)
+            .find_one_and_update(filter, doc! {"$set": update_doc}, options)
             .await
             .map_err(|e| async_graphql::Error::new(e.to_string()))?;
 

@@ -14,6 +14,7 @@ impl ServiceSchemaBuilder {
     pub fn get_entity_field_type(
         entity_field: &ServiceEntityField,
         resolver_type: &ResolverType,
+        parent_input_prefix: &str,
     ) -> TypeRefWithInputs {
         let mut inputs = Vec::new();
 
@@ -59,7 +60,7 @@ impl ServiceSchemaBuilder {
                     //HACK: This will prevent the ability to create multiple inputs with same
                     //name. Need to be able to create multiple inputs with same name based on
                     //parent object. For example, use Prefix argument to specify.
-                    let input_name = format!("get_{}_input", entity_field.name.clone());
+                    let input_name = format!("{}_{}_input", parent_input_prefix, entity_field.name.clone());
                     let object_inputs = ServiceSchemaBuilder::create_input(
                         input_name.clone(),
                         entity_field.fields.clone().unwrap_or(Vec::new()),
@@ -71,7 +72,7 @@ impl ServiceSchemaBuilder {
                     TypeRef::named(input_name)
                 }
                 ResolverType::FindMany => {
-                    let input_name = format!("get_{}s_input", entity_field.name.clone());
+                    let input_name = format!("{}_{}s_input", parent_input_prefix, entity_field.name.clone());
                     let object_inputs = ServiceSchemaBuilder::create_input(
                         input_name.clone(),
                         entity_field.fields.clone().unwrap_or(Vec::new()),
@@ -83,7 +84,7 @@ impl ServiceSchemaBuilder {
                     TypeRef::named(input_name)
                 }
                 ResolverType::UpdateOne => {
-                    let input_name = format!("update_{}_input", entity_field.name.clone());
+                    let input_name = format!("{}_{}_input", parent_input_prefix, entity_field.name.clone());
                     let object_inputs = ServiceSchemaBuilder::create_input(
                         input_name.clone(),
                         entity_field.fields.clone().unwrap_or(Vec::new()),
@@ -95,7 +96,7 @@ impl ServiceSchemaBuilder {
                     TypeRef::named(input_name)
                 }
                 ResolverType::CreateOne => {
-                    let input_name = format!("create_{}_input", entity_field.name.clone());
+                    let input_name = format!("{}_{}_input",parent_input_prefix, entity_field.name.clone());
                     let object_inputs = ServiceSchemaBuilder::create_input(
                         input_name.clone(),
                         entity_field.fields.clone().unwrap_or(Vec::new()),
@@ -228,13 +229,17 @@ impl ServiceSchemaBuilder {
             resolver_type,
         );
 
-        //Update the first input in the inputs vector to include the query field
-        let mut input = inputs.remove(0);
+        let mut input = inputs
+            .iter()
+            .position(|input| input.type_name() == resolver_input_name)
+            .map(|i| inputs.remove(i))
+            .unwrap();
+        let query_input_name = format!("get_{}_input", &entity.name.to_lowercase());
         input = input.field(InputValue::new(
             "query",
-            TypeRef::named_nn(format!("get_{}_input", &entity.name.to_lowercase())),
+            TypeRef::named_nn(query_input_name.clone()),
         ));
-        inputs.insert(0, input);
+        inputs.push(input);
 
         resolver = resolver.argument(InputValue::new(
             &resolver_input_name,
@@ -256,8 +261,9 @@ impl ServiceSchemaBuilder {
         let mut input = InputObject::new(&input_name);
         for field in &fields {
             if !ServiceSchemaBuilder::is_excluded_input_field(field, resolver_type) {
+                let parent_input_name = input_name.clone().replace("_input", "");
                 let type_ref_with_inputs =
-                    ServiceSchemaBuilder::get_entity_field_type(field, resolver_type);
+                    ServiceSchemaBuilder::get_entity_field_type(field, resolver_type, &parent_input_name);
 
                 for input in type_ref_with_inputs.inputs {
                     inputs.push(input);
