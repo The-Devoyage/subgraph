@@ -6,6 +6,7 @@
 - HTTP Data Source Added with Find One, Create One, and Find Many Resolvers
 - Optional property `exclude_from_input` is now a part of a Field definition.
 - Update One Resolver enables the ability to update mongo or put/patch http entities.
+- Object Scalars - Allows for nested field definitions and filtering.
 
 ### Fixed
 - The `_id` property will no longer be removed automatically from input generation.

@@ -1,17 +1,19 @@
 use async_graphql::dynamic::{Field, FieldFuture, FieldValue, TypeRef, ValueAccessor};
 use log::{debug, info};
 
-use crate::{
-    configuration::subgraph::entities::ServiceEntity, data_sources::DataSources,
-    graphql::schema::ResolverConfig,
-};
+use crate::{configuration::subgraph::entities::ServiceEntity, data_sources::DataSources};
 
-use super::{ResolverType, ServiceSchema};
+use super::{ResolverType, ServiceSchemaBuilder};
 
-mod add_entity_type;
-mod generate_resolver_input_value;
+mod create_resolver_input_value;
 
-impl ServiceSchema {
+#[derive(Debug)]
+pub struct ResolverConfig {
+    resolver_name: String,
+    return_type: TypeRef,
+}
+
+impl ServiceSchemaBuilder {
     pub fn create_resolver_config(
         entity: &ServiceEntity,
         resolver_type: ResolverType,
@@ -99,30 +101,41 @@ impl ServiceSchema {
         entity: ServiceEntity,
         resolver_type: ResolverType,
     ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
-        info!("Resolving Entity");
+        debug!("Resolving Entity");
         match resolver_type {
             ResolverType::FindOne => {
-                ServiceSchema::resolve_find_one(data_sources, &input, entity, resolver_type).await
+                ServiceSchemaBuilder::resolve_find_one(data_sources, &input, entity, resolver_type)
+                    .await
             }
             ResolverType::FindMany => {
-                ServiceSchema::resolve_find_many(data_sources, &input, entity, resolver_type).await
+                ServiceSchemaBuilder::resolve_find_many(data_sources, &input, entity, resolver_type)
+                    .await
             }
             ResolverType::CreateOne => {
-                ServiceSchema::resolve_create_one(data_sources, &input, entity, resolver_type).await
+                ServiceSchemaBuilder::resolve_create_one(
+                    data_sources,
+                    &input,
+                    entity,
+                    resolver_type,
+                )
+                .await
             }
             ResolverType::UpdateOne => {
-                ServiceSchema::resolve_update_one(data_sources, &input, entity, resolver_type).await
+                ServiceSchemaBuilder::resolve_update_one(
+                    data_sources,
+                    &input,
+                    entity,
+                    resolver_type,
+                )
+                .await
             }
         }
     }
 
-    pub fn add_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
+    pub fn create_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
         info!("Creating Resolver");
 
-        let resolver_config = ServiceSchema::create_resolver_config(entity, resolver_type);
-
-        self = self.add_entity_type(&entity);
-
+        let resolver_config = ServiceSchemaBuilder::create_resolver_config(entity, resolver_type);
         let cloned_entity = entity.clone();
 
         let resolver = Field::new(
@@ -134,7 +147,7 @@ impl ServiceSchema {
                     let data_sources = ctx.data_unchecked::<DataSources>().clone();
                     let input = ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
 
-                    ServiceSchema::handle_resolve(
+                    ServiceSchemaBuilder::handle_resolve(
                         &data_sources,
                         &input,
                         cloned_entity,
@@ -145,10 +158,9 @@ impl ServiceSchema {
             },
         );
 
-        info!("Field Created");
-        debug!("{:?}", resolver);
+        debug!("Resolver: {:?}", resolver);
 
-        self = self.generate_resolver_input_value(&entity, resolver, &resolver_type);
+        self = self.create_resolver_input_value(&entity, resolver, &resolver_type);
         self
     }
 }

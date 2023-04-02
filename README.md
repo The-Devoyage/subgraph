@@ -117,6 +117,20 @@ scalar = "String"
 required = true
 ```
 
+Fields be nested using Object Scalars. See a full list of avaiable scalars within the API Section of this README.
+
+```toml
+[[service.entities.fields]]
+name = "usage"
+scalar = "Object"
+required = true
+fields = [
+    { name = "prompt_tokens", scalar = "Int", required = true },
+    { name = "completion_tokens", scalar = "Int", required = true },
+    { name = "total_tokens", scalar = "Int", required = true },
+]
+```
+
 **Entity Data Source**
 
 If not defined, entities are associated with the first data source in the config file but can be assigned to any data source.
@@ -279,10 +293,17 @@ method = "GET"
 | required\*          | Whether or not the field is required.                                      | Boolean        |
 | exclude_from_input  | A list of resolvers of which not to apply to the associated input.         | ResolverType[] |
 
-| Scalar Options | ResolverType  |
-| -------------- | ------------- |
-| String         | FindOne       |
-| Int            | FindMany      |
-| Boolean        | CreateOne     |
-| ObjectID       |               |
+| Scalar Options |
+| -------------- |
+| String         |
+| Int            |
+| Boolean        |
+| ObjectID       |
+| Object         |
 
+| ResolverType  |
+| ------------- |
+| FindOne       |
+| FindMany      |
+| CreateOne     |
+| UpdateOne     |

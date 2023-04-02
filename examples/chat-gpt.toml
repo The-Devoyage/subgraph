@@ -6,12 +6,23 @@ service_name = "chat_gpt"
 name = "chat_gpt"
 url = "https://api.openai.com/v1"
 
+
 [[service.entities]]
 name = "chat_completion"
+
 
 [service.entities.data_source]
 from = "chat_gpt"
 path = "/chat/completion"
+# [service.entities.data_source.resolvers]
+# [service.entities.data_source.resolvers.create_one]
+# fields = [
+# { name = "model", scalar = "String", required = true},
+# # Should use name to create new Object Scalar.
+# # Should implement object array scalar.
+# { name = "messages", scalar = "Object", required = true, list = true},
+# { name = "temperature", scalar = "String", required = true}
+# ]
 
 [[service.entities.fields]]
 name = "id"
@@ -35,8 +46,13 @@ required = true
 
 [[service.entities.fields]]
 name = "usage"
-scalar = "String"
+scalar = "Object"
 required = true
+fields = [
+    { name = "prompt_tokens", scalar = "Int", required = true },
+    { name = "completion_tokens", scalar = "Int", required = true },
+    { name = "total_tokens", scalar = "Int", required = true },
+]
 
 [[service.entities.fields]]
 name = "choices"
