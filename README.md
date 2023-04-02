@@ -115,6 +115,11 @@ required = true
 name = "name"
 scalar = "String"
 required = true
+
+[[service.entities.fields]]
+name = "age"
+scalar = "String"
+# required = false by default 
 ```
 
 Fields be nested using Object Scalars. See a full list of avaiable scalars within the API Section of this README.
@@ -290,7 +295,7 @@ method = "GET"
 | ------------------- | -------------------------------------------------------------------------- | -------------- |
 | name\*              | The name of the field.                                                     | String         |
 | scalar\*            | The scalar type of the field.                                              | Scalar Options |
-| required\*          | Whether or not the field is required.                                      | Boolean        |
+| required            | Whether or not the field is required. Defaults to false.                   | Boolean        |
 | exclude_from_input  | A list of resolvers of which not to apply to the associated input.         | ResolverType[] |
 
 | Scalar Options |
