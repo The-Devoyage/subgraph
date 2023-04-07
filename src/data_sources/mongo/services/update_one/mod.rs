@@ -36,7 +36,7 @@ impl Services {
             .upsert(true)
             .build();
 
-        let update_doc = Services::set_nested_fields(&input);
+        let update_doc = Services::create_nested_fields(&input);
 
         debug!("Update Doc: {:?}", update_doc);
 
