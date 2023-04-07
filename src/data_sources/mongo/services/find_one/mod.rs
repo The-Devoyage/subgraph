@@ -17,7 +17,7 @@ impl Services {
         info!("Created Collection");
         debug!("{:?}", collection);
 
-        let filter = Services::set_nested_fields(&filter);
+        let filter = Services::create_nested_fields(&filter);
 
         let document = collection.find_one(filter, None).await;
 

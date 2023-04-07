@@ -1,134 +1,13 @@
 use crate::{
-    configuration::subgraph::entities::{ScalarOptions, ServiceEntity, ServiceEntityField},
+    configuration::subgraph::entities::{ServiceEntity, ServiceEntityField},
     graphql::schema::{ResolverType, ServiceSchemaBuilder},
 };
 use async_graphql::dynamic::{Field, InputObject, InputValue, TypeRef};
 use log::{debug, info};
 
-pub struct TypeRefWithInputs {
-    pub type_ref: TypeRef,
-    pub inputs: Vec<InputObject>,
-}
+pub mod get_entity_field_type;
 
 impl ServiceSchemaBuilder {
-    pub fn get_entity_field_type(
-        entity_field: &ServiceEntityField,
-        resolver_type: &ResolverType,
-        parent_input_prefix: &str,
-    ) -> TypeRefWithInputs {
-        let mut inputs = Vec::new();
-
-        let type_ref = match &entity_field.scalar {
-            ScalarOptions::String => match resolver_type {
-                ResolverType::FindOne | ResolverType::FindMany | ResolverType::UpdateOne => {
-                    TypeRef::named(TypeRef::STRING)
-                }
-                ResolverType::CreateOne => match entity_field.required {
-                    Some(true) => TypeRef::named_nn(TypeRef::STRING),
-                    _ => TypeRef::named(TypeRef::STRING),
-                },
-            },
-            ScalarOptions::Int => match resolver_type {
-                ResolverType::FindOne | ResolverType::FindMany | ResolverType::UpdateOne => {
-                    TypeRef::named(TypeRef::INT)
-                }
-                ResolverType::CreateOne => match entity_field.required {
-                    Some(true) => TypeRef::named_nn(TypeRef::INT),
-                    _ => TypeRef::named(TypeRef::INT),
-                },
-            },
-            ScalarOptions::Boolean => match resolver_type {
-                ResolverType::FindOne | ResolverType::FindMany | ResolverType::UpdateOne => {
-                    TypeRef::named(TypeRef::BOOLEAN)
-                }
-                ResolverType::CreateOne => match entity_field.required {
-                    Some(true) => TypeRef::named_nn(TypeRef::BOOLEAN),
-                    _ => TypeRef::named(TypeRef::BOOLEAN),
-                },
-            },
-            ScalarOptions::ObjectID => match resolver_type {
-                ResolverType::FindOne | ResolverType::FindMany | ResolverType::UpdateOne => {
-                    TypeRef::named("ObjectID")
-                }
-                ResolverType::CreateOne => match entity_field.required {
-                    Some(true) => TypeRef::named_nn("ObjectID"),
-                    _ => TypeRef::named("ObjectID"),
-                },
-            },
-            ScalarOptions::Object => match resolver_type {
-                ResolverType::FindOne => {
-                    let input_name = format!(
-                        "{}_{}_input",
-                        parent_input_prefix,
-                        entity_field.name.clone()
-                    );
-                    let object_inputs = ServiceSchemaBuilder::create_input(
-                        input_name.clone(),
-                        entity_field.fields.clone().unwrap_or(Vec::new()),
-                        resolver_type,
-                    );
-                    for input in object_inputs {
-                        inputs.push(input);
-                    }
-                    TypeRef::named(input_name)
-                }
-                ResolverType::FindMany => {
-                    let input_name = format!(
-                        "{}_{}s_input",
-                        parent_input_prefix,
-                        entity_field.name.clone()
-                    );
-                    let object_inputs = ServiceSchemaBuilder::create_input(
-                        input_name.clone(),
-                        entity_field.fields.clone().unwrap_or(Vec::new()),
-                        resolver_type,
-                    );
-                    for input in object_inputs {
-                        inputs.push(input);
-                    }
-                    TypeRef::named(input_name)
-                }
-                ResolverType::UpdateOne => {
-                    let input_name = format!(
-                        "{}_{}_input",
-                        parent_input_prefix,
-                        entity_field.name.clone()
-                    );
-                    let object_inputs = ServiceSchemaBuilder::create_input(
-                        input_name.clone(),
-                        entity_field.fields.clone().unwrap_or(Vec::new()),
-                        resolver_type,
-                    );
-                    for input in object_inputs {
-                        inputs.push(input);
-                    }
-                    TypeRef::named(input_name)
-                }
-                ResolverType::CreateOne => {
-                    let input_name = format!(
-                        "{}_{}_input",
-                        parent_input_prefix,
-                        entity_field.name.clone()
-                    );
-                    let object_inputs = ServiceSchemaBuilder::create_input(
-                        input_name.clone(),
-                        entity_field.fields.clone().unwrap_or(Vec::new()),
-                        resolver_type,
-                    );
-                    for input in object_inputs {
-                        inputs.push(input);
-                    }
-                    match entity_field.required {
-                        Some(true) => TypeRef::named_nn(input_name),
-                        _ => TypeRef::named(input_name),
-                    }
-                }
-            },
-        };
-
-        TypeRefWithInputs { type_ref, inputs }
-    }
-
     pub fn is_excluded_input_field(
         entity_field: &ServiceEntityField,
         resolver_type: &ResolverType,

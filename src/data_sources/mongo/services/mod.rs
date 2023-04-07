@@ -10,11 +10,11 @@ mod update_one;
 pub struct Services;
 
 impl Services {
-    pub fn set_nested_fields(doc: &Document) -> Document {
+    pub fn create_nested_fields(doc: &Document) -> Document {
         let mut set_doc = Document::new();
         for (key, value) in doc.iter() {
             if let Some(sub_doc) = value.as_document() {
-                let sub_set_doc = Services::set_nested_fields(sub_doc);
+                let sub_set_doc = Services::create_nested_fields(sub_doc);
                 for (sub_key, sub_value) in sub_set_doc.iter() {
                     let nested_key = format!("{}.{}", key, sub_key);
                     set_doc.insert(nested_key, sub_value.clone());
@@ -25,5 +25,4 @@ impl Services {
         }
         set_doc
     }
-
 }

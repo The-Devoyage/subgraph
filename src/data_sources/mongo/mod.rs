@@ -76,12 +76,11 @@ impl MongoDataSource {
         entity: ServiceEntity,
         resolver_type: ResolverType,
     ) -> Result<FieldValue<'a>, async_graphql::Error> {
-        info!("Executing Mongo Data Source Operation");
+        debug!("Executing Operation - Mongo Data Source");
 
         let mut input = input.deserialize::<Document>().unwrap();
 
-        info!("Found Input");
-        debug!("{:?}", input);
+        debug!("Found Input: {:?}", input);
 
         input = MongoDataSource::finalize_filter(input);
 
@@ -90,23 +89,9 @@ impl MongoDataSource {
             _ => unreachable!(),
         };
 
-        info!("Found DB");
-        debug!("{:?}", db);
+        debug!("Database Found");
 
-        let collection_name = if entity.data_source.is_some() {
-            info!("Found Entity Data Source");
-            debug!("{:?}", entity.data_source);
-
-            let entity_collection_name = entity.data_source.unwrap().collection;
-
-            if entity_collection_name.is_some() {
-                entity_collection_name.unwrap()
-            } else {
-                entity.name
-            }
-        } else {
-            entity.name
-        };
+        let collection_name = ServiceEntity::get_mongo_collection_name(&entity);
 
         info!("Found Collection Name");
         debug!("{:?}", collection_name);
