@@ -1,5 +1,5 @@
 use async_graphql::dynamic::{FieldValue, ValueAccessor};
-use log::info;
+use log::debug;
 
 use crate::{
     configuration::subgraph::{data_sources::ServiceDataSourceConfig, entities::ServiceEntity},
@@ -21,7 +21,9 @@ pub struct DataSources {
 }
 
 impl DataSources {
+    /// Initialize Data Sources
     pub async fn init(service_data_source_configs: Vec<ServiceDataSourceConfig>) -> DataSources {
+        debug!("Initializing Data Sources");
         let mut data_sources = vec![];
         for service_data_source_config in service_data_source_configs {
             match service_data_source_config {
@@ -39,10 +41,11 @@ impl DataSources {
         }
     }
 
-    pub fn get_entity_data_source<'a>(
-        entity: &ServiceEntity,
+    pub fn get_data_source_for_entity<'a>(
         data_sources: &'a DataSources,
+        entity: &ServiceEntity,
     ) -> &'a DataSource {
+        debug!("Getting Data Source for Entity");
         if entity.data_source.is_some() {
             let data_source = match entity.data_source.as_ref().unwrap().from.as_ref() {
                 Some(ds_name) => {
@@ -64,17 +67,18 @@ impl DataSources {
         }
     }
 
+    /// Execute a data source operation.
     pub async fn execute<'a>(
         data_sources: &DataSources,
         input: &ValueAccessor<'_>,
         entity: ServiceEntity,
         resolver_type: ResolverType,
     ) -> Result<FieldValue<'a>, async_graphql::Error> {
-        info!("Executing Datasource Operation");
+        debug!("Executing Datasource Operation");
 
         let cloned_entity = entity.clone();
 
-        let data_source = DataSources::get_entity_data_source(&entity, data_sources);
+        let data_source = DataSources::get_data_source_for_entity(data_sources, &entity);
 
         match data_source {
             DataSource::Mongo(_ds) => Ok(mongo::MongoDataSource::execute_operation(

@@ -7,6 +7,8 @@
 - Optional property `exclude_from_input` is now a part of a Field definition.
 - Update One Resolver enables the ability to update mongo or put/patch http entities.
 - Object Scalars - Allows for nested field definitions and filtering.
+- List Options - Allow all scalars to be implemented as a list.
+- Environment Variable Support - Use env vars in config file with $VARIABLE syntax.
 
 ### Fixed
 - The `_id` property will no longer be removed automatically from input generation.

@@ -199,6 +199,14 @@ method = "POST"
 method = "GET"
 ```
 
+### Environment Variables
+
+Use environment variables in the configuration file with `$` syntax. 
+
+```toml
+default_headers = [{ name = "Authorization", value = "Bearer $OPENAI_KEY" }]
+```
+
 ## API
 
 ### CLI Options
@@ -230,19 +238,25 @@ method = "GET"
 | uri\*        | The connection string for the mongo | String |
 | db\*         | The name of the mongo database.     | String |
 
-| HTTP Config | Description                            | Type   |
-| ----------- | -------------------------------------- | ------ |
-| name\*      | The name of the HTTP data source.      | String |
-| url\*       | The base URL for the HTTP data source. | String |
+| HTTP Config     | Description                            | Type            |
+| --------------- | -------------------------------------- | --------------- |
+| name\*          | The name of the HTTP data source.      | String          |
+| url\*           | The base URL for the HTTP data source. | String          |
+| default_headers | Headers to include with every request  | DefaultHeader[] |
+
+| Default Header | Description                             | Type   |
+|--------------- |---------------------------------------- |------- |
+| name           | The key of the key value header pair.   | String |
+| value          | The value of the key value header pair. | String |
 
 #### Cors Config
 
-| Cors Config      | Description                                              | Type            |
-| ---------------- | -------------------------------------------------------- | --------------- |
-| allow_any_origin | A boolean value indicating whether any origin is allowed | Boolean         |
-| allow_origins    | A list of allowed origins                                | String[]        |
-| allow_headers    | A list of allowed headers                                | String[]        |
-| allow_methods    | A list of allowed HTTP methods                           | MethodConfig [] |
+| Cors Config      | Description                                              | Type           |
+| ---------------- | -------------------------------------------------------- | -------------- |
+| allow_any_origin | A boolean value indicating whether any origin is allowed | Boolean        |
+| allow_origins    | A list of allowed origins                                | String[]       |
+| allow_headers    | A list of allowed headers                                | String[]       |
+| allow_methods    | A list of allowed HTTP methods                           | MethodConfig[] |
 
 | MethodConfig | Description                                     | Type         |
 | ------------ | ------------------------------------------------| ------------ |
@@ -295,8 +309,10 @@ method = "GET"
 | ------------------- | -------------------------------------------------------------------------- | -------------- |
 | name\*              | The name of the field.                                                     | String         |
 | scalar\*            | The scalar type of the field.                                              | Scalar Options |
-| required            | Whether or not the field is required. Defaults to false.                   | Boolean        |
+| required            | Whether or not the field is required. Defaults to false.                   | Option<bool>   |
 | exclude_from_input  | A list of resolvers of which not to apply to the associated input.         | ResolverType[] |
+| exclude_from_output | A list of resolvers of which not to apply to the associated input.         | ResolverType[] |
+| list                | Defines the scalar as a list or a singlar value.                           | Option<bool>   |
 
 | Scalar Options |
 | -------------- |

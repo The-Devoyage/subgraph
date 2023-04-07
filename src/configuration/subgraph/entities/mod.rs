@@ -45,7 +45,9 @@ pub struct ServiceEntityField {
     pub scalar: ScalarOptions,
     pub required: Option<bool>,
     pub exclude_from_input: Option<Vec<ResolverType>>,
+    pub exclude_from_output: Option<bool>,
     pub fields: Option<Vec<ServiceEntityField>>,
+    pub list: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -85,5 +87,31 @@ impl ServiceEntity {
             }
         }
         None
+    }
+
+    pub fn get_entity_data_source(
+        service_entity: &ServiceEntity,
+    ) -> Option<ServiceEntityDataSource> {
+        debug!("Get Data Source From Service Entity: {:?}", service_entity);
+        let data_source = &service_entity.data_source;
+        if data_source.is_some() {
+            let data_source = data_source.clone().unwrap();
+            debug!("Data Source: {:?}", data_source);
+            return Some(data_source.clone());
+        }
+        None
+    }
+
+    pub fn get_mongo_collection_name(entity: &ServiceEntity) -> String {
+        debug!("Found Entity Data Source: {:?}", entity.data_source);
+        let data_source = ServiceEntity::get_entity_data_source(entity);
+        if data_source.is_none() {
+            return entity.name.clone();
+        }
+        let collection = data_source.unwrap().collection;
+        if collection.is_none() {
+            return entity.name.clone();
+        }
+        collection.unwrap()
     }
 }
