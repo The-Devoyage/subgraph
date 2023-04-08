@@ -1,28 +1,29 @@
 [package]
 name = "subgraph"
-version = "0.0.6"
+version = "0.0.7"
 edition = "2021"
 
 [dependencies]
 tokio = { version = "1.23.0", features = ["full"] }
 warp = "0.3.3"
 http = "0.2.8"
-async-graphql = {version = "5.0.5", features= ["dynamic-schema"]}
-async-graphql-warp = "5.0.5"
-# async-graphql = { path = "../async-graphql", features = ["dynamic-schema"] }
-# async-graphql-warp = { path = "../async-graphql/integrations/warp" }
+# async-graphql = {version = "5.0.7", features= ["dynamic-schema"]}
+# async-graphql-warp = "5.0.7"
+async-graphql = { path = "../../the-devoyage-project/async-graphql", features = ["dynamic-schema"] }
+async-graphql-warp = { path = "../../the-devoyage-project/async-graphql/integrations/warp" }
+reqwest = {version = "0.11.14", features = ["json"]}
 serde = { version = "1.0", features = ["derive"] }
 bson = { version = "2", features = ["chrono-0_4"] }
 chrono = "0.4.23"
 quote = "1.0"
 proc-macro2 = "1.0"
 log = "0.4.17"
-envy = "0.4.2"
 env_logger = "0.10.0"
 clap = { version = "4.1.1", features = ["derive"] }
 toml = "0.7.2"
 http-serde = "1.1.2"
-
+json = "0.12.4"
+serde_json = "1.0.95"
 
 [dependencies.mongodb]
 version = "2.3.1"

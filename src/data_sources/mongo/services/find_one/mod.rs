@@ -10,12 +10,14 @@ impl Services {
         filter: Document,
         collection: String,
     ) -> Result<Document, async_graphql::Error> {
-        info!("Executing Find One");
+        info!("Executing Find One - Mongo Data Source");
 
         let collection = db.collection(&collection);
 
         info!("Created Collection");
         debug!("{:?}", collection);
+
+        let filter = Services::create_nested_fields(&filter);
 
         let document = collection.find_one(filter, None).await;
 
@@ -23,7 +25,7 @@ impl Services {
             if let Some(user_document) = doc_exists {
                 Ok(user_document)
             } else {
-                Err(Error::new("User not found")
+                Err(Error::new("Document not found")
                     .extend_with(|err, e| e.set("details", err.message.as_str())))
             }
         } else {

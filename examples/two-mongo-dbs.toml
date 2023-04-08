@@ -1,0 +1,61 @@
+[service]
+service_name = "double_mongo"
+
+# Define Two Mongo Data Sources
+[[service.data_sources]] # Self Hosted
+[service.data_sources.Mongo]
+name = "mongo_1"
+uri = "mongodb://user:pass@127.0.0.1:27017/databasename"
+db = "databasename"
+[[service.data_sources]] # Mongo Atlas
+[service.data_sources.Mongo]
+name = "mongo_2"
+uri = "mongodb+srv://username:password@myclus.ilkajfs.mongodb.net/?retryWrites=true&w=majority"
+db = "moon"
+
+
+# First Entity From Data Source 1 
+[[service.entities]]
+name = "Person"
+[service.entities.data_source]
+from = "mongo_1"
+collection = "users"
+
+[[service.entities.fields]]
+name = "_id"
+scalar = "ObjectID"
+required = true
+[[service.entities.fields]]
+name = "name"
+scalar = "String"
+required = true
+[[service.entities.fields]]
+name = "age"
+scalar = "Int"
+required = false
+[[service.entities.fields]]
+name = "married"
+scalar = "Boolean"
+required = true
+
+
+# Second Entity From Data Source 2
+[[service.entities]]
+name = "Dog"
+[service.entities.data_source]
+from = "mongo_2"
+collection = "users"
+
+[[service.entities.fields]]
+name = "_id"
+scalar = "ObjectID"
+required = true
+[[service.entities.fields]]
+name = "name"
+scalar = "String"
+required = true
+[[service.entities.fields]]
+name = "breed"
+scalar = "String"
+required = true
+

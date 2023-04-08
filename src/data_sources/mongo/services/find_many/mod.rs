@@ -12,6 +12,8 @@ impl Services {
     ) -> Result<Vec<Document>, async_graphql::Error> {
         let coll = db.collection::<Document>(&collection);
 
+        let filter = Services::create_nested_fields(&filter);
+
         let mut cursor = coll.find(filter, None).await?;
 
         let mut documents = Vec::new();
@@ -19,7 +21,7 @@ impl Services {
         while let Some(result) = cursor.next().await {
             match result {
                 Ok(document) => documents.push(document),
-                Err(error) => Err(Error::new("Can't find results.")
+                Err(_error) => Err(Error::new("Can't find results.")
                     .extend_with(|err, e| e.set("details", err.message.as_str())))?,
             }
         }

@@ -1,19 +1,14 @@
-use log::error;
+use std::collections::HashMap;
+
 use serde::Deserialize;
+
+pub mod parse_subgraph_config;
 
 #[derive(Deserialize, Debug)]
 pub struct Environment {}
 
 impl Environment {
-    pub fn init() -> Environment {
-        let environment = match envy::from_env::<Environment>() {
-            Ok(val) => val,
-            Err(error) => {
-                error!("{:#?}", error);
-                panic!("Failed to read env.");
-            }
-        };
-
-        environment
+    pub fn init() -> HashMap<String, String> {
+        std::env::vars().collect()
     }
 }

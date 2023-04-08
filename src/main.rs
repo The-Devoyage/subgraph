@@ -24,14 +24,18 @@ async fn main() {
     )
     .init();
 
-    // let environment = configuration::environment::Environment::init();
-    let subgraph_config = configuration::subgraph::SubGraphConfig::init(&args);
+    let environment = configuration::environment::Environment::init();
+    let mut subgraph_config = configuration::subgraph::SubGraphConfig::init(&args);
+    subgraph_config = configuration::environment::Environment::replace_env_vars_in_config(
+        subgraph_config,
+        environment,
+    );
 
     let data_sources =
         data_sources::DataSources::init(subgraph_config.service.data_sources.clone()).await;
 
     let schema =
-        graphql::schema::ServiceSchema::build(subgraph_config.clone(), data_sources).finish();
+        graphql::schema::ServiceSchemaBuilder::new(subgraph_config.clone(), data_sources).build();
 
     let graphql_post = async_graphql_warp::graphql(schema).and_then(
         |(schema, request): (Schema, async_graphql::Request)| async move {

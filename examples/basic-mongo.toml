@@ -1,0 +1,36 @@
+[service]
+service_name = "bikes"
+
+[[service.data_sources]]
+[service.data_sources.Mongo]
+name = "bikes_db"
+uri = "mongodb://user:password@127.0.0.1:27017/db_name"
+db = "db_name"
+
+[[service.entities]]
+name = "Bike"
+
+[[service.entities.fields]]
+name = "_id"
+scalar = "ObjectID"
+required = true
+
+[[service.entities.fields]]
+name = "color"
+scalar = "String"
+required = true
+
+[[service.entities.fields]]
+name = "type"
+scalar = "String"
+required = true
+
+[[service.entities.fields]]
+name = "in_stock"
+scalar = "Boolean"
+required = true
+
+[[service.entities.fields]]
+name = "size"
+scalar = "Int"
+required = true

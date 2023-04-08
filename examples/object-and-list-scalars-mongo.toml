@@ -1,0 +1,59 @@
+[service]
+service_name = "beers"
+
+[[service.data_sources]]
+[service.data_sources.Mongo]
+name = "beers_ds"
+uri = "mongodb://sun:sun@127.0.0.1:27017/sun"
+db = "sun"
+
+[[service.entities]]
+name = "Beer"
+
+[[service.entities.fields]]
+name = "_id"
+scalar = "ObjectID"
+required = true
+exclude_from_input = ["CreateOne"]
+
+[[service.entities.fields]]
+name = "name"
+scalar = "String"
+required = true
+
+[[service.entities.fields]]
+name = "cities"
+scalar = "String"
+required = true
+list = true
+
+[[service.entities.fields]]
+name = "comments"
+scalar = "Object"
+required = true
+list = true
+fields = [
+    { name = "user", scalar = "String", required = true },
+    { name = "comment", scalar = "String", required = true },
+]
+
+[[service.entities.fields]]
+name = "scores"
+scalar = "Int"
+list = true
+
+[[service.entities.fields]]
+name = "attributes"
+scalar = "Object"
+required = true
+fields = [
+    { name = "ibu", scalar = "Int", required = true },
+    { name = "abv", scalar = "Int", required = true },
+    { name = "type", scalar = "String", required = true },
+    { name = "address", scalar = "Object", required = true, fields = [
+        { name = "street", scalar = "String", required = true },
+        { name = "city", scalar = "String", required = true },
+        { name = "state", scalar = "String", required = true },
+        { name = "zip", scalar = "String", required = true },
+    ]},
+]

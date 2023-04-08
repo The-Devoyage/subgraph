@@ -1,4 +1,4 @@
-use async_graphql::{futures_util::StreamExt, Error, ErrorExtensions, Result};
+use async_graphql::{Error, ErrorExtensions, Result};
 use bson::{doc, to_document, Document};
 use log::{debug, info};
 use mongodb::Database;
@@ -23,16 +23,16 @@ impl Services {
         info!("Converted New Document");
         debug!("{:?}", document);
 
-        let insert_many_result = coll
+        let insert_one_result = coll
             .insert_one(document, None)
             .await
             .expect("Failed to create document.");
 
         info!("Document Inserted");
-        debug!("{:?}", insert_many_result);
+        debug!("{:?}", insert_one_result);
 
         let document = coll
-            .find_one(doc! {"_id": insert_many_result.inserted_id }, None)
+            .find_one(doc! {"_id": insert_one_result.inserted_id }, None)
             .await;
 
         info!("Found Newly Inserted Document");
@@ -42,7 +42,7 @@ impl Services {
             if let Some(user_document) = doc_exists {
                 Ok(user_document)
             } else {
-                Err(Error::new("User not found")
+                Err(Error::new("Document not found")
                     .extend_with(|err, e| e.set("details", err.message.as_str())))
             }
         } else {
