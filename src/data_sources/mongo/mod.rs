@@ -5,7 +5,9 @@ use mongodb::{options::ClientOptions, Client, Database};
 use std::str::FromStr;
 
 use crate::{
-    configuration::subgraph::{data_sources::MongoDataSourceConfig, entities::ServiceEntity},
+    configuration::subgraph::{
+        data_sources::mongo::MongoDataSourceConfig, entities::ServiceEntity,
+    },
     graphql::schema::ResolverType,
 };
 
@@ -13,7 +15,7 @@ use super::DataSource;
 
 pub mod services;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MongoDataSource {
     pub client: Client,
     pub db: Database,
@@ -43,8 +45,11 @@ impl MongoDataSource {
 
     pub fn convert_object_id_string_to_object_id(mut filter: Document) -> Document {
         info!("Converting String, `_id`, In Filter to Object ID");
-        let object_id_string = filter.get_str("_id").unwrap();
-        let object_id = ObjectId::from_str(object_id_string).unwrap();
+        let object_id_string = filter.get_str("_id");
+        if object_id_string.is_err() {
+            return filter;
+        }
+        let object_id = ObjectId::from_str(object_id_string.unwrap()).unwrap();
         filter.insert("_id", object_id);
         filter
     }
@@ -70,54 +75,45 @@ impl MongoDataSource {
         input: &ValueAccessor<'_>,
         entity: ServiceEntity,
         resolver_type: ResolverType,
-    ) -> FieldValue<'a> {
-        info!("Executing Mongo Data Source Operation");
+    ) -> Result<FieldValue<'a>, async_graphql::Error> {
+        debug!("Executing Operation - Mongo Data Source");
 
-        let mut filter = input.deserialize::<Document>().unwrap();
+        let mut input = input.deserialize::<Document>().unwrap();
 
-        info!("Found Filter");
-        debug!("{:?}", filter);
+        debug!("Found Input: {:?}", input);
 
-        filter = MongoDataSource::finalize_filter(filter);
+        input = MongoDataSource::finalize_filter(input);
 
         let db = match data_source {
             DataSource::Mongo(ds) => ds.db.clone(),
+            _ => unreachable!(),
         };
 
-        info!("Found DB");
-        debug!("{:?}", db);
+        debug!("Database Found");
 
-        let entity_collection_name = entity.data_source.unwrap().collection;
-        let collection_name = if entity_collection_name.is_some() {
-            entity_collection_name.unwrap()
-        } else {
-            entity.name
-        };
+        let collection_name = ServiceEntity::get_mongo_collection_name(&entity);
 
         info!("Found Collection Name");
         debug!("{:?}", collection_name);
 
         match resolver_type {
             ResolverType::FindOne => {
-                let result = services::Services::find_one(db, filter, collection_name)
-                    .await
-                    .unwrap();
-                FieldValue::owned_any(result)
+                let result = services::Services::find_one(db, input, collection_name).await?;
+                Ok(FieldValue::owned_any(result))
             }
             ResolverType::FindMany => {
-                let results = services::Services::find_many(db, filter, collection_name).await;
-                FieldValue::list(
-                    results
-                        .unwrap()
-                        .into_iter()
-                        .map(|doc| FieldValue::owned_any(doc)),
-                )
+                let results = services::Services::find_many(db, input, collection_name).await?;
+                Ok(FieldValue::list(
+                    results.into_iter().map(|doc| FieldValue::owned_any(doc)),
+                ))
             }
             ResolverType::CreateOne => {
-                let result = services::Services::create_one(db, filter, collection_name)
-                    .await
-                    .unwrap();
-                FieldValue::owned_any(result)
+                let result = services::Services::create_one(db, input, collection_name).await?;
+                Ok(FieldValue::owned_any(result))
+            }
+            ResolverType::UpdateOne => {
+                let result = services::Services::update_one(db, input, collection_name).await?;
+                Ok(FieldValue::owned_any(result))
             }
         }
     }

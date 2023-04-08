@@ -1,13 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum ServiceDataSourceConfig {
-    Mongo(MongoDataSourceConfig),
-}
+pub mod http;
+pub mod mongo;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct MongoDataSourceConfig {
-    pub name: String,
-    pub uri: String,
-    pub db: String,
+pub enum ServiceDataSourceConfig {
+    Mongo(mongo::MongoDataSourceConfig),
+    HTTP(http::HttpDataSourceConfig),
 }
