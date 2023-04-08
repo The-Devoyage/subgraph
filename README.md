@@ -8,7 +8,9 @@ Not yet for production use - There is still a bit of work to get to v0.1.0! That
 
 Define a configuration to run the service. The configuration tells subgraph how to generate the API around the data you need.
 
-1. Define your configuration file.
+1. Download release binary or clone repo.
+
+2. Define your configuration file.
 
 - [Basic Mongo Example](examples/basic-mongo.toml)
 - [Two Mongo Data Sources](examples/two-mongo-dbs.toml)
@@ -17,15 +19,19 @@ Define a configuration to run the service. The configuration tells subgraph how 
 - [Objects and Arrays](examples/object-and-list-scalars-mongo.toml)
 - [Chat GPT](examples/chat-gpt.toml)
 
-2. Start the Service
+3. Start the Service
+
+From binary release:
+```bash
+subgraph --config path-to-config.toml --port 5011
+```
+From repo
 
 ```bash
-cargo run -- --config ./config.toml --port 5011 --log-level debug
+cargo run -- -c ./config.toml -p 5011
 ```
 
-Read below for binary/build options.
-
-3. Use the API
+4. Use the API
 
 - GraphQL Sandbox runs on the specified port.
 
@@ -66,14 +72,6 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 - Write and execute GraphQL queries in the playground.
 
 ## Usage
-
-### Build
-
-If downloading from source, running the `cargo run` command as demonstrated in the quick start is useful. When using in production, create a release to generate a executable binary.
-
-```bash
-cargo build --relesae
-```
 
 ### Defining The Service
 
