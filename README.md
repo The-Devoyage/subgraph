@@ -12,6 +12,8 @@ Define a configuration to run the service. The configuration tells subgraph how 
 - [Two Mongo Data Sources](examples/two-mongo-dbs.toml)
 - [HTTP Data Source (External API)](examples/basic-http.toml)
 - [Advanced Mixed Data Sources](examples/advanced-mixed.toml)
+- [Objects and Arrays](examples/object-and-list-scalar.toml)
+- [Chat GPT](examples/chat-gpt.toml)
 
 2. Start the Service
 
