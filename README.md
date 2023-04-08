@@ -2,6 +2,8 @@
 
 Currently, a POC written in Rust in order to dynamically generate a functional API from a simple configuration/schema.
 
+Not yet for production use - There is still a bit of work to get to v0.1.0! That being said, I hope that you enjoy what has been made so far.
+
 ## Quick Start
 
 Define a configuration to run the service. The configuration tells subgraph how to generate the API around the data you need.
@@ -42,11 +44,19 @@ Simple TOML configuration to define the entities to be resolved.
 
 ### CRUD
 
-Resolvers are created for each defined entity.
+Resolvers are created for each defined entity allowing you to find and manipulate the data you need.
 
 - Find One
 - Find Many
 - Create One
+- Update One
+
+### Data Sources
+
+Connect many data sources to a single API. Supports multiple instances of every data source (for example 2 mongo data sources and 3 http data sources).
+
+- Mongo DB Data Source - Connect to your existing mongo data base and use the API to manipulate and find documents.
+- HTTP Data Source - Map third party RESTful APIs to GraphQL automatically. 
 
 ### Sandbox
 
@@ -98,6 +108,7 @@ db = "remote_db"
 [service.data_sources.HTTP]
 name = "todos"
 url = "https://jsonplaceholder.typicode.com"
+default_headers = [{ name = "Authorization", value = "Bearer $OPENAI_KEY" }]
 ```
 
 ### Defining Entities
