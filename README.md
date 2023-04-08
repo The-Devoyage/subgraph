@@ -10,6 +10,8 @@ Define a configuration to run the service. The configuration tells subgraph how 
 
 1. Download release binary or clone repo.
 
+- [Releases](https://github.com/The-Devoyage/subgraph/releases)
+
 2. Define your configuration file.
 
 - [Basic Mongo Example](examples/basic-mongo.toml)
