@@ -9,6 +9,9 @@ db = "db_name"
 
 [[service.entities]]
 name = "Bike"
+[service.entities.data_source]
+from = "bikes_db"
+collection = "dogs"
 
 [[service.entities.fields]]
 name = "_id"
