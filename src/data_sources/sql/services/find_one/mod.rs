@@ -15,7 +15,7 @@ impl Services {
                 debug!("Executing MYSQL Query");
                 let mut query = sqlx::query(&sql_query.query);
 
-                for value in &sql_query.values {
+                for value in &sql_query.where_values {
                     match value {
                         SqlValueEnum::String(value) => {
                             query = query.bind(value);
@@ -29,16 +29,21 @@ impl Services {
                     }
                 }
 
-                let row = query.fetch_one(pool).await?;
+                let row = query.fetch_optional(pool).await?;
 
                 debug!("DB Row: {:?}", row);
-                Ok(ResponseRow::MySql(row))
+
+                if row.is_none() {
+                    return Err(async_graphql::Error::from("Not Found"));
+                }
+
+                Ok(ResponseRow::MySql(row.unwrap()))
             }
             PoolEnum::Postgres(pool) => {
                 debug!("Executing POSTGRES Query");
                 let mut query = sqlx::query(&sql_query.query);
 
-                for value in &sql_query.values {
+                for value in &sql_query.where_values {
                     match value {
                         SqlValueEnum::String(value) => {
                             query = query.bind(value);
@@ -52,15 +57,19 @@ impl Services {
                     }
                 }
 
-                let row = query.fetch_one(pool).await?;
+                let row = query.fetch_optional(pool).await?;
 
-                Ok(ResponseRow::Postgres(row))
+                if row.is_none() {
+                    return Err(async_graphql::Error::from("Not Found"));
+                }
+
+                Ok(ResponseRow::Postgres(row.unwrap()))
             }
             PoolEnum::SqLite(pool) => {
                 debug!("Executing SQLITE Query");
                 let mut query = sqlx::query(&sql_query.query);
 
-                for value in &sql_query.values {
+                for value in &sql_query.where_values {
                     match value {
                         SqlValueEnum::String(value) => {
                             query = query.bind(value);
@@ -74,9 +83,13 @@ impl Services {
                     }
                 }
 
-                let row = query.fetch_one(pool).await?;
+                let row = query.fetch_optional(pool).await?;
 
-                Ok(ResponseRow::SqLite(row))
+                if row.is_none() {
+                    return Err(async_graphql::Error::from("Not Found"));
+                }
+
+                Ok(ResponseRow::SqLite(row.unwrap()))
             }
         }
     }

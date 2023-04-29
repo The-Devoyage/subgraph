@@ -4,7 +4,7 @@ service_name = "espresso"
 [[service.data_sources]]
 [service.data_sources.SQL]
 name = "espresso_db"
-uri = "sqlite:/home/nickisyourfan/Desktop/DEV/sqlite_dbs/espresso.db"
+uri = "sqlite:/home/nickisyourfan/Desktop/DEV/dbs/espresso.db"
 dialect = "SQLITE"
 
 [[service.entities]]

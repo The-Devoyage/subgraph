@@ -33,7 +33,7 @@ pub enum PoolEnum {
     SqLite(Pool<Sqlite>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum SqlValueEnum {
     String(String),
     Int(i32),
@@ -44,6 +44,9 @@ pub enum SqlValueEnum {
 pub struct SqlQuery {
     query: String,
     values: Vec<SqlValueEnum>,
+    value_keys: Vec<String>,
+    where_values: Vec<SqlValueEnum>,
+    where_keys: Vec<String>,
     table: String,
 }
 

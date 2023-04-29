@@ -116,6 +116,7 @@ impl ServiceEntity {
         collection.unwrap()
     }
 
+    //TODO: How to tell if two names are the same?
     pub fn get_field(entity: &ServiceEntity, field_name: &str) -> Option<ServiceEntityField> {
         debug!("Get Field: {:?}", field_name);
         let fields = &entity.fields;
