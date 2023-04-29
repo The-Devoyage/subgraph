@@ -23,7 +23,7 @@ pub struct MongoDataSource {
 }
 
 impl MongoDataSource {
-    pub async fn init_mongo(mongo_data_source_config: &MongoDataSourceConfig) -> DataSource {
+    pub async fn init(mongo_data_source_config: &MongoDataSourceConfig) -> DataSource {
         info!("Initializing Mongo");
         let client_options = ClientOptions::parse(&mongo_data_source_config.uri)
             .await

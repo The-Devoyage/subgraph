@@ -8,11 +8,13 @@ use crate::{
 
 pub mod http;
 pub mod mongo;
+pub mod sql;
 
 #[derive(Debug, Clone)]
 pub enum DataSource {
     Mongo(mongo::MongoDataSource),
     HTTP(http::HttpDataSource),
+    SQL(sql::SqlDataSource),
 }
 
 #[derive(Debug, Clone)]
@@ -28,10 +30,13 @@ impl DataSources {
         for service_data_source_config in service_data_source_configs {
             match service_data_source_config {
                 ServiceDataSourceConfig::Mongo(conf) => {
-                    data_sources.push(mongo::MongoDataSource::init_mongo(&conf).await);
+                    data_sources.push(mongo::MongoDataSource::init(&conf).await);
                 }
                 ServiceDataSourceConfig::HTTP(conf) => {
                     data_sources.push(http::HttpDataSource::init(&conf).await);
+                }
+                ServiceDataSourceConfig::SQL(conf) => {
+                    data_sources.push(sql::SqlDataSource::init(&conf).await);
                 }
             };
         }
@@ -55,6 +60,7 @@ impl DataSources {
                         .find(|data_source| match data_source {
                             DataSource::Mongo(ds) => &ds.config.name == ds_name,
                             DataSource::HTTP(ds) => &ds.config.name == ds_name,
+                            DataSource::SQL(ds) => &ds.config.name == ds_name,
                         })
                         .unwrap();
                     data_source
@@ -89,6 +95,13 @@ impl DataSources {
             )
             .await?),
             DataSource::HTTP(_ds) => Ok(http::HttpDataSource::execute_operation(
+                data_source,
+                input,
+                cloned_entity,
+                resolver_type,
+            )
+            .await?),
+            DataSource::SQL(_ds) => Ok(sql::SqlDataSource::execute_operation(
                 data_source,
                 input,
                 cloned_entity,
