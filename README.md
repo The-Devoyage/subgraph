@@ -255,6 +255,10 @@ Use environment variables in the configuration file with `$` syntax.
 default_headers = [{ name = "Authorization", value = "Bearer $OPENAI_KEY" }]
 ```
 
+### Resolvers
+
+By default, all resolvers are created for all entities. This is with the exception of the Update One resolver, in which SqLite and Postgres do not support the `LIMIT 1` query.
+
 ## API
 
 ### CLI Options
