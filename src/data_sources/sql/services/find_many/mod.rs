@@ -15,7 +15,7 @@ impl Services {
             PoolEnum::MySql(pool) => {
                 let mut query = sqlx::query(&sql_query.query);
 
-                for value in &sql_query.values {
+                for value in &sql_query.where_values {
                     match value {
                         SqlValueEnum::String(value) => {
                             query = query.bind(value);
@@ -40,7 +40,7 @@ impl Services {
             PoolEnum::Postgres(pool) => {
                 let mut query = sqlx::query(&sql_query.query);
 
-                for value in &sql_query.values {
+                for value in &sql_query.where_values {
                     match value {
                         SqlValueEnum::String(value) => {
                             query = query.bind(value);
@@ -65,7 +65,7 @@ impl Services {
             PoolEnum::SqLite(pool) => {
                 let mut query = sqlx::query(&sql_query.query);
 
-                for value in &sql_query.values {
+                for value in &sql_query.where_values {
                     match value {
                         SqlValueEnum::String(value) => {
                             query = query.bind(value);

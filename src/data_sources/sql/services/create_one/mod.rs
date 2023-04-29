@@ -37,7 +37,7 @@ impl Services {
 
                 let find_one_query = SqlDataSource::create_find_one_query(
                     &sql_query.table,
-                    vec!["id".to_string()],
+                    &vec!["id".to_string()],
                     &dialect,
                 );
 
@@ -65,18 +65,7 @@ impl Services {
                     }
                 }
 
-                let rows_affected = query.execute(pool).await?.rows_affected();
-
-                let find_one_query = SqlDataSource::create_find_one_query(
-                    &sql_query.table,
-                    vec!["id".to_string()],
-                    &dialect,
-                );
-
-                let result = sqlx::query(&find_one_query)
-                    .bind(rows_affected.to_string())
-                    .fetch_one(pool)
-                    .await?;
+                let result = query.fetch_one(pool).await?;
 
                 Ok(ResponseRow::Postgres(result))
             }
@@ -101,7 +90,7 @@ impl Services {
 
                 let find_one_query = SqlDataSource::create_find_one_query(
                     &sql_query.table,
-                    vec!["id".to_string()],
+                    &vec!["id".to_string()],
                     &dialect,
                 );
 

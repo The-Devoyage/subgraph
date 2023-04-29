@@ -26,7 +26,6 @@ impl ServiceSchemaBuilder {
                         self = self.create_resolver(entity, ResolverType::FindOne);
                         self = self.create_resolver(entity, ResolverType::FindMany);
                         self = self.create_resolver(entity, ResolverType::CreateOne);
-                        self = self.create_resolver(entity, ResolverType::UpdateOne);
                     }
                     DialectEnum::MYSQL => {
                         self = self.create_resolver(entity, ResolverType::FindOne);
