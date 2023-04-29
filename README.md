@@ -8,11 +8,11 @@ Not yet for production use - There is still a bit of work to get to v0.1.0! That
 
 Define a configuration to run the service. The configuration tells subgraph how to generate the API around the data you need.
 
-1. Download release binary or clone repo.
+### 1. Download or Clone
 
-- [Releases](https://github.com/The-Devoyage/subgraph/releases)
+You can download binary from the [Releases Page](https://github.com/The-Devoyage/subgraph/releases) or clone the repo to use cargo to run.
 
-2. Define your configuration file.
+### 2. Define your configuration file.
 
 Check out some [Example Configurations](examples) for SqLite, MySQL, Postgres, HTTP and other use cases.
 
@@ -48,7 +48,7 @@ name = "loves"
 scalar = "Boolean"
 ```
 
-3. Start the Service
+### 3. Start the Service
 
 From binary release:
 ```bash
@@ -60,16 +60,16 @@ From repo
 cargo run -- -c ./config.toml -p 5011
 ```
 
-4. Use the API
+### 4. Start Querying
 
-- GraphQL Sandbox runs on the specified port.
+Use the GraphQL Sandbox runs on the specified port (the option defined in the CLI, `-p 5011`).
 
 ```
 # In the browser:
 http://localhost:5011
 ```
 
-- Queries and Mutations to the `/graphql` endpoint.
+Start sending Queries and Mutations to the `/graphql` endpoint from your application.
 
 ## Features
 
@@ -101,9 +101,11 @@ Once started, view the sandbox in the browser hosted at the specified port. For 
 - View the generated schema using the schema tab.
 - Write and execute GraphQL queries in the playground.
 
-## Usage
+## The Config File
 
-### Defining The Service
+Using subgraph is simple - Define a configuration and start the server.
+
+### The Service Name
 
 Define the service at the top of the config.
 
