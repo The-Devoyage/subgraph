@@ -1,4 +1,8 @@
-use crate::graphql::schema::ResolverType;
+use crate::{
+    configuration::subgraph::data_sources::sql::DialectEnum,
+    data_sources::{DataSource, DataSources},
+    graphql::schema::ResolverType,
+};
 
 use super::ServiceSchemaBuilder;
 use log::{debug, info};
@@ -14,10 +18,34 @@ impl ServiceSchemaBuilder {
 
         for entity in entities.iter() {
             self = self.create_entity_type_defs(entity);
-            self = self.create_resolver(entity, ResolverType::FindOne);
-            self = self.create_resolver(entity, ResolverType::FindMany);
-            self = self.create_resolver(entity, ResolverType::CreateOne);
-            self = self.create_resolver(entity, ResolverType::UpdateOne);
+
+            let data_source = DataSources::get_data_source_for_entity(&self.data_sources, entity);
+            match data_source {
+                DataSource::SQL(ds) => match ds.config.dialect {
+                    DialectEnum::POSTGRES => {
+                        self = self.create_resolver(entity, ResolverType::FindOne);
+                        self = self.create_resolver(entity, ResolverType::FindMany);
+                        self = self.create_resolver(entity, ResolverType::CreateOne);
+                    }
+                    DialectEnum::MYSQL => {
+                        self = self.create_resolver(entity, ResolverType::FindOne);
+                        self = self.create_resolver(entity, ResolverType::FindMany);
+                        self = self.create_resolver(entity, ResolverType::CreateOne);
+                        self = self.create_resolver(entity, ResolverType::UpdateOne);
+                    }
+                    DialectEnum::SQLITE => {
+                        self = self.create_resolver(entity, ResolverType::FindOne);
+                        self = self.create_resolver(entity, ResolverType::FindMany);
+                        self = self.create_resolver(entity, ResolverType::CreateOne);
+                    }
+                },
+                DataSource::Mongo(_) | DataSource::HTTP(_) => {
+                    self = self.create_resolver(entity, ResolverType::FindOne);
+                    self = self.create_resolver(entity, ResolverType::FindMany);
+                    self = self.create_resolver(entity, ResolverType::CreateOne);
+                    self = self.create_resolver(entity, ResolverType::UpdateOne);
+                }
+            }
         }
 
         self

@@ -14,12 +14,39 @@ Define a configuration to run the service. The configuration tells subgraph how 
 
 2. Define your configuration file.
 
-- [Basic Mongo Example](examples/basic-mongo.toml)
-- [Two Mongo Data Sources](examples/two-mongo-dbs.toml)
-- [HTTP Data Source (External API)](examples/basic-http.toml)
-- [Advanced Mixed Data Sources](examples/advanced-mixed.toml)
-- [Objects and Arrays](examples/object-and-list-scalars-mongo.toml)
-- [Chat GPT](examples/chat-gpt.toml)
+Check out some [Example Configurations](examples) for SqLite, MySQL, Postgres, HTTP and other use cases.
+
+```toml
+[service]
+service_name = "dogs"
+
+[[service.data_sources]]
+[service.data_sources.Mongo]
+name = "dogs_db"
+uri = "mongodb://user:password@127.0.0.1:27017/db_name"
+db = "db_name"
+
+[[service.entities]]
+name = "Dog"
+
+[[service.entities.fields]]
+name = "_id"
+scalar = "ObjectID"
+required = true
+
+[[service.entities.fields]]
+name = "name"
+scalar = "String"
+required = true
+
+[[service.entities.fields]]
+name = "age"
+scalar = "Int"
+
+[[service.entities.fields]]
+name = "loves"
+scalar = "Boolean"
+```
 
 3. Start the Service
 
@@ -65,6 +92,7 @@ Connect many data sources to a single API. Supports multiple instances of every 
 
 - Mongo DB Data Source - Connect to your existing mongo data base and use the API to manipulate and find documents.
 - HTTP Data Source - Map third party RESTful APIs to GraphQL automatically. 
+- SQL Data Source - Support for Postgres, MySQL, and SqLite.
 
 ### Sandbox
 
@@ -99,10 +127,10 @@ uri = "mongodb://user:pass127.0.0.1:27017/db_name"
 db = "local_db"
 
 [[service.data_sources]]
-[service.data_sources.Mongo]
-name = "mongo_2"
-uri = "mongodb+srv://user:pass@cluster298.an37alj.mongodb.net/?retryWrites=true&w=majority"
-db = "remote_db"
+[service.data_sources.SQL]
+name = "espresso_db"
+uri = "sqlite:/home/nickisyourfan/Desktop/DEV/dbs/espresso.db"
+dialect = "SQLITE"
 
 [[service.data_sources]]
 [service.data_sources.HTTP]
@@ -133,9 +161,14 @@ required = true
 name = "age"
 scalar = "String"
 # required = false by default 
+
+[[service.entities.fields]]
+name = "friends"
+scalar = "String"
+list = true # Support for lists
 ```
 
-Fields be nested using Object Scalars. See a full list of avaiable scalars within the API Section of this README.
+Fields may be nested using Object Scalars. See a full list of available scalars within the API Section of this README.
 
 ```toml
 [[service.entities.fields]]
@@ -244,6 +277,7 @@ default_headers = [{ name = "Authorization", value = "Bearer $OPENAI_KEY" }]
 | ------------- | ----------------- | ------------ |
 | Mongo         | Mongo Data Source | Mongo Config |
 | HTTP          | HTTP Data Source  | HTTP Config  |
+| SQL           | SQL Data Source   | SQL Config   |
 
 | Mongo Config | Description                         | Type   |
 | ------------ | ----------------------------------- | ------ |
@@ -261,6 +295,18 @@ default_headers = [{ name = "Authorization", value = "Bearer $OPENAI_KEY" }]
 |--------------- |---------------------------------------- |------- |
 | name           | The key of the key value header pair.   | String |
 | value          | The value of the key value header pair. | String |
+
+| SQL Config | Description                       | Type           |
+|----------- | ----------------------------------| ---------------|
+| name       | The name of the SQL data source.  | String         |
+| uri        | SQLX Compatible URI (rust crate). | String         |
+| dialect    | The dialect of the SQL DB.        | Dialect Option |
+
+| Dialect Option |
+| -------------- |
+| SQLITE         |
+| POSTGRES       |
+| MYSQL          |
 
 #### Cors Config
 
@@ -299,7 +345,8 @@ default_headers = [{ name = "Authorization", value = "Bearer $OPENAI_KEY" }]
 | Entity Data Source Config | Description                                                         | Type              |
 | ------------------------- | ------------------------------------------------------------------- | ----------------- |
 | from                      | The name of the associated HTTP Data Source.                        | String            |
-| collection                | The name of the associated Mongo collection.                        | String            |
+| collection                | The name of the associated Mongo Collection.                        | String            |
+| table                     | The name of the associated SQL Table.                               | String            |
 | path                      | The path/endpoint relative to the associated HTTP Data Source Path. | String            |
 | resolvers                 | Configuration to apply per generated resolver.                      | Entity Resolver[] |
 
@@ -325,7 +372,7 @@ default_headers = [{ name = "Authorization", value = "Bearer $OPENAI_KEY" }]
 | required            | Whether or not the field is required. Defaults to false.                   | Option<bool>   |
 | exclude_from_input  | A list of resolvers of which not to apply to the associated input.         | ResolverType[] |
 | exclude_from_output | A list of resolvers of which not to apply to the associated input.         | ResolverType[] |
-| list                | Defines the scalar as a list or a singlar value.                           | Option<bool>   |
+| list                | Defines the scalar as a list or a singular value.                          | Option<bool>   |
 
 | Scalar Options |
 | -------------- |
