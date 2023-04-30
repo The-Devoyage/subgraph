@@ -4,6 +4,7 @@
 
 ## Added
 - SQL Data Source - Postgres, MySql, and SqLite support.
+- Update Many Support
 
 ## [v0.0.7]
 
