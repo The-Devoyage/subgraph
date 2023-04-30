@@ -49,44 +49,13 @@ impl Services {
 
                 update_query.execute(pool).await?;
 
-                let mut find_one_where_keys = Vec::new();
-                let mut find_one_where_values = Vec::new();
-
-                for key in &sql_query.where_keys {
-                    find_one_where_keys.push(key.clone());
-                    let index = sql_query
-                        .value_keys
-                        .iter()
-                        .position(|x| *x.to_string() == key.to_string());
-
-                    if index.is_none() {
-                        let index = sql_query
-                            .where_keys
-                            .iter()
-                            .position(|x| *x.to_string() == key.to_string())
-                            .unwrap();
-                        let value = sql_query.where_values.get(index).unwrap();
-                        find_one_where_values.push(value.clone());
-                    } else {
-                        if let Some(value) = sql_query.values.get(index.unwrap()) {
-                            find_one_where_values.push(value.clone());
-                        }
-                    }
-                }
-
-                for key in &sql_query.value_keys {
-                    if !find_one_where_keys.contains(key) {
-                        find_one_where_keys.push(key.clone());
-                        let index = sql_query
-                            .value_keys
-                            .iter()
-                            .position(|x| *x.to_string() == key.to_string())
-                            .unwrap();
-                        if let Some(value) = sql_query.values.get(index) {
-                            find_one_where_values.push(value.clone());
-                        }
-                    }
-                }
+                let (find_one_where_keys, find_one_where_values) =
+                    SqlDataSource::create_update_return_key_data(
+                        &sql_query.where_keys,
+                        &sql_query.where_values,
+                        &sql_query.value_keys,
+                        &sql_query.values,
+                    );
 
                 let find_one_query_string = SqlDataSource::create_find_one_query(
                     &sql_query.table,

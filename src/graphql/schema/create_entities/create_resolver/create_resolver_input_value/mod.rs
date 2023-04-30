@@ -111,7 +111,47 @@ impl ServiceSchemaBuilder {
     ) -> Self {
         let resolver_input_name = format!("update_{}_input", &entity.name.to_lowercase());
         debug!(
-            "Creating Create One Resolver Input: {}",
+            "Creating Update One Resolver Input: {}",
+            resolver_input_name
+        );
+
+        let mut inputs = ServiceSchemaBuilder::create_input(
+            resolver_input_name.clone(),
+            entity.fields.clone(),
+            resolver_type,
+        );
+
+        let mut input = inputs
+            .iter()
+            .position(|input| input.type_name() == resolver_input_name)
+            .map(|i| inputs.remove(i))
+            .unwrap();
+        let query_input_name = format!("get_{}_input", &entity.name.to_lowercase());
+        input = input.field(InputValue::new(
+            "query",
+            TypeRef::named_nn(query_input_name.clone()),
+        ));
+        inputs.push(input);
+
+        resolver = resolver.argument(InputValue::new(
+            &resolver_input_name,
+            TypeRef::named_nn(resolver_input_name.clone()),
+        ));
+
+        self.mutation = self.mutation.field(resolver);
+        self = self.register_inputs(inputs);
+        self
+    }
+
+    pub fn create_update_many_input(
+        mut self,
+        entity: &ServiceEntity,
+        mut resolver: Field,
+        resolver_type: &ResolverType,
+    ) -> Self {
+        let resolver_input_name = format!("update_{}s_input", &entity.name.to_lowercase());
+        debug!(
+            "Creating Update Many Resolver Input: {}",
             resolver_input_name
         );
 
@@ -203,6 +243,9 @@ impl ServiceSchemaBuilder {
             }
             ResolverType::UpdateOne => {
                 self = self.create_update_one_input(&entity, resolver, &resolver_type);
+            }
+            ResolverType::UpdateMany => {
+                self = self.create_update_many_input(&entity, resolver, &resolver_type);
             }
         }
         self

@@ -49,7 +49,7 @@ impl HttpDataSource {
                 },
                 None => "POST".to_string(),
             },
-            ResolverType::UpdateOne => match cloned_entity.data_source {
+            ResolverType::UpdateOne | ResolverType::UpdateMany => match cloned_entity.data_source {
                 Some(ref data_source) => match data_source.resolvers {
                     Some(ref resolvers) => match resolvers.update_one {
                         Some(ref update_one) => match update_one.http_method {
