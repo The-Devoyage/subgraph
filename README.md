@@ -85,6 +85,7 @@ Resolvers are created for each defined entity allowing you to find and manipulat
 - Find Many
 - Create One
 - Update One
+- Update Many
 
 ### Data Sources
 
@@ -394,3 +395,4 @@ By default, all resolvers are created for all entities. This is with the excepti
 | FindMany      |
 | CreateOne     |
 | UpdateOne     |
+| UpdateMany    |
