@@ -17,6 +17,7 @@ collection = "dogs"
 name = "_id"
 scalar = "ObjectID"
 required = true
+exclude_from_input = ["CreateOne", "UpdateOne"]
 
 [[service.entities.fields]]
 name = "color"

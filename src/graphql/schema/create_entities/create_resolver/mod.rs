@@ -1,4 +1,4 @@
-use async_graphql::dynamic::{Field, FieldFuture, FieldValue, TypeRef, ValueAccessor};
+use async_graphql::dynamic::{Field, FieldFuture, TypeRef};
 use log::{debug, info};
 
 use crate::{configuration::subgraph::entities::ServiceEntity, data_sources::DataSources};
@@ -37,99 +37,15 @@ impl ServiceSchemaBuilder {
                 resolver_name: format!("update_{}", &entity.name.to_lowercase()),
                 return_type: TypeRef::named_nn(&entity.name),
             },
+            ResolverType::UpdateMany => ResolverConfig {
+                resolver_name: format!("update_{}s", &entity.name.to_lowercase()),
+                return_type: TypeRef::named_nn_list_nn(&entity.name),
+            },
         };
 
         debug!("Resolver Type: {:?}", resolver_type);
 
         resolver_type
-    }
-
-    pub async fn resolve_find_one<'a>(
-        data_sources: &DataSources,
-        input: &ValueAccessor<'_>,
-        entity: ServiceEntity,
-        resolver_type: ResolverType,
-    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
-        info!("Resolving Find One");
-        let result = DataSources::execute(data_sources, &input, entity, resolver_type).await?;
-
-        Ok(Some(result))
-    }
-
-    pub async fn resolve_find_many<'a>(
-        data_sources: &DataSources,
-        input: &ValueAccessor<'_>,
-        entity: ServiceEntity,
-        resolver_type: ResolverType,
-    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
-        info!("Resolving Find Many");
-
-        let results = DataSources::execute(data_sources, &input, entity, resolver_type).await?;
-
-        Ok(Some(results))
-    }
-
-    pub async fn resolve_create_one<'a>(
-        data_sources: &DataSources,
-        input: &ValueAccessor<'_>,
-        entity: ServiceEntity,
-        resolver_type: ResolverType,
-    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
-        info!("Resolving Create One");
-
-        let result = DataSources::execute(data_sources, &input, entity, resolver_type).await?;
-
-        Ok(Some(result))
-    }
-
-    pub async fn resolve_update_one<'a>(
-        data_sources: &DataSources,
-        input: &ValueAccessor<'_>,
-        entity: ServiceEntity,
-        resolver_type: ResolverType,
-    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
-        info!("Resolving Update One");
-
-        let result = DataSources::execute(data_sources, &input, entity, resolver_type).await?;
-
-        Ok(Some(result))
-    }
-
-    pub async fn handle_resolve<'a>(
-        data_sources: &DataSources,
-        input: &ValueAccessor<'_>,
-        entity: ServiceEntity,
-        resolver_type: ResolverType,
-    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
-        debug!("Resolving Entity");
-        match resolver_type {
-            ResolverType::FindOne => {
-                ServiceSchemaBuilder::resolve_find_one(data_sources, &input, entity, resolver_type)
-                    .await
-            }
-            ResolverType::FindMany => {
-                ServiceSchemaBuilder::resolve_find_many(data_sources, &input, entity, resolver_type)
-                    .await
-            }
-            ResolverType::CreateOne => {
-                ServiceSchemaBuilder::resolve_create_one(
-                    data_sources,
-                    &input,
-                    entity,
-                    resolver_type,
-                )
-                .await
-            }
-            ResolverType::UpdateOne => {
-                ServiceSchemaBuilder::resolve_update_one(
-                    data_sources,
-                    &input,
-                    entity,
-                    resolver_type,
-                )
-                .await
-            }
-        }
     }
 
     pub fn create_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
@@ -147,13 +63,11 @@ impl ServiceSchemaBuilder {
                     let data_sources = ctx.data_unchecked::<DataSources>().clone();
                     let input = ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
 
-                    ServiceSchemaBuilder::handle_resolve(
-                        &data_sources,
-                        &input,
-                        cloned_entity,
-                        resolver_type,
-                    )
-                    .await
+                    let results =
+                        DataSources::execute(&data_sources, &input, cloned_entity, resolver_type)
+                            .await?;
+
+                    Ok(Some(results))
                 })
             },
         );
