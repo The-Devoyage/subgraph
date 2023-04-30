@@ -12,6 +12,7 @@ pub struct ServiceEntityResolverConfig {
     pub find_many: Option<ServiceEntityResolver>,
     pub create_one: Option<ServiceEntityResolver>,
     pub update_one: Option<ServiceEntityResolver>,
+    pub update_many: Option<ServiceEntityResolver>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

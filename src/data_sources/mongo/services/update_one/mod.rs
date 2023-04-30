@@ -1,5 +1,5 @@
 use bson::{doc, to_document, Document};
-use log::{debug, info};
+use log::debug;
 use mongodb::{
     options::{FindOneAndUpdateOptions, ReturnDocument},
     Database,
@@ -15,7 +15,7 @@ impl Services {
         mut input: Document,
         collection: String,
     ) -> Result<Document, async_graphql::Error> {
-        info!("Executing Update One");
+        debug!("Executing Update One");
 
         let coll = db.collection::<Document>(&collection);
 

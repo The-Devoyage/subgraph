@@ -154,6 +154,17 @@ impl SqlDataSource {
                 .await?;
                 Ok(FieldValue::owned_any(result))
             }
+            ResolverType::UpdateMany => {
+                let results = services::Services::update_many(
+                    &data_source.pool,
+                    &query,
+                    data_source.config.dialect.clone(),
+                )
+                .await?;
+                Ok(FieldValue::list(
+                    results.into_iter().map(|row| FieldValue::owned_any(row)),
+                ))
+            }
         }
     }
 }

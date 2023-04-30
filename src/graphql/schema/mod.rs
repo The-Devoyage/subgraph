@@ -12,6 +12,7 @@ pub enum ResolverType {
     FindMany,
     CreateOne,
     UpdateOne,
+    UpdateMany,
 }
 
 pub struct ServiceSchemaBuilder {

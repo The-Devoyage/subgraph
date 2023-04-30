@@ -115,6 +115,12 @@ impl MongoDataSource {
                 let result = services::Services::update_one(db, input, collection_name).await?;
                 Ok(FieldValue::owned_any(result))
             }
+            ResolverType::UpdateMany => {
+                let results = services::Services::update_many(db, input, collection_name).await?;
+                Ok(FieldValue::list(
+                    results.into_iter().map(|doc| FieldValue::owned_any(doc)),
+                ))
+            }
         }
     }
 }

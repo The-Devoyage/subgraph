@@ -43,6 +43,12 @@ impl SqlDataSource {
                 &dialect,
                 &where_keys,
             ),
+            ResolverType::UpdateMany => SqlDataSource::create_update_many_query(
+                table_name,
+                &value_keys,
+                &dialect,
+                &where_keys,
+            ),
         };
 
         let sql_query = SqlQuery {
@@ -87,7 +93,9 @@ impl SqlDataSource {
 
                 let is_where_clause = match resolver_type {
                     ResolverType::FindOne | ResolverType::FindMany => true,
-                    ResolverType::CreateOne | ResolverType::UpdateOne => false,
+                    ResolverType::CreateOne
+                    | ResolverType::UpdateOne
+                    | ResolverType::UpdateMany => false,
                 };
 
                 match field.unwrap().scalar {
@@ -287,5 +295,89 @@ impl SqlDataSource {
         }
 
         query
+    }
+
+    pub fn create_update_many_query(
+        table_name: &str,
+        value_keys: &Vec<String>,
+        dialect: &DialectEnum,
+        where_keys: &Vec<String>,
+    ) -> String {
+        let mut query = String::new();
+        query.push_str("UPDATE ");
+        query.push_str(table_name);
+        query.push_str(" SET ");
+
+        for i in 0..value_keys.len() {
+            query.push_str(&value_keys[i]);
+            query.push_str(" = ");
+            query.push_str(SqlDataSource::get_placeholder(dialect, Some(i as i32)).as_str());
+            if i != value_keys.len() - 1 {
+                query.push_str(", ");
+            }
+        }
+
+        let offset = Some(value_keys.len() as i32);
+
+        let parameterized_query = SqlDataSource::create_where_clause(where_keys, dialect, offset);
+        query.push_str(&parameterized_query);
+
+        match dialect {
+            DialectEnum::POSTGRES => {
+                query.push_str(" RETURNING *");
+            }
+            _ => {}
+        }
+
+        if !query.ends_with(';') {
+            query.push(';');
+        }
+
+        query
+    }
+
+    pub fn create_update_return_key_data(
+        sql_query_where_keys: &Vec<String>,
+        sql_query_where_values: &Vec<SqlValueEnum>,
+        sql_query_value_keys: &Vec<String>,
+        sql_query_values: &Vec<SqlValueEnum>,
+    ) -> (Vec<String>, Vec<SqlValueEnum>) {
+        let mut where_keys = Vec::new();
+        let mut where_values = Vec::new();
+
+        for key in sql_query_where_keys {
+            where_keys.push(key.clone());
+            let index = sql_query_value_keys
+                .iter()
+                .position(|x| *x.to_string() == key.to_string());
+
+            if index.is_none() {
+                let index = sql_query_where_keys
+                    .iter()
+                    .position(|x| *x.to_string() == key.to_string())
+                    .unwrap();
+                let value = sql_query_where_values.get(index).unwrap();
+                where_values.push(value.clone());
+            } else {
+                if let Some(value) = sql_query_values.get(index.unwrap()) {
+                    where_values.push(value.clone());
+                }
+            }
+        }
+
+        for key in sql_query_value_keys {
+            if !where_keys.contains(key) {
+                where_keys.push(key.clone());
+                let index = sql_query_value_keys
+                    .iter()
+                    .position(|x| *x.to_string() == key.to_string())
+                    .unwrap();
+                if let Some(value) = sql_query_values.get(index) {
+                    where_values.push(value.clone());
+                }
+            }
+        }
+
+        (where_keys, where_values)
     }
 }
