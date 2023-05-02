@@ -19,9 +19,8 @@ impl HttpDataSource {
                 let json = Json::from(document);
                 Some(json)
             }
-            ResolverType::FindOne => None,
-            ResolverType::FindMany => None,
-            ResolverType::UpdateOne => {
+            ResolverType::FindOne | ResolverType::FindMany => None,
+            ResolverType::UpdateOne | ResolverType::UpdateMany => {
                 debug!("Update One Resolver Filters");
                 let mut document = input.deserialize::<Document>().unwrap();
                 document.remove("query");
