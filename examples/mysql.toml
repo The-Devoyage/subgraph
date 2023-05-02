@@ -1,5 +1,6 @@
 [service]
 service_name = "cars"
+guard = "headers.auth.role != GUEST"
 
 [[service.data_sources]]
 [service.data_sources.SQL]
@@ -28,6 +29,7 @@ required = true
 name = "price"
 scalar = "Int"
 required = true
+guard = "(headers.auth.role == ADMIN | headers.auth.role == USER) && headers.auth.role != GUEST"
 
 [[service.entities.fields]]
 name = "brand"
