@@ -12,6 +12,7 @@ pub struct ServiceEntityResolverConfig {
     pub find_many: Option<ServiceEntityResolver>,
     pub create_one: Option<ServiceEntityResolver>,
     pub update_one: Option<ServiceEntityResolver>,
+    pub update_many: Option<ServiceEntityResolver>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -54,6 +55,7 @@ pub struct ServiceEntityField {
 pub struct ServiceEntityDataSource {
     pub from: Option<String>,
     pub collection: Option<String>,
+    pub table: Option<String>,
     pub path: Option<String>,
     pub search_query: Option<Vec<QueryPair>>,
     pub resolvers: Option<ServiceEntityResolverConfig>,
@@ -113,5 +115,17 @@ impl ServiceEntity {
             return entity.name.clone();
         }
         collection.unwrap()
+    }
+
+    //TODO: How to tell if two names are the same?
+    pub fn get_field(entity: &ServiceEntity, field_name: &str) -> Option<ServiceEntityField> {
+        debug!("Get Field: {:?}", field_name);
+        let fields = &entity.fields;
+        for field in fields {
+            if field.name == field_name {
+                return Some(field.clone());
+            }
+        }
+        None
     }
 }

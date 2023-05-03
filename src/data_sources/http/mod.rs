@@ -81,13 +81,11 @@ impl HttpDataSource {
             ResolverType::FindOne => {
                 let result =
                     services::Services::find_one(data_source.client.clone(), filter).await?;
-
                 Ok(FieldValue::owned_any(result))
             }
             ResolverType::FindMany => {
                 let results =
                     services::Services::find_many(data_source.client.clone(), filter).await?;
-
                 Ok(FieldValue::list(
                     results.into_iter().map(|doc| FieldValue::owned_any(doc)),
                 ))
@@ -95,14 +93,19 @@ impl HttpDataSource {
             ResolverType::CreateOne => {
                 let result =
                     services::Services::create_one(data_source.client.clone(), filter).await?;
-
                 Ok(FieldValue::owned_any(result))
             }
             ResolverType::UpdateOne => {
                 let result =
                     services::Services::update_one(data_source.client.clone(), filter).await?;
-
                 Ok(FieldValue::owned_any(result))
+            }
+            ResolverType::UpdateMany => {
+                let results =
+                    services::Services::update_many(data_source.client.clone(), filter).await?;
+                Ok(FieldValue::list(
+                    results.into_iter().map(|doc| FieldValue::owned_any(doc)),
+                ))
             }
         }
     }

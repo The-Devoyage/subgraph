@@ -127,6 +127,30 @@ impl HttpDataSource {
                 url.set_path(&path);
                 url
             }
+            ResolverType::UpdateMany => {
+                let update_many_resolver = entity_resolvers.as_ref().unwrap().update_many.as_ref();
+
+                if update_many_resolver.is_none() {
+                    return Ok(url);
+                }
+
+                debug!("Current URL: {:?}", url);
+
+                let resolver_path = update_many_resolver.unwrap().path.as_ref();
+
+                if resolver_path.is_none() {
+                    return Ok(url);
+                }
+
+                debug!(
+                    "Resolver Path Defined: {:?}",
+                    update_many_resolver.unwrap().path.as_ref()
+                );
+
+                let path = format!("{}{}", url.path(), resolver_path.unwrap());
+                url.set_path(&path);
+                url
+            }
         };
         Ok(url)
     }
@@ -144,10 +168,10 @@ impl HttpDataSource {
         let mut url = Url::parse(url.as_str())?;
 
         document = match resolver_type {
-            ResolverType::FindOne => document,
-            ResolverType::FindMany => document,
-            ResolverType::CreateOne => document,
-            ResolverType::UpdateOne => to_document(document.get("query").unwrap())?,
+            ResolverType::FindOne | ResolverType::FindMany | ResolverType::CreateOne => document,
+            ResolverType::UpdateOne | ResolverType::UpdateMany => {
+                to_document(document.get("query").unwrap())?
+            }
         };
 
         while let Some(path_segment) = path_segments.next() {

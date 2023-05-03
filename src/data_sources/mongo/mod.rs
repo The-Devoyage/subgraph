@@ -23,7 +23,7 @@ pub struct MongoDataSource {
 }
 
 impl MongoDataSource {
-    pub async fn init_mongo(mongo_data_source_config: &MongoDataSourceConfig) -> DataSource {
+    pub async fn init(mongo_data_source_config: &MongoDataSourceConfig) -> DataSource {
         info!("Initializing Mongo");
         let client_options = ClientOptions::parse(&mongo_data_source_config.uri)
             .await
@@ -114,6 +114,12 @@ impl MongoDataSource {
             ResolverType::UpdateOne => {
                 let result = services::Services::update_one(db, input, collection_name).await?;
                 Ok(FieldValue::owned_any(result))
+            }
+            ResolverType::UpdateMany => {
+                let results = services::Services::update_many(db, input, collection_name).await?;
+                Ok(FieldValue::list(
+                    results.into_iter().map(|doc| FieldValue::owned_any(doc)),
+                ))
             }
         }
     }
