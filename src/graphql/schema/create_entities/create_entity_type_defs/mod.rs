@@ -1,6 +1,6 @@
 use crate::{
     configuration::subgraph::entities::{ScalarOptions, ServiceEntity, ServiceEntityField},
-    data_sources::{DataSource, DataSources},
+    data_sources::{sql::services::ResponseRow, DataSource, DataSources},
 };
 
 use super::ServiceSchemaBuilder;
@@ -240,6 +240,18 @@ impl ServiceSchemaBuilder {
                                 json_value, field_name, scalar,
                             )
                             .await;
+
+                            Ok(Some(value.unwrap()))
+                        }
+                        DataSource::SQL(_ds) => {
+                            let response_row =
+                                ctx.parent_value.try_downcast_ref::<ResponseRow>().unwrap();
+
+                            let value = ServiceSchemaBuilder::resolve_sql_field(
+                                response_row,
+                                field_name,
+                                scalar,
+                            );
 
                             Ok(Some(value.unwrap()))
                         }

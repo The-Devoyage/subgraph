@@ -9,11 +9,15 @@ db = "db_name"
 
 [[service.entities]]
 name = "Bike"
+[service.entities.data_source]
+from = "bikes_db"
+collection = "dogs"
 
 [[service.entities.fields]]
 name = "_id"
 scalar = "ObjectID"
 required = true
+exclude_from_input = ["CreateOne", "UpdateOne"]
 
 [[service.entities.fields]]
 name = "color"

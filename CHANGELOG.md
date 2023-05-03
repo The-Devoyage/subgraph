@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.0.8]
+
+## Added
+- SQL Data Source - Postgres, MySql, and SqLite support.
+- Update Many Support
+
 ## [v0.0.7]
 
 ### Added
