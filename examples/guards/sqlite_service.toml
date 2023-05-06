@@ -1,0 +1,4 @@
+[[service.guards]]
+name = "invalid_role"
+when = "Headers(\"auth.role\") != \"admin\""
+return = "Invalid Role - Permission Denied"
