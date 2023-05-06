@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::graphql::schema::ResolverType;
 
-use super::cors::MethodOption;
+use super::{cors::MethodOption, guard::Guard};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceEntityResolverConfig {
@@ -43,6 +43,7 @@ pub struct QueryPair(pub String, pub String);
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceEntityField {
     pub name: String,
+    pub guards: Option<Vec<Guard>>,
     pub scalar: ScalarOptions,
     pub required: Option<bool>,
     pub exclude_from_input: Option<Vec<ResolverType>>,
@@ -67,6 +68,7 @@ pub struct ServiceEntityResolver {
     pub path: Option<String>,
     pub search_query: Option<Vec<QueryPair>>,
     pub http_method: Option<MethodOption>,
+    pub guards: Option<Vec<Guard>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -74,6 +76,7 @@ pub struct ServiceEntity {
     pub name: String,
     pub fields: Vec<ServiceEntityField>,
     pub data_source: Option<ServiceEntityDataSource>,
+    pub guards: Option<Vec<Guard>>,
 }
 
 impl ServiceEntity {
@@ -86,6 +89,46 @@ impl ServiceEntity {
                 let resolvers = resolvers.unwrap();
                 debug!("Resolvers: {:?}", resolvers);
                 return Some(resolvers);
+            }
+        }
+        None
+    }
+
+    pub fn get_resolver(
+        service_entity: &ServiceEntity,
+        resolver_type: ResolverType,
+    ) -> Option<ServiceEntityResolver> {
+        debug!("Get Resolver: {:?}", resolver_type);
+        let resolvers = ServiceEntity::get_resolvers(service_entity.clone());
+        if resolvers.is_none() {
+            return None;
+        }
+        let resolvers = resolvers.unwrap();
+        match resolver_type {
+            ResolverType::FindOne => {
+                if resolvers.find_one.is_some() {
+                    return resolvers.find_one;
+                }
+            }
+            ResolverType::FindMany => {
+                if resolvers.find_many.is_some() {
+                    return resolvers.find_many;
+                }
+            }
+            ResolverType::CreateOne => {
+                if resolvers.create_one.is_some() {
+                    return resolvers.create_one;
+                }
+            }
+            ResolverType::UpdateOne => {
+                if resolvers.update_one.is_some() {
+                    return resolvers.update_one;
+                }
+            }
+            ResolverType::UpdateMany => {
+                if resolvers.update_many.is_some() {
+                    return resolvers.update_many;
+                }
             }
         }
         None
