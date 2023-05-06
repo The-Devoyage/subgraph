@@ -1,0 +1,63 @@
+[service]
+service_name = "espresso"
+
+# [[service.guards]]
+# name = "invalid_access_key"
+# if_expr = "\"1233\" != \"1234\""
+# then_msg = "Invalid Access Key - Permission Denied"
+# [[service.guards]]
+# name = "invalid_role"
+# if_expr = "\"root\" != \"admin\""
+# then_msg = "Invalid Role - Permission Denied"
+
+[[service.data_sources]]
+[service.data_sources.SQL]
+name = "caffeine_data_source"
+uri = "sqlite:/home/nickisyourfan/Desktop/DEV/dbs/caffeine.db"
+dialect = "SQLITE"
+
+[[service.entities]]
+name = "Espresso"
+
+# [service.entities.data_source]
+# from = "caffeine_data_source"
+# [service.entities.data_source.resolvers]
+# [service.entities.data_source.resolvers.find_one]
+# [[service.entities.data_source.resolvers.find_one.guards]]
+# name = "invalid_age"
+# if_expr = "3 != 1"
+# then_msg = "Invalid Age - Permission Denied Resolver Access"
+# [[service.entities.data_source.resolvers.find_one.guards]]
+# name = "invalid_butter"
+# if_expr = "3 != 1"
+# then_msg = "Invalid butter - Permission Denied Resolver Access 2"
+
+# [[service.entities.guards]]
+# name = "invalid_name"
+# if_expr = "\"laura\" != \"nick\""
+# then_msg = "Invalid Name - Permission Denied"
+
+[[service.entities.fields]]
+name = "id"
+scalar = "Int"
+required = true
+exclude_from_input = ["CreateOne", "UpdateOne", "UpdateMany"] 
+[[service.entities.fields]]
+name = "name"
+scalar = "String"
+required = true
+guards = [
+  {name = "name", if_expr = "1 > 0", then_msg = "Invalid Name - Field Level" },
+  {name = "name", if_expr = "1 > 0", then_msg = "Invalid Name - Field Level - Too Longgg" },
+]
+[[service.entities.fields]]
+name = "price"
+scalar = "Int"
+required = true
+guards = [
+  {name = "price", if_expr = "1 > 0", then_msg = "Invalid Price - Field Level" },
+]
+[[service.entities.fields]]
+name = "available"
+scalar = "Boolean"
+required = true
