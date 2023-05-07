@@ -1,4 +1,6 @@
 use async_graphql::dynamic::{Field, FieldFuture, TypeRef};
+use bson::Document;
+use http::HeaderMap;
 use log::{debug, info};
 
 use crate::{
@@ -89,21 +91,28 @@ impl ServiceSchemaBuilder {
                 FieldFuture::new(async move {
                     let data_sources = ctx.data_unchecked::<DataSources>().clone();
                     let input = ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
+                    let headers = ctx.data_unchecked::<HeaderMap>().clone();
+                    let input_document = &input.deserialize::<Document>().unwrap();
+                    let guard_context = Guard::create_guard_context(
+                        headers,
+                        input_document.clone(),
+                        cloned_entity.clone(),
+                    )?;
 
                     if service_guards.is_some() {
-                        Guard::check(&service_guards.unwrap())?;
+                        Guard::check(&service_guards.unwrap(), &guard_context)?;
                     }
 
                     if resolver_guards.is_some() {
-                        Guard::check(&resolver_guards.unwrap())?;
+                        Guard::check(&resolver_guards.unwrap(), &guard_context)?;
                     }
 
                     if entity_guards.is_some() {
-                        Guard::check(&entity_guards.unwrap())?;
+                        Guard::check(&entity_guards.unwrap(), &guard_context)?;
                     }
 
                     if field_guards.len() > 0 {
-                        Guard::check(&field_guards)?;
+                        Guard::check(&field_guards, &guard_context)?;
                     }
 
                     let results =
