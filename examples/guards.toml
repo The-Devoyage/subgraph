@@ -1,14 +1,18 @@
 [service]
 service_name = "espresso"
 
-# [[service.guards]]
-# name = "invalid_access_key"
-# if_expr = "\"1233\" != \"1234\""
-# then_msg = "Invalid Access Key - Permission Denied"
+[[service.guards]]
+name = "invalid_access_key"
+if_expr = "headers(\"authorization\") != \"1234\""
+then_msg = "Invalid Access Key - Permission Denied"
 # [[service.guards]]
 # name = "invalid_role"
 # if_expr = "\"root\" != \"admin\""
 # then_msg = "Invalid Role - Permission Denied"
+[[service.guards]]
+name = "invalid_id"
+if_expr = "input(\"id\") == 1"
+then_msg = "Invalid ID - Permission Denied"
 
 [[service.data_sources]]
 [service.data_sources.SQL]
@@ -46,17 +50,18 @@ exclude_from_input = ["CreateOne", "UpdateOne", "UpdateMany"]
 name = "name"
 scalar = "String"
 required = true
-guards = [
-  {name = "name", if_expr = "1 > 0", then_msg = "Invalid Name - Field Level" },
-  {name = "name", if_expr = "1 > 0", then_msg = "Invalid Name - Field Level - Too Longgg" },
-]
+# guards = [
+#   {name = "name", if_expr = "1 > 0", then_msg = "Invalid Name - Field Level" },
+#   {name = "name", if_expr = "1 > 0", then_msg = "Invalid Name - Field Level - Too Longgg" },
+# ]
 [[service.entities.fields]]
 name = "price"
 scalar = "Int"
 required = true
-guards = [
-  {name = "price", if_expr = "1 > 0", then_msg = "Invalid Price - Field Level" },
-]
+list = true
+# guards = [
+#   {name = "price", if_expr = "1 > 0", then_msg = "Invalid Price - Field Level" },
+# ]
 [[service.entities.fields]]
 name = "available"
 scalar = "Boolean"
