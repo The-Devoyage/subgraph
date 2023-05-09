@@ -1,5 +1,7 @@
 # Changelog
 
+## [v0.0.9]
+
 ## [v0.0.8]
 
 ## Added
