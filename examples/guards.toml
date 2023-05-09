@@ -1,24 +1,38 @@
 [service]
 service_name = "espresso"
 
-[[service.guards]]
-name = "invalid_access_key"
-if_expr = "headers(\"authorization\") != \"1234\""
-then_msg = "Invalid Access Key - Permission Denied"
+# [[service.guards]]
+# name = "invalid_access_key"
+# if_expr = "headers(\"authorization\") != \"1234\""
+# then_msg = "Invalid Access Key - Permission Denied"
 # [[service.guards]]
 # name = "invalid_role"
 # if_expr = "\"root\" != \"admin\""
 # then_msg = "Invalid Role - Permission Denied"
-[[service.guards]]
-name = "invalid_id"
-if_expr = "input(\"id\") == 1"
-then_msg = "Invalid ID - Permission Denied"
+# [[service.guards]]
+# name = "invalid_id"
+# if_expr = "input(\"price\") == 1"
+# then_msg = "Invalid ID - Permission Denied"
+# [[service.guards]]
+# name = "cities"
+# if_expr = "some(input(\"cities\"), \"Dallas\")"
+# then_msg = "403 - Forbidden - Access to Dallas Invalid"
+# [[service.guards]]
+# name = "comments.user"
+# if_expr = "some(input(\"comments.user\"), \"nick\")"
+# then_msg = "403 - Forbidden - Access to Dallas Invalid"
+
 
 [[service.data_sources]]
 [service.data_sources.SQL]
 name = "caffeine_data_source"
 uri = "sqlite:/home/nickisyourfan/Desktop/DEV/dbs/caffeine.db"
 dialect = "SQLITE"
+[[service.data_sources]]
+[service.data_sources.Mongo]
+name = "beers_ds"
+uri = "mongodb://sun:sun@127.0.0.1:27017/sun"
+db = "sun"
 
 [[service.entities]]
 name = "Espresso"
@@ -58,7 +72,7 @@ required = true
 name = "price"
 scalar = "Int"
 required = true
-list = true
+list = false
 # guards = [
 #   {name = "price", if_expr = "1 > 0", then_msg = "Invalid Price - Field Level" },
 # ]
@@ -66,3 +80,56 @@ list = true
 name = "available"
 scalar = "Boolean"
 required = true
+
+[[service.entities]]
+name = "Beer"
+[service.entities.data_source]
+from = "beers_ds"
+
+[[service.entities.fields]]
+name = "_id"
+scalar = "ObjectID"
+required = true
+exclude_from_input = ["CreateOne"]
+
+[[service.entities.fields]]
+name = "name"
+scalar = "String"
+required = true
+
+[[service.entities.fields]]
+name = "cities"
+scalar = "String"
+required = true
+list = true
+
+[[service.entities.fields]]
+name = "comments"
+scalar = "Object"
+required = true
+list = true
+fields = [
+    { name = "user", scalar = "String", required = true },
+    { name = "comment", scalar = "String", required = true },
+]
+
+[[service.entities.fields]]
+name = "scores"
+scalar = "Int"
+list = true
+
+[[service.entities.fields]]
+name = "attributes"
+scalar = "Object"
+required = true
+fields = [
+    { name = "ibu", scalar = "Int", required = true },
+    { name = "abv", scalar = "Int", required = true },
+    { name = "type", scalar = "String", required = true },
+    { name = "address", scalar = "Object", required = true, fields = [
+        { name = "street", scalar = "String", required = true },
+        { name = "city", scalar = "String", required = true },
+        { name = "state", scalar = "String", required = true },
+        { name = "zip", scalar = "String", required = true },
+    ]},
+]
