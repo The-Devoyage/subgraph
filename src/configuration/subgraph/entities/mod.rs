@@ -160,13 +160,75 @@ impl ServiceEntity {
         collection.unwrap()
     }
 
-    //TODO: How to tell if two names are the same?
-    pub fn get_field(entity: &ServiceEntity, field_name: &str) -> Option<ServiceEntityField> {
+    pub fn get_field_from_entity(
+        entity: &ServiceEntity,
+        field_name: &str,
+    ) -> Option<ServiceEntityField> {
         debug!("Get Field: {:?}", field_name);
         let fields = &entity.fields;
-        for field in fields {
-            if field.name == field_name {
-                return Some(field.clone());
+        if field_name.contains(".") {
+            debug!("Field is Nested");
+            let mut field_names: Vec<&str> = field_name.split(".").collect();
+            let first_field_name = field_names[0];
+            let first_field = ServiceEntity::get_field_from_entity(entity, first_field_name);
+            if first_field.is_none() {
+                return None;
+            }
+            let first_field = first_field.unwrap();
+            let fields = first_field.fields;
+            if fields.is_none() {
+                return None;
+            }
+            field_names.remove(0);
+            let field =
+                ServiceEntity::get_field_from_fields(fields.unwrap(), field_names.join("."));
+            if field.is_none() {
+                return None;
+            }
+            debug!("Found Field: {:?}", field);
+            return Some(field.unwrap());
+        } else {
+            for field in fields {
+                if field.name == field_name {
+                    return Some(field.clone());
+                }
+            }
+        }
+        None
+    }
+
+    pub fn get_field_from_fields(
+        fields: Vec<ServiceEntityField>,
+        field_name: String,
+    ) -> Option<ServiceEntityField> {
+        debug!("Get Field From Fields: {:?}", field_name);
+        if field_name.contains(".") {
+            debug!("Field is Nested");
+            let mut field_names: Vec<&str> = field_name.split(".").collect();
+            let first_field_name = field_names[0];
+            let first_field =
+                ServiceEntity::get_field_from_fields(fields.clone(), first_field_name.to_string());
+            if first_field.is_none() {
+                return None;
+            }
+            let first_field = first_field.unwrap();
+            let fields = first_field.fields;
+            if fields.is_none() {
+                return None;
+            }
+            field_names.remove(0);
+            let field =
+                ServiceEntity::get_field_from_fields(fields.unwrap(), field_names.join("."));
+            if field.is_none() {
+                return None;
+            }
+            debug!("Found Field: {:?}", field);
+            return Some(field.unwrap());
+        } else {
+            for field in fields {
+                if field.name == field_name {
+                    return Some(field.clone());
+                }
             }
         }
         None

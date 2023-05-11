@@ -29,7 +29,6 @@ impl Guard {
                 return Err(Error::new("Guard Creation Error")
                     .extend_with(|_err, e| e.set(guard.name.clone(), "Required when guarding.")));
             }
-
             if should_guard.unwrap() {
                 debug!("Guarding");
                 errors.push((guard.name.clone(), guard.then_msg.clone()));
@@ -78,29 +77,50 @@ impl Guard {
                         ScalarOptions::Boolean => {
                             values.push(Value::Boolean(document.as_bool().unwrap()))
                         }
-                        _ => unreachable!(),
+                        ScalarOptions::Object => {
+                            return Err(EvalexprError::CustomMessage("Object not supported".into()))
+                        }
                     }
                 }
                 debug!("Values: {:?}", values);
                 Ok(Value::from(values))
             } else {
-                return Err(EvalexprError::expected_string(argument.clone()));
+                return Err(EvalexprError::CustomMessage("Could not get key".into()));
             }
         } else {
-            match input_document.clone().get(&cleaned_key) {
-                Some(v) => {
-                    match scalar {
+            if cleaned_key.contains(".") {
+                debug!("Nested Key");
+                let keys: Vec<&str> = cleaned_key.split(".").collect();
+                let nested_document = input_document.clone();
+                let first_key = keys.first().unwrap();
+                let nested_value = nested_document.get(first_key).unwrap();
+                //TODO: If key is * then need to iterate through and get values.
+                if let Some(document) = nested_value.as_document() {
+                    Guard::get_from_document(
+                        document.clone(),
+                        keys[1..].join(".").to_string(),
+                        scalar,
+                        is_list,
+                        argument,
+                    )
+                } else {
+                    return Err(EvalexprError::expected_string(argument.clone()));
+                }
+            } else {
+                match input_document.clone().get(&cleaned_key) {
+                    Some(v) => match scalar {
                         ScalarOptions::String | ScalarOptions::ObjectID => {
+                            debug!("String Value: {:?}", v);
                             Ok(Value::String(v.to_string()))
                         }
                         ScalarOptions::Int => Ok(Value::Int(v.as_i32().unwrap() as i64)),
                         ScalarOptions::Boolean => Ok(Value::Boolean(v.as_bool().unwrap())),
-                        //TODO: Implement Object scalars
-                        _ => unreachable!(),
-                    }
+                        ScalarOptions::Object => {
+                            return Err(EvalexprError::expected_string(argument.clone()))
+                        }
+                    },
+                    None => Err(EvalexprError::expected_string(argument.clone())),
                 }
-                //TODO: Eval Scalar Error
-                None => Err(EvalexprError::expected_string(argument.clone())),
             }
         }
     }
@@ -117,9 +137,9 @@ impl Guard {
                 debug!("Input Argument: {:?}", argument);
                 let key = argument.to_string();
                 let cleaned_key = key.replace("\"", "");
-                let field = ServiceEntity::get_field(&entity.clone(), &cleaned_key);
+                let field = ServiceEntity::get_field_from_entity(&entity.clone(), &cleaned_key);
                 if field.is_none() {
-                    return Err(EvalexprError::expected_string(argument.clone()))
+                    return Err(EvalexprError::CustomMessage("Field not found".to_string()));
                 }
                 let scalar = field.clone().unwrap().scalar;
                 let is_list = field.unwrap().list.unwrap_or(false);

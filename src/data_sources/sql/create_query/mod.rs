@@ -85,7 +85,7 @@ impl SqlDataSource {
                 debug!("Processing Key: {:?}", key);
                 debug!("Processing Value: {:?}", value.string());
 
-                let field = ServiceEntity::get_field(entity, key);
+                let field = ServiceEntity::get_field_from_entity(entity, key);
 
                 if field.is_none() {
                     panic!("Field not found: {:?}", key);
