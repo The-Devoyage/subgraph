@@ -2,9 +2,6 @@
 
 ## [v0.0.9]
 
-### Changed
-- Find one and Find Many Inputs Fixed - List searching not supported currently.
-
 ## [v0.0.8]
 
 ## Added
