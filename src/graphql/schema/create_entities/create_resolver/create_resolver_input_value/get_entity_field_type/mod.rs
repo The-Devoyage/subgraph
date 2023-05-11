@@ -17,8 +17,10 @@ impl ServiceSchemaBuilder {
         is_required: bool,
     ) -> TypeRef {
         match resolver_type {
-            ResolverType::FindOne | ResolverType::FindMany => TypeRef::named(TypeRef::STRING),
-            ResolverType::UpdateOne | ResolverType::UpdateMany => {
+            ResolverType::FindOne
+            | ResolverType::FindMany
+            | ResolverType::UpdateOne
+            | ResolverType::UpdateMany => {
                 if is_list {
                     TypeRef::named_nn_list(TypeRef::STRING)
                 } else {
@@ -50,8 +52,10 @@ impl ServiceSchemaBuilder {
         is_required: bool,
     ) -> TypeRef {
         match resolver_type {
-            ResolverType::FindOne | ResolverType::FindMany => TypeRef::named(TypeRef::INT),
-            ResolverType::UpdateOne | ResolverType::UpdateMany => {
+            ResolverType::FindOne
+            | ResolverType::FindMany
+            | ResolverType::UpdateOne
+            | ResolverType::UpdateMany => {
                 if is_list {
                     TypeRef::named_nn_list(TypeRef::INT)
                 } else {
@@ -83,8 +87,10 @@ impl ServiceSchemaBuilder {
         is_required: bool,
     ) -> TypeRef {
         match resolver_type {
-            ResolverType::FindOne | ResolverType::FindMany => TypeRef::named(TypeRef::BOOLEAN),
-            ResolverType::UpdateOne | ResolverType::UpdateMany => {
+            ResolverType::FindOne
+            | ResolverType::FindMany
+            | ResolverType::UpdateOne
+            | ResolverType::UpdateMany => {
                 if true {
                     TypeRef::named_nn_list(TypeRef::BOOLEAN)
                 } else {
@@ -116,8 +122,10 @@ impl ServiceSchemaBuilder {
         is_required: bool,
     ) -> TypeRef {
         match resolver_type {
-            ResolverType::FindOne | ResolverType::FindMany => TypeRef::named("ObjectID"),
-            ResolverType::UpdateOne | ResolverType::UpdateMany => {
+            ResolverType::FindOne
+            | ResolverType::FindMany
+            | ResolverType::UpdateOne
+            | ResolverType::UpdateMany => {
                 if is_list {
                     TypeRef::named_nn_list("ObjectID")
                 } else {
@@ -182,8 +190,10 @@ impl ServiceSchemaBuilder {
         }
 
         let type_ref = match resolver_type {
-            ResolverType::FindOne | ResolverType::FindMany => TypeRef::named(input_name),
-            ResolverType::UpdateOne | ResolverType::UpdateMany => {
+            ResolverType::FindOne
+            | ResolverType::FindMany
+            | ResolverType::UpdateOne
+            | ResolverType::UpdateMany => {
                 if entity_field.list == Some(true) {
                     TypeRef::named_nn_list(input_name)
                 } else {
