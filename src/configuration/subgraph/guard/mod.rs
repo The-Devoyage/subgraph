@@ -1,11 +1,16 @@
 use async_graphql::{Error, ErrorExtensions};
-use bson::{Bson, Document};
+use bson::Document;
 use evalexpr::*;
 use http::HeaderMap;
 use log::{debug, error};
 use serde::{Deserialize, Serialize};
 
-use crate::configuration::subgraph::entities::{ScalarOptions, ServiceEntity};
+use crate::{
+    configuration::subgraph::entities::{ScalarOptions, ServiceEntity},
+    utils::{self, document::get_from_document::GetDocumentResultType},
+};
+
+use super::entities::service_entity_field::ServiceEntityField;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Guard {
@@ -26,8 +31,9 @@ impl Guard {
             debug!("Should Guard: {:?}", should_guard);
             if should_guard.is_err() {
                 error!("Guard Creation Error, {:?}", should_guard);
-                return Err(Error::new("Guard Creation Error")
-                    .extend_with(|_err, e| e.set(guard.name.clone(), "Required when guarding.")));
+                return Err(Error::new("Guard Creation Error").extend_with(|_err, e| {
+                    e.set(guard.name.clone(), should_guard.err().unwrap().to_string())
+                }));
             }
             if should_guard.unwrap() {
                 debug!("Guarding");
@@ -49,77 +55,94 @@ impl Guard {
         Ok(())
     }
 
-    pub fn get_from_document(
+    pub fn get_input_value(
         input_document: Document,
-        cleaned_key: String,
-        scalar: ScalarOptions,
-        is_list: bool,
-        argument: &Value,
+        mut fields: Vec<ServiceEntityField>,
     ) -> Result<Value, EvalexprError> {
-        debug!("Getting Value from Document");
-        debug!("Document: {:?}", input_document);
-        debug!("Key: {:?}", cleaned_key);
-        debug!("Scalar: {:?}", scalar);
-        debug!("Is List: {:?}", is_list);
-        if is_list {
-            if let Some(Bson::Array(documents)) = input_document.get(&cleaned_key) {
-                let mut values = Vec::new();
-                for document in documents {
-                    match scalar {
-                        ScalarOptions::String | ScalarOptions::ObjectID => {
-                            println!("Document: {:?}", document);
-                            let cleaned_string = document.to_string().replace("\"", "");
-                            values.push(Value::String(cleaned_string))
+        debug!("Getting from Document");
+        let document_value =
+            utils::document::Document::get_from_document(&input_document, fields[0].clone());
+
+        if document_value.is_err() {
+            return Err(EvalexprError::CustomMessage(
+                "Input field not found.".to_string(),
+            ));
+        }
+
+        match fields[0].scalar {
+            ScalarOptions::String
+            | ScalarOptions::Int
+            | ScalarOptions::Boolean
+            | ScalarOptions::ObjectID => {
+                if fields.len() > 1 {
+                    return Err(EvalexprError::CustomMessage(
+                        "Can not access property from primitive.".to_string(),
+                    ));
+                } else {
+                    match document_value.unwrap() {
+                        GetDocumentResultType::String(value) => {
+                            return Ok(Value::String(value));
                         }
-                        ScalarOptions::Int => {
-                            values.push(Value::Int(document.as_i32().unwrap() as i64))
+                        GetDocumentResultType::StringArray(value) => {
+                            return Ok(Value::Tuple(
+                                value.into_iter().map(Value::String).collect(),
+                            ));
                         }
-                        ScalarOptions::Boolean => {
-                            values.push(Value::Boolean(document.as_bool().unwrap()))
+                        GetDocumentResultType::Int(value) => {
+                            return Ok(Value::Int(value as i64));
                         }
-                        ScalarOptions::Object => {
-                            return Err(EvalexprError::CustomMessage("Object not supported".into()))
+                        GetDocumentResultType::IntArray(value) => {
+                            return Ok(Value::Tuple(
+                                value.into_iter().map(|x| Value::Int(x as i64)).collect(),
+                            ));
+                        }
+                        GetDocumentResultType::Boolean(value) => {
+                            return Ok(Value::Boolean(value));
+                        }
+                        GetDocumentResultType::BooleanArray(value) => {
+                            return Ok(Value::Tuple(
+                                value.into_iter().map(Value::Boolean).collect(),
+                            ));
+                        }
+                        _ => {
+                            return Err(EvalexprError::CustomMessage(
+                                "Value is not primitive.".to_string(),
+                            ));
                         }
                     }
                 }
-                debug!("Values: {:?}", values);
-                Ok(Value::from(values))
-            } else {
-                return Err(EvalexprError::CustomMessage("Could not get key".into()));
             }
-        } else {
-            if cleaned_key.contains(".") {
-                debug!("Nested Key");
-                let keys: Vec<&str> = cleaned_key.split(".").collect();
-                let nested_document = input_document.clone();
-                let first_key = keys.first().unwrap();
-                let nested_value = nested_document.get(first_key).unwrap();
-                //TODO: If key is * then need to iterate through and get values.
-                if let Some(document) = nested_value.as_document() {
-                    Guard::get_from_document(
-                        document.clone(),
-                        keys[1..].join(".").to_string(),
-                        scalar,
-                        is_list,
-                        argument,
-                    )
+            ScalarOptions::Object => {
+                if fields[0].list.unwrap_or(false) {
+                    let mut values = vec![];
+                    match document_value.unwrap() {
+                        GetDocumentResultType::DocumentArray(document) => {
+                            fields.remove(0);
+                            for document in document {
+                                values.push(
+                                    Guard::get_input_value(document, fields.clone()).unwrap(),
+                                );
+                            }
+                            Ok(Value::Tuple(values))
+                        }
+                        _ => {
+                            return Err(EvalexprError::CustomMessage(
+                                "Expected document array.".to_string(),
+                            ));
+                        }
+                    }
                 } else {
-                    return Err(EvalexprError::expected_string(argument.clone()));
-                }
-            } else {
-                match input_document.clone().get(&cleaned_key) {
-                    Some(v) => match scalar {
-                        ScalarOptions::String | ScalarOptions::ObjectID => {
-                            debug!("String Value: {:?}", v);
-                            Ok(Value::String(v.to_string()))
+                    fields.remove(0);
+                    match document_value.unwrap() {
+                        GetDocumentResultType::Document(value) => {
+                            Ok(Guard::get_input_value(value, fields).unwrap())
                         }
-                        ScalarOptions::Int => Ok(Value::Int(v.as_i32().unwrap() as i64)),
-                        ScalarOptions::Boolean => Ok(Value::Boolean(v.as_bool().unwrap())),
-                        ScalarOptions::Object => {
-                            return Err(EvalexprError::expected_string(argument.clone()))
+                        _ => {
+                            return Err(EvalexprError::CustomMessage(
+                                "Expected document object.".to_string(),
+                            ));
                         }
-                    },
-                    None => Err(EvalexprError::expected_string(argument.clone())),
+                    }
                 }
             }
         }
@@ -129,24 +152,23 @@ impl Guard {
         headers: HeaderMap,
         input_document: Document,
         entity: ServiceEntity,
-    ) -> Result<HashMapContext, EvalexprError> {
+    ) -> Result<HashMapContext, async_graphql::Error> {
         debug!("Creating Guard Context");
 
         let context = context_map! {
             "input" => Function::new(move |argument| {
                 debug!("Input Argument: {:?}", argument);
-                let key = argument.to_string();
-                let cleaned_key = key.replace("\"", "");
-                let field = ServiceEntity::get_field_from_entity(&entity.clone(), &cleaned_key);
-                if field.is_none() {
-                    return Err(EvalexprError::CustomMessage("Field not found".to_string()));
+                let key = argument.as_string()?;
+                let fields = ServiceEntity::get_fields_recursive(&entity.clone(), &key);
+                if fields.is_err() {
+                    return Err(EvalexprError::CustomMessage(
+                        "Input fields not found.".to_string(),
+                    ));
                 }
-                let scalar = field.clone().unwrap().scalar;
-                let is_list = field.unwrap().list.unwrap_or(false);
-                Guard::get_from_document(input_document.clone(), cleaned_key, scalar, is_list, argument)
+                Guard::get_input_value(input_document.clone(), fields.unwrap())
             }),
             "headers" => Function::new(move |argument| {
-                let key = argument.to_string();
+                let key = argument.as_string()?;
                 let cleaned_key = key.replace("\"", "");
                 let value = headers.get(&cleaned_key);
                 if value.is_none() {
@@ -162,6 +184,9 @@ impl Guard {
             }),
         };
         debug!("Guard Context: {:?}", context);
-        context
+        match context {
+            Ok(context) => Ok(context),
+            Err(e) => Err(async_graphql::Error::new(e.to_string())),
+        }
     }
 }

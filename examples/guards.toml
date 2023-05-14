@@ -13,14 +13,14 @@ service_name = "espresso"
 # name = "invalid_id"
 # if_expr = "input(\"price\") == 1"
 # then_msg = "Invalid ID - Permission Denied"
-[[service.guards]]
-name = "cities"
-if_expr = "contains(input(\"cities\"), \"Dallas\")"
-then_msg = "403 - Forbidden - Access to Dallas Invalid"
 # [[service.guards]]
-# name = "comments.user"
-# if_expr = "some(input(\"comments.*.user\"), \"nick\")"
+# name = "cities"
+# if_expr = "contains(input(\"cities\"), \"Dallas\")"
 # then_msg = "403 - Forbidden - Access to Dallas Invalid"
+[[service.guards]]
+name = "comments.user"
+if_expr = "contains(input(\"comments.user\"), \"nick\")"
+then_msg = "403 - Forbidden - Can not search by this name"
 
 [[service.data_sources]]
 [service.data_sources.SQL]

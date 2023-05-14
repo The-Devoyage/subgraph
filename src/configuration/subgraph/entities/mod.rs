@@ -2,9 +2,12 @@ use bson::spec::ElementType;
 use log::debug;
 use serde::{Deserialize, Serialize};
 
-use crate::graphql::schema::ResolverType;
+use service_entity_field::ServiceEntityField;
 
 use super::{cors::MethodOption, guard::Guard};
+use crate::graphql::schema::ResolverType;
+
+pub mod service_entity_field;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceEntityResolverConfig {
@@ -39,18 +42,6 @@ impl ScalarOptions {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct QueryPair(pub String, pub String);
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ServiceEntityField {
-    pub name: String,
-    pub guards: Option<Vec<Guard>>,
-    pub scalar: ScalarOptions,
-    pub required: Option<bool>,
-    pub exclude_from_input: Option<Vec<ResolverType>>,
-    pub exclude_from_output: Option<bool>,
-    pub fields: Option<Vec<ServiceEntityField>>,
-    pub list: Option<bool>,
-}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceEntityDataSource {
@@ -160,77 +151,79 @@ impl ServiceEntity {
         collection.unwrap()
     }
 
-    pub fn get_field_from_entity(
+    /// Returns vector of fields for a given entity.
+    /// If field is nested, it returns all fields leading to the final field.
+    pub fn get_fields_recursive(
         entity: &ServiceEntity,
         field_name: &str,
-    ) -> Option<ServiceEntityField> {
+    ) -> Result<Vec<ServiceEntityField>, async_graphql::Error> {
         debug!("Get Field: {:?}", field_name);
-        let fields = &entity.fields;
+        let entity_fields = &entity.fields;
         if field_name.contains(".") {
             debug!("Field is Nested");
-            let mut field_names: Vec<&str> = field_name.split(".").collect();
-            let first_field_name = field_names[0];
-            let first_field = ServiceEntity::get_field_from_entity(entity, first_field_name);
-            if first_field.is_none() {
-                return None;
-            }
-            let first_field = first_field.unwrap();
-            let fields = first_field.fields;
-            if fields.is_none() {
-                return None;
+            let mut fields = vec![];
+            let mut field_names = ServiceEntityField::split_field_names(field_name)?;
+            let first_field = ServiceEntity::get_field(entity, field_names[0])?;
+            fields.push(first_field.clone());
+            let nested_fields = first_field.fields;
+            if nested_fields.is_none() {
+                return Ok(fields);
             }
             field_names.remove(0);
-            let field =
-                ServiceEntity::get_field_from_fields(fields.unwrap(), field_names.join("."));
-            if field.is_none() {
-                return None;
-            }
-            debug!("Found Field: {:?}", field);
-            return Some(field.unwrap());
+            let rest_fields = ServiceEntityField::get_fields_recursive(
+                nested_fields.unwrap(),
+                field_names.join("."),
+            )?;
+            fields.extend(rest_fields);
+            return Ok(fields);
         } else {
-            for field in fields {
+            for field in entity_fields {
                 if field.name == field_name {
-                    return Some(field.clone());
+                    return Ok(vec![field.clone()]);
                 }
             }
+            Err(async_graphql::Error::new(format!(
+                "Field {} not found in entity {}",
+                field_name, entity.name
+            )))
         }
-        None
     }
 
-    pub fn get_field_from_fields(
-        fields: Vec<ServiceEntityField>,
-        field_name: String,
-    ) -> Option<ServiceEntityField> {
-        debug!("Get Field From Fields: {:?}", field_name);
+    /// Gets a field from a given entity.
+    /// If field is nested, only returns nested field.
+    pub fn get_field(
+        entity: &ServiceEntity,
+        field_name: &str,
+    ) -> Result<ServiceEntityField, async_graphql::Error> {
+        debug!("Get Field: {:?}", field_name);
+        let entity_fields = &entity.fields;
         if field_name.contains(".") {
             debug!("Field is Nested");
-            let mut field_names: Vec<&str> = field_name.split(".").collect();
+            let mut field_names = ServiceEntityField::split_field_names(field_name)?;
             let first_field_name = field_names[0];
-            let first_field =
-                ServiceEntity::get_field_from_fields(fields.clone(), first_field_name.to_string());
-            if first_field.is_none() {
-                return None;
-            }
-            let first_field = first_field.unwrap();
-            let fields = first_field.fields;
-            if fields.is_none() {
-                return None;
+            let first_field = ServiceEntity::get_field(entity, first_field_name)?;
+            let nested_fields = first_field.fields;
+            if nested_fields.is_none() {
+                return Err(async_graphql::Error::new(format!(
+                    "Field {} is not a nested field",
+                    field_name
+                )));
             }
             field_names.remove(0);
             let field =
-                ServiceEntity::get_field_from_fields(fields.unwrap(), field_names.join("."));
-            if field.is_none() {
-                return None;
-            }
+                ServiceEntityField::get_field(nested_fields.unwrap(), field_names.join("."))?;
             debug!("Found Field: {:?}", field);
-            return Some(field.unwrap());
+            return Ok(field);
         } else {
-            for field in fields {
+            for field in entity_fields {
                 if field.name == field_name {
-                    return Some(field.clone());
+                    return Ok(field.clone());
                 }
             }
+            Err(async_graphql::Error::new(format!(
+                "Field {} not found",
+                field_name
+            )))
         }
-        None
     }
 }
