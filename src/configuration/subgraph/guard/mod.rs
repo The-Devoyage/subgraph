@@ -81,25 +81,46 @@ impl Guard {
                 } else {
                     match document_value.unwrap() {
                         GetDocumentResultType::String(value) => {
+                            debug!("Value: {:?}", value);
                             return Ok(Value::String(value));
                         }
                         GetDocumentResultType::StringArray(value) => {
+                            debug!("Value: {:?}", value);
+                            if value.len() == 0 {
+                                return Err(EvalexprError::CustomMessage(
+                                    "Input Value Required".to_string(),
+                                ));
+                            }
                             return Ok(Value::Tuple(
                                 value.into_iter().map(Value::String).collect(),
                             ));
                         }
                         GetDocumentResultType::Int(value) => {
+                            debug!("Value: {:?}", value);
                             return Ok(Value::Int(value as i64));
                         }
                         GetDocumentResultType::IntArray(value) => {
+                            debug!("Value: {:?}", value);
+                            if value.len() == 0 {
+                                return Err(EvalexprError::CustomMessage(
+                                    "Input Value Required".to_string(),
+                                ));
+                            }
                             return Ok(Value::Tuple(
                                 value.into_iter().map(|x| Value::Int(x as i64)).collect(),
                             ));
                         }
                         GetDocumentResultType::Boolean(value) => {
+                            debug!("Value: {:?}", value);
                             return Ok(Value::Boolean(value));
                         }
                         GetDocumentResultType::BooleanArray(value) => {
+                            debug!("Value: {:?}", value);
+                            if value.len() == 0 {
+                                return Err(EvalexprError::CustomMessage(
+                                    "Input Value Required".to_string(),
+                                ));
+                            }
                             return Ok(Value::Tuple(
                                 value.into_iter().map(Value::Boolean).collect(),
                             ));
@@ -123,6 +144,7 @@ impl Guard {
                                     Guard::get_input_value(document, fields.clone()).unwrap(),
                                 );
                             }
+                            debug!("Values: {:?}", values);
                             Ok(Value::Tuple(values))
                         }
                         _ => {
@@ -162,10 +184,16 @@ impl Guard {
                 let fields = ServiceEntity::get_fields_recursive(&entity.clone(), &key);
                 if fields.is_err() {
                     return Err(EvalexprError::CustomMessage(
-                        "Input fields not found.".to_string(),
+                        "Fields not found.".to_string(),
                     ));
                 }
-                Guard::get_input_value(input_document.clone(), fields.unwrap())
+                let input_value = Guard::get_input_value(input_document.clone(), fields.unwrap());
+                if input_value.is_err() {
+                    return Err(EvalexprError::CustomMessage(
+                        input_value.unwrap_err().to_string(),
+                    ));
+                }
+                input_value
             }),
             "headers" => Function::new(move |argument| {
                 let key = argument.as_string()?;
