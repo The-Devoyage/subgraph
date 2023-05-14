@@ -4,13 +4,17 @@ use std::{fs::File, io::Read};
 
 use crate::cli_args::CliArgs;
 
+use self::guard::Guard;
+
 pub mod cors;
 pub mod data_sources;
 pub mod entities;
+pub mod guard;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceConfig {
     pub service_name: String,
+    pub guards: Option<Vec<Guard>>,
     pub entities: Vec<entities::ServiceEntity>,
     pub data_sources: Vec<data_sources::ServiceDataSourceConfig>,
     pub cors: Option<cors::CorsConfigOptions>,

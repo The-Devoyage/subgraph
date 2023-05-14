@@ -1,5 +1,7 @@
 use crate::{
-    configuration::subgraph::entities::{ScalarOptions, ServiceEntity, ServiceEntityField},
+    configuration::subgraph::entities::{
+        service_entity_field::ServiceEntityField, ScalarOptions, ServiceEntity,
+    },
     data_sources::{sql::services::ResponseRow, DataSource, DataSources},
 };
 

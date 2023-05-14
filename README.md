@@ -351,7 +351,7 @@ By default, all resolvers are created for all entities. This is with the excepti
 
 | Entity Data Source Config | Description                                                         | Type              |
 | ------------------------- | ------------------------------------------------------------------- | ----------------- |
-| from                      | The name of the associated HTTP Data Source.                        | String            |
+| from*                     | The name of the associated HTTP Data Source.                        | String            |
 | collection                | The name of the associated Mongo Collection.                        | String            |
 | table                     | The name of the associated SQL Table.                               | String            |
 | path                      | The path/endpoint relative to the associated HTTP Data Source Path. | String            |
