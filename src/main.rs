@@ -5,7 +5,7 @@ use async_graphql::{
 use async_graphql_warp::{GraphQLBadRequest, GraphQLResponse};
 use clap::Parser;
 use env_logger::Env;
-use http::StatusCode;
+use http::{HeaderMap, StatusCode};
 use log::info;
 use std::convert::Infallible;
 use warp::{http::Response as HttpResponse, Filter, Rejection};
@@ -14,6 +14,7 @@ mod cli_args;
 mod configuration;
 mod data_sources;
 mod graphql;
+mod utils;
 
 #[tokio::main]
 async fn main() {
@@ -37,13 +38,15 @@ async fn main() {
     let schema =
         graphql::schema::ServiceSchemaBuilder::new(subgraph_config.clone(), data_sources).build();
 
-    let graphql_post = async_graphql_warp::graphql(schema).and_then(
-        |(schema, request): (Schema, async_graphql::Request)| async move {
-            let dynamic_request = schema.execute(request).await;
-            let response = GraphQLResponse::from(dynamic_request);
-            Ok::<_, Infallible>(response)
-        },
-    );
+    let graphql_post = async_graphql_warp::graphql(schema)
+        .and(warp::header::headers_cloned())
+        .and_then(
+            |(schema, request): (Schema, async_graphql::Request), headers: HeaderMap| async move {
+                let dynamic_request = schema.execute(request.data(headers)).await;
+                let response = GraphQLResponse::from(dynamic_request);
+                Ok::<_, Infallible>(response)
+            },
+        );
 
     let graphql_playground = warp::path::end().and(warp::get()).map(|| {
         HttpResponse::builder()

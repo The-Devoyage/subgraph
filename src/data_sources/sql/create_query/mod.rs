@@ -87,7 +87,7 @@ impl SqlDataSource {
 
                 let field = ServiceEntity::get_field(entity, key);
 
-                if field.is_none() {
+                if field.is_err() {
                     panic!("Field not found: {:?}", key);
                 }
 

@@ -657,6 +657,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "evalexpr"
+version = "9.0.0"
+
+[[package]]
 name = "event-listener"
 version = "2.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2508,7 +2512,7 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "subgraph"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "async-graphql",
  "async-graphql-warp",
@@ -2516,6 +2520,7 @@ dependencies = [
  "chrono",
  "clap",
  "env_logger",
+ "evalexpr",
  "http",
  "http-serde",
  "json",
