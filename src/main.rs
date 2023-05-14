@@ -14,6 +14,7 @@ mod cli_args;
 mod configuration;
 mod data_sources;
 mod graphql;
+mod utils;
 
 #[tokio::main]
 async fn main() {

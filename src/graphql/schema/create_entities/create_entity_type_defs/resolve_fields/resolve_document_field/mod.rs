@@ -207,7 +207,7 @@ impl ServiceSchemaBuilder {
         if value.is_none() {
             return Ok(Value::Null);
         }
-        debug!("---Found Object Value: {:?}", value);
+        debug!("Found Object Value: {:?}", value);
 
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
