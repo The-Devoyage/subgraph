@@ -1,10 +1,10 @@
 [service]
 service_name = "espresso"
 
-# [[service.guards]]
-# name = "invalid_access_key"
-# if_expr = "headers(\"authorization\") != \"1234\""
-# then_msg = "Invalid Access Key - Permission Denied"
+[[service.guards]]
+name = "invalid_access_key"
+if_expr = "headers(\"authorization\") != \"1234\""
+then_msg = "Invalid Access Key - Permission Denied"
 # [[service.guards]]
 # name = "invalid_role"
 # if_expr = "\"root\" != \"admin\""
@@ -19,8 +19,12 @@ service_name = "espresso"
 # then_msg = "403 - Forbidden - Access to Dallas Invalid"
 # [[service.guards]]
 # name = "comments.user"
-# if_expr = "contains_any(input(\"comments.user\"), (\"nick\", \"joey\"))"
+# if_expr = "contains_any(input(\"comments.user\"), (\"sarah\", \"nick\"))"
 # then_msg = "403 - Forbidden - Can not search by this name"
+# [[service.guards]]
+# name = "attributes.ibu"
+# if_expr = "input(\"attributes.ibu\") == 88"
+# then_msg = "403 - Forbidden - Can not search by this number"
 
 [[service.data_sources]]
 [service.data_sources.SQL]
