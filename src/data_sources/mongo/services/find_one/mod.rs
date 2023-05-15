@@ -16,7 +16,7 @@ impl Services {
 
         debug!("Created Collection: {:?}", collection);
 
-        let filter = Services::create_nested_fields(&filter);
+        let filter = Services::create_nested_find_filter(&filter);
 
         debug!("Created Filter: {:?}", filter);
 
