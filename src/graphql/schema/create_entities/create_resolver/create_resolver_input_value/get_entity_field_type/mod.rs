@@ -91,7 +91,7 @@ impl ServiceSchemaBuilder {
             | ResolverType::FindMany
             | ResolverType::UpdateOne
             | ResolverType::UpdateMany => {
-                if true {
+                if is_list {
                     TypeRef::named_nn_list(TypeRef::BOOLEAN)
                 } else {
                     TypeRef::named(TypeRef::BOOLEAN)
