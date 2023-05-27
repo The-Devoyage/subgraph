@@ -281,8 +281,8 @@ Guards are boolean expressions that if evaluated true will block access to the s
 
 - Service Guards - Guards access to the entire service. Evaluated before query logic is executed.
 - Resolver Guards - Guards access to the entire resolver. Evaluated on a per resolver basis, before query logic is executed.
-- Entity Guards - Guards access to the entire entity. Evaluated after the query logic has been executed.
-- Field Guards - Guards access when field is present and truthy evaluation. Evaluated after the query logic has been executed.
+- Entity Guards - Guards access to the entire entity. Evaluated before queyr logic.
+- Field Guards - Guards access when field is present and truthy evaluation. Evaluated before query logic, if field is present in field list.
 
 Guards grant access to various datapoints such as Headers and Input values.
 

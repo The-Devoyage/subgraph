@@ -1,10 +1,17 @@
-use async_graphql::dynamic::{Field, FieldFuture, TypeRef};
+use async_graphql::{
+    dynamic::{Field, FieldFuture, TypeRef},
+    SelectionField,
+};
 use bson::Document;
+use evalexpr::HashMapContext;
 use http::HeaderMap;
 use log::{debug, info};
 
 use crate::{
-    configuration::subgraph::{entities::ServiceEntity, guard::Guard},
+    configuration::subgraph::{
+        entities::{service_entity_field::ServiceEntityField, ServiceEntity},
+        guard::Guard,
+    },
     data_sources::DataSources,
 };
 
@@ -53,6 +60,54 @@ impl ServiceSchemaBuilder {
         resolver_type
     }
 
+    pub fn guard_nested(
+        selection_field: SelectionField,
+        fields: Vec<ServiceEntityField>,
+        field_name: &str,
+        guard_context: HashMapContext,
+    ) -> Result<(), async_graphql::Error> {
+        debug!("Guard Nested");
+        debug!("Fields: {:?}", fields);
+        let field = fields
+            .iter()
+            .find(|field| field.name == field_name)
+            .unwrap();
+        let guards = ServiceEntityField::get_guards(field.clone());
+        debug!("Field Guards: {:?}", guards);
+
+        if guards.is_some() {
+            Guard::check(&guards.unwrap(), &guard_context)?;
+        }
+
+        if selection_field.selection_set().count() > 0 {
+            for selection_field in selection_field.selection_set().into_iter() {
+                ServiceSchemaBuilder::guard_nested(
+                    selection_field,
+                    field.fields.clone().unwrap(),
+                    selection_field.name(),
+                    guard_context.clone(),
+                )?;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn guard_field(
+        selection_field: SelectionField,
+        entity: &ServiceEntity,
+        guard_context: HashMapContext,
+    ) -> Result<(), async_graphql::Error> {
+        debug!("Guard Field");
+        let field_name = selection_field.name();
+        let fields = ServiceEntityField::get_fields_recursive(
+            entity.fields.clone(),
+            field_name.to_string(),
+        )?;
+        ServiceSchemaBuilder::guard_nested(selection_field, fields, field_name, guard_context)?;
+        Ok(())
+    }
+
     pub fn create_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
         info!("Creating Resolver");
 
@@ -66,17 +121,6 @@ impl ServiceSchemaBuilder {
         } else {
             None
         };
-        let field_guards = entity
-            .fields
-            .iter()
-            .flat_map(|field| {
-                if field.guards.is_some() {
-                    field.guards.clone().unwrap().clone()
-                } else {
-                    Vec::new()
-                }
-            })
-            .collect::<Vec<Guard>>();
 
         let resolver = Field::new(
             resolver_config.resolver_name,
@@ -86,7 +130,6 @@ impl ServiceSchemaBuilder {
                 let service_guards = service_guards.clone();
                 let entity_guards = entity_guards.clone();
                 let resolver_guards = resolver_guards.clone();
-                let field_guards = field_guards.clone();
 
                 FieldFuture::new(async move {
                     let data_sources = ctx.data_unchecked::<DataSources>().clone();
@@ -111,8 +154,19 @@ impl ServiceSchemaBuilder {
                         Guard::check(&entity_guards.unwrap(), &guard_context)?;
                     }
 
-                    if field_guards.len() > 0 {
-                        Guard::check(&field_guards, &guard_context)?;
+                    let selection_fields = ctx
+                        .field()
+                        .selection_set()
+                        .into_iter()
+                        .map(|f| f)
+                        .collect::<Vec<SelectionField>>();
+
+                    for selection_field in selection_fields {
+                        ServiceSchemaBuilder::guard_field(
+                            selection_field,
+                            &cloned_entity,
+                            guard_context.clone(),
+                        )?;
                     }
 
                     let results =
