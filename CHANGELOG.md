@@ -2,6 +2,11 @@
 
 ## [v0.0.9]
 
+### Added
+
+- Guards to assist with Authorization.
+- Port and Log Level options now supported in config file.
+
 ### Fixed
 
 - Mongo filter support for arrays and array of objects.
