@@ -2,7 +2,7 @@ use log::{debug, error};
 use serde::{Deserialize, Serialize};
 use std::{fs::File, io::Read};
 
-use crate::cli_args::CliArgs;
+use crate::{cli_args::CliArgs, utils::log_level::LogLevelEnum};
 
 use self::guard::Guard;
 
@@ -14,6 +14,8 @@ pub mod guard;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceConfig {
     pub service_name: String,
+    pub port: Option<u16>,
+    pub log_level: Option<LogLevelEnum>,
     pub guards: Option<Vec<Guard>>,
     pub entities: Vec<entities::ServiceEntity>,
     pub data_sources: Vec<data_sources::ServiceDataSourceConfig>,
