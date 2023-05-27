@@ -12,11 +12,11 @@ pub struct CliArgs {
 
     /// Service log level.
     #[serde(rename = "log-level")]
-    #[arg(short, long, value_parser = PossibleValuesParser::new(["info", "debug", "info", "warn", "error"]), default_value = "info")]
+    #[arg(short, long, value_parser = PossibleValuesParser::new(["info", "debug", "info", "warn", "error"]))]
     pub log_level: Option<String>,
 
     // The port this service runs on.
-    #[arg(short, long, default_value = "0")]
+    #[arg(short, long)]
     pub port: Option<u16>,
 
     // Mongo DB Connection URI String
