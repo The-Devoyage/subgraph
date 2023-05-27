@@ -96,6 +96,15 @@ impl ServiceEntityField {
         }
     }
 
+    pub fn get_guards(field: ServiceEntityField) -> Option<Vec<Guard>> {
+        debug!("Get Guards From Field: {:?}", field);
+        let field_guards = field.guards.clone();
+        if field_guards.is_none() {
+            return None;
+        }
+        Some(field.guards.unwrap())
+    }
+
     /// Split field names into a vector of field names.
     /// Ex: `user.name` will return `["user", "name"]`
     pub fn split_field_names(field_name: &str) -> Result<Vec<&str>, async_graphql::Error> {

@@ -68,7 +68,7 @@ name = "name"
 scalar = "String"
 required = true
 # guards = [
-#   {name = "name", if_expr = "1 > 0", then_msg = "Invalid Name - Field Level" },
+#   {name = "uniquename", if_expr = "1 > 0", then_msg = "Invalid Name - Field Level" },
 #   {name = "name", if_expr = "1 > 0", then_msg = "Invalid Name - Field Level - Too Longgg" },
 # ]
 [[service.entities.fields]]
@@ -99,6 +99,9 @@ exclude_from_input = ["CreateOne"]
 name = "name"
 scalar = "String"
 required = true
+guards = [
+  {name = "beername", if_expr = "1 > 0", then_msg = "Invalid beer name - Field Level" },
+]
 
 [[service.entities.fields]]
 name = "cities"
