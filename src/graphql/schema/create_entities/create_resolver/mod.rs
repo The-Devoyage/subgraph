@@ -79,6 +79,11 @@ impl ServiceSchemaBuilder {
             Guard::check(&guards.unwrap(), &guard_context)?;
         }
 
+        if field.as_type.is_some() {
+            //NOTE: Guards for as type entities?
+            return Ok(());
+        }
+
         if selection_field.selection_set().count() > 0 {
             for selection_field in selection_field.selection_set().into_iter() {
                 ServiceSchemaBuilder::guard_nested(

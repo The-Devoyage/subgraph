@@ -1,5 +1,7 @@
 [service]
 service_name = "espresso"
+port = 3030
+log_level = "debug"
 
 [[service.data_sources]]
 [service.data_sources.SQL]

@@ -15,6 +15,7 @@ pub struct ServiceEntityField {
     pub exclude_from_output: Option<bool>,
     pub fields: Option<Vec<ServiceEntityField>>,
     pub list: Option<bool>,
+    pub as_type: Option<String>,
 }
 
 impl ServiceEntityField {

@@ -1,7 +1,5 @@
 use crate::{
-    configuration::subgraph::entities::{
-        service_entity_field::ServiceEntityField, ScalarOptions, ServiceEntity,
-    },
+    configuration::subgraph::entities::{service_entity_field::ServiceEntityField, ServiceEntity},
     data_sources::{sql::services::ResponseRow, DataSource, DataSources},
 };
 
@@ -14,133 +12,17 @@ use bson::{to_document, Document};
 use json::JsonValue;
 use log::debug;
 
+pub mod get_field_type_ref;
 pub mod resolve_fields;
 
 #[derive(Debug)]
 pub struct TypeRefsAndDefs {
     type_ref: TypeRef,
     type_defs: Vec<Object>,
+    is_root_object: bool,
 }
 
 impl ServiceSchemaBuilder {
-    pub fn get_field_type_ref(
-        entity_field: &ServiceEntityField,
-        data_sources: &DataSources,
-        entity: &ServiceEntity,
-    ) -> TypeRefsAndDefs {
-        debug!("Getting Field Type Ref And Defs");
-        let mut type_defs = Vec::new();
-
-        let type_ref = match entity_field.required {
-            Some(true) => match entity_field.scalar.clone() {
-                ScalarOptions::String => {
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_nn_list_nn(TypeRef::STRING)
-                    } else {
-                        TypeRef::named_nn(TypeRef::STRING)
-                    }
-                }
-                ScalarOptions::Int => {
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_nn_list_nn(TypeRef::INT)
-                    } else {
-                        TypeRef::named_nn(TypeRef::INT)
-                    }
-                }
-                ScalarOptions::Boolean => {
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_nn_list_nn(TypeRef::BOOLEAN)
-                    } else {
-                        TypeRef::named_nn(TypeRef::BOOLEAN)
-                    }
-                }
-                ScalarOptions::ObjectID => {
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_nn_list_nn("ObjectID")
-                    } else {
-                        TypeRef::named_nn("ObjectID")
-                    }
-                }
-                ScalarOptions::Object => {
-                    let object_type_defs = ServiceSchemaBuilder::create_type_defs(
-                        data_sources,
-                        entity,
-                        entity_field.name.clone(),
-                        entity_field.fields.clone().unwrap_or(Vec::new()),
-                        false,
-                    );
-
-                    for object in object_type_defs {
-                        type_defs.push(object);
-                    }
-
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_nn_list_nn(entity_field.name.clone())
-                    } else {
-                        TypeRef::named_nn(entity_field.name.clone())
-                    }
-                }
-            },
-            _ => match entity_field.scalar.clone() {
-                ScalarOptions::String => {
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_list_nn(TypeRef::STRING)
-                    } else {
-                        TypeRef::named(TypeRef::STRING)
-                    }
-                }
-                ScalarOptions::Int => {
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_list_nn(TypeRef::INT)
-                    } else {
-                        TypeRef::named(TypeRef::INT)
-                    }
-                }
-                ScalarOptions::Boolean => {
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_list_nn(TypeRef::BOOLEAN)
-                    } else {
-                        TypeRef::named(TypeRef::BOOLEAN)
-                    }
-                }
-                ScalarOptions::ObjectID => {
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_list_nn("ObjectID")
-                    } else {
-                        TypeRef::named("ObjectID")
-                    }
-                }
-                ScalarOptions::Object => {
-                    let object_type_defs = ServiceSchemaBuilder::create_type_defs(
-                        data_sources,
-                        entity,
-                        entity_field.name.clone(),
-                        entity_field.fields.clone().unwrap_or(vec![]),
-                        false,
-                    );
-
-                    for object in object_type_defs {
-                        type_defs.push(object)
-                    }
-
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_list_nn(entity_field.name.clone())
-                    } else {
-                        TypeRef::named(entity_field.name.clone())
-                    }
-                }
-            },
-        };
-
-        debug!("Created Type Ref: {:?}", type_ref);
-        debug!("Created Type Defs: {:?}", type_defs);
-
-        TypeRefsAndDefs {
-            type_ref,
-            type_defs,
-        }
-    }
-
     pub fn create_field(
         entity_field: ServiceEntityField,
         type_ref: TypeRef,
@@ -293,7 +175,6 @@ impl ServiceSchemaBuilder {
         entity: &ServiceEntity,
         type_name: String,
         fields: Vec<ServiceEntityField>,
-        is_root_object: bool,
     ) -> Vec<Object> {
         let mut type_defs = Vec::new();
         debug!("Creating Type For: `{}`", type_name);
@@ -322,7 +203,7 @@ impl ServiceSchemaBuilder {
                 cloned_entity_field,
                 type_defs_and_refs.type_ref,
                 data_source.clone(),
-                is_root_object,
+                type_defs_and_refs.is_root_object,
             )
         }
 
@@ -349,7 +230,6 @@ impl ServiceSchemaBuilder {
             entity,
             entity.name.clone(),
             entity.fields.clone(),
-            true,
         );
 
         self = self.register_types(entity_type_defs);

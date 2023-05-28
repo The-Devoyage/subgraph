@@ -11,6 +11,7 @@
 
 - Mongo filter support for arrays and array of objects.
 - List options for boolean input scalars fixed.
+- Object ID lists can now be resolved.
 
 ## [v0.0.8]
 
