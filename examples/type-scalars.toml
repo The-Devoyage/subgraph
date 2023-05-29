@@ -35,5 +35,6 @@ scalar = "ObjectID"
 required = false
 list = true
 as_type = "user"
+join_on = "_id"
 
 

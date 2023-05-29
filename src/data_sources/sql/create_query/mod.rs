@@ -1,4 +1,4 @@
-use async_graphql::dynamic::{ObjectAccessor, ValueAccessor};
+use bson::Document;
 use log::debug;
 
 use crate::{
@@ -14,7 +14,7 @@ use super::{SqlDataSource, SqlQuery};
 
 impl SqlDataSource {
     pub fn create_query(
-        input: &ValueAccessor<'_>,
+        input: Document,
         resolver_type: ResolverType,
         table_name: &str,
         dialect: DialectEnum,
@@ -22,10 +22,8 @@ impl SqlDataSource {
     ) -> SqlQuery {
         debug!("Creating SQL Query");
 
-        let input_object = input.object().unwrap();
-
         let (where_keys, where_values, value_keys, values) =
-            SqlDataSource::get_key_data(&input_object, entity, &resolver_type);
+            SqlDataSource::get_key_data(&input, entity, &resolver_type);
 
         let query = match resolver_type {
             ResolverType::FindOne => {
@@ -49,6 +47,7 @@ impl SqlDataSource {
                 &dialect,
                 &where_keys,
             ),
+            _ => panic!("Invalid resolver type"),
         };
 
         let sql_query = SqlQuery {
@@ -66,7 +65,7 @@ impl SqlDataSource {
     }
 
     pub fn get_key_data(
-        input_object: &ObjectAccessor,
+        input_object: &Document,
         entity: &ServiceEntity,
         resolver_type: &ResolverType,
     ) -> (
@@ -83,7 +82,7 @@ impl SqlDataSource {
         for (key, value) in input_object.iter() {
             if key != "query" {
                 debug!("Processing Key: {:?}", key);
-                debug!("Processing Value: {:?}", value.string());
+                debug!("Processing Value: {:?}", value.to_string());
 
                 let field = ServiceEntity::get_field(entity, key);
 
@@ -96,35 +95,35 @@ impl SqlDataSource {
                     ResolverType::CreateOne
                     | ResolverType::UpdateOne
                     | ResolverType::UpdateMany => false,
+                    _ => panic!("Invalid resolver type"),
                 };
 
                 match field.unwrap().scalar {
                     ScalarOptions::String => {
                         if is_where_clause {
                             where_keys.push(key.to_string());
-                            where_values
-                                .push(SqlValueEnum::String(value.string().unwrap().to_string()));
+                            where_values.push(SqlValueEnum::String(value.to_string()));
                         } else {
                             value_keys.push(key.to_string());
-                            values.push(SqlValueEnum::String(value.string().unwrap().to_string()));
+                            values.push(SqlValueEnum::String(value.to_string()));
                         }
                     }
                     ScalarOptions::Int => {
                         if is_where_clause {
                             where_keys.push(key.to_string());
-                            where_values.push(SqlValueEnum::Int(value.i64().unwrap() as i32));
+                            where_values.push(SqlValueEnum::Int(value.as_i64().unwrap() as i32));
                         } else {
                             value_keys.push(key.to_string());
-                            values.push(SqlValueEnum::Int(value.i64().unwrap() as i32));
+                            values.push(SqlValueEnum::Int(value.as_i64().unwrap() as i32));
                         }
                     }
                     ScalarOptions::Boolean => {
                         if is_where_clause {
                             where_keys.push(key.to_string());
-                            where_values.push(SqlValueEnum::Bool(value.boolean().unwrap()));
+                            where_values.push(SqlValueEnum::Bool(value.as_bool().unwrap()));
                         } else {
                             value_keys.push(key.to_string());
-                            values.push(SqlValueEnum::Bool(value.boolean().unwrap()));
+                            values.push(SqlValueEnum::Bool(value.as_bool().unwrap()));
                         }
                     }
                     _ => {
@@ -133,17 +132,16 @@ impl SqlDataSource {
                 }
             } else if key == "query" {
                 debug!("Processing Where Query");
-                let query_object = value.object().unwrap();
+                let query_object = value.as_document().unwrap();
 
                 for (key, value) in query_object.iter() {
                     where_keys.push(key.to_string());
-                    if value.string().is_ok() {
-                        where_values
-                            .push(SqlValueEnum::String(value.string().unwrap().to_string()));
-                    } else if value.i64().is_ok() {
-                        where_values.push(SqlValueEnum::Int(value.i64().unwrap() as i32));
-                    } else if value.boolean().is_ok() {
-                        where_values.push(SqlValueEnum::Bool(value.boolean().unwrap()));
+                    if value.as_str().is_some() {
+                        where_values.push(SqlValueEnum::String(value.to_string()));
+                    } else if value.as_i64().is_some() {
+                        where_values.push(SqlValueEnum::Int(value.as_i64().unwrap() as i32));
+                    } else if value.as_bool().is_some() {
+                        where_values.push(SqlValueEnum::Bool(value.as_bool().unwrap()));
                     }
                 }
             }

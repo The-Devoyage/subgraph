@@ -1,11 +1,12 @@
 use crate::{
     configuration::subgraph::entities::{service_entity_field::ServiceEntityField, ServiceEntity},
     data_sources::{sql::services::ResponseRow, DataSource, DataSources},
+    graphql::schema::ResolverType,
 };
 
 use super::ServiceSchemaBuilder;
 use async_graphql::{
-    dynamic::{Field, FieldFuture, Object, TypeRef},
+    dynamic::{Field, FieldFuture, InputValue, Object, TypeRef},
     ErrorExtensions,
 };
 use bson::{to_document, Document};
@@ -171,12 +172,14 @@ impl ServiceSchemaBuilder {
     }
 
     pub fn create_type_defs(
+        &self,
         data_sources: &DataSources,
         entity: &ServiceEntity,
         type_name: String,
         fields: Vec<ServiceEntityField>,
     ) -> Vec<Object> {
         let mut type_defs = Vec::new();
+
         debug!("Creating Type For: `{}`", type_name);
         let mut type_def = Object::new(type_name);
 
@@ -188,8 +191,7 @@ impl ServiceSchemaBuilder {
             }
 
             debug!("Creating Field Def For:\n {:?}", entity_field);
-            let type_defs_and_refs =
-                ServiceSchemaBuilder::get_field_type_ref(&entity_field, &data_sources, entity);
+            let type_defs_and_refs = self.get_field_type_ref(&entity_field, &data_sources, entity);
 
             debug!("Field Type Defs and Ref, {:?}", type_defs_and_refs);
 
@@ -197,14 +199,34 @@ impl ServiceSchemaBuilder {
                 type_defs.push(object_type_def);
             }
 
-            let cloned_entity_field = entity_field.clone();
-            type_def = ServiceSchemaBuilder::add_field(
-                type_def,
-                cloned_entity_field,
-                type_defs_and_refs.type_ref,
-                data_source.clone(),
-                type_defs_and_refs.is_root_object,
-            )
+            if entity_field.as_type.is_some() {
+                debug!("Creating As Type Resolver For: {:?}", entity_field);
+                let list = entity_field.list.unwrap_or(false);
+                let as_type_resolver = self.create_resolver(
+                    entity,
+                    ResolverType::InternalType,
+                    Some(entity_field.name.clone()),
+                    Some(list),
+                );
+                let resolver_input_name = ServiceSchemaBuilder::get_resolver_input_name(
+                    &entity.name,
+                    &ResolverType::InternalType,
+                    Some(list),
+                );
+                type_def = type_def.field(as_type_resolver.argument(InputValue::new(
+                    format!("{}", entity_field.name),
+                    TypeRef::named_nn(resolver_input_name),
+                )));
+            } else {
+                let cloned_entity_field = entity_field.clone();
+                type_def = ServiceSchemaBuilder::add_field(
+                    type_def,
+                    cloned_entity_field,
+                    type_defs_and_refs.type_ref,
+                    data_source.clone(),
+                    type_defs_and_refs.is_root_object,
+                );
+            }
         }
 
         type_defs.push(type_def);
@@ -225,7 +247,7 @@ impl ServiceSchemaBuilder {
 
     pub fn create_entity_type_defs(mut self, entity: &ServiceEntity) -> Self {
         debug!("Creating Types For Entity: {}", &entity.name);
-        let entity_type_defs = ServiceSchemaBuilder::create_type_defs(
+        let entity_type_defs = self.create_type_defs(
             &self.data_sources.clone(),
             entity,
             entity.name.clone(),
