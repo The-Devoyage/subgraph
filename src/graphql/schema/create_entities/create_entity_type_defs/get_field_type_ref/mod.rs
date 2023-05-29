@@ -11,6 +11,7 @@ use log::debug;
 
 impl ServiceSchemaBuilder {
     pub fn get_field_type_ref(
+        &self,
         entity_field: &ServiceEntityField,
         data_sources: &DataSources,
         entity: &ServiceEntity,
@@ -18,16 +19,12 @@ impl ServiceSchemaBuilder {
         debug!("Getting Field Type Ref And Defs");
 
         if entity_field.as_type.is_some() {
-            return ServiceSchemaBuilder::create_internal_type_field_refs(entity_field);
+            return self.create_internal_type_field_refs(entity_field);
         }
 
         let type_refs_and_defs = match entity_field.required {
-            Some(true) => {
-                ServiceSchemaBuilder::create_required_type_refs(entity, entity_field, data_sources)
-            }
-            _ => {
-                ServiceSchemaBuilder::create_optional_type_refs(entity, entity_field, data_sources)
-            }
+            Some(true) => self.create_required_type_refs(entity, entity_field, data_sources),
+            _ => self.create_optional_type_refs(entity, entity_field, data_sources),
         };
 
         debug!(
@@ -38,7 +35,10 @@ impl ServiceSchemaBuilder {
         type_refs_and_defs
     }
 
-    pub fn create_internal_type_field_refs(entity_field: &ServiceEntityField) -> TypeRefsAndDefs {
+    pub fn create_internal_type_field_refs(
+        &self,
+        entity_field: &ServiceEntityField,
+    ) -> TypeRefsAndDefs {
         debug!("Creating Internal Type Field Refs");
 
         let type_ref = if let Some(as_type_name) = &entity_field.as_type.clone() {
@@ -60,11 +60,12 @@ impl ServiceSchemaBuilder {
         TypeRefsAndDefs {
             type_ref,
             type_defs: Vec::new(),
-            is_root_object: false,
+            is_root_object: true,
         }
     }
 
     pub fn create_required_type_refs(
+        &self,
         entity: &ServiceEntity,
         entity_field: &ServiceEntityField,
         data_sources: &DataSources,
@@ -104,7 +105,7 @@ impl ServiceSchemaBuilder {
                 }
             }
             ScalarOptions::Object => {
-                let object_type_defs = ServiceSchemaBuilder::create_type_defs(
+                let object_type_defs = self.create_type_defs(
                     data_sources,
                     entity,
                     entity_field.name.clone(),
@@ -133,6 +134,7 @@ impl ServiceSchemaBuilder {
     }
 
     pub fn create_optional_type_refs(
+        &self,
         entity: &ServiceEntity,
         entity_field: &ServiceEntityField,
         data_sources: &DataSources,
@@ -172,7 +174,7 @@ impl ServiceSchemaBuilder {
                 }
             }
             ScalarOptions::Object => {
-                let object_type_defs = ServiceSchemaBuilder::create_type_defs(
+                let object_type_defs = self.create_type_defs(
                     data_sources,
                     entity,
                     entity_field.name.clone(),

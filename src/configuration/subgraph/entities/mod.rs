@@ -121,6 +121,7 @@ impl ServiceEntity {
                     return resolvers.update_many;
                 }
             }
+            _ => panic!("Invalid resolver type"),
         }
         None
     }

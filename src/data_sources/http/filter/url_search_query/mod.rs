@@ -1,4 +1,3 @@
-use async_graphql::dynamic::ValueAccessor;
 use bson::Document;
 use log::{debug, info};
 use reqwest::Url;
@@ -179,6 +178,7 @@ impl HttpDataSource {
 
                 url
             }
+            _ => panic!("Invalid resolver type"),
         };
         Ok(url)
     }
@@ -219,7 +219,7 @@ impl HttpDataSource {
 
     pub async fn create_query_string_filters(
         mut url: Url,
-        input: &ValueAccessor<'_>,
+        input: Document,
     ) -> Result<Url, async_graphql::Error> {
         debug!("Creating Query String Filters");
 
@@ -227,16 +227,13 @@ impl HttpDataSource {
 
         let mut query_pairs = url_cloned.query_pairs();
 
-        let document = input.deserialize::<Document>()?;
-        debug!("Deserialized Input: {:?}", document);
-
         url.query_pairs_mut().clear();
         let mut url = Url::parse(url.as_str())?;
 
         while let Some(query_pair) = query_pairs.next() {
             debug!("Query Pair: {:?}", query_pair);
             let value =
-                HttpDataSource::replace_identifier(query_pair.1.to_string(), &document).await?;
+                HttpDataSource::replace_identifier(query_pair.1.to_string(), &input).await?;
 
             if value.is_none() {
                 continue;

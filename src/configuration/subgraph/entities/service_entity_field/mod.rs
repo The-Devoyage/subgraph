@@ -16,6 +16,7 @@ pub struct ServiceEntityField {
     pub fields: Option<Vec<ServiceEntityField>>,
     pub list: Option<bool>,
     pub as_type: Option<String>,
+    pub join_on: Option<String>,
 }
 
 impl ServiceEntityField {

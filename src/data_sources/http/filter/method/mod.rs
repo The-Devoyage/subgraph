@@ -62,6 +62,7 @@ impl HttpDataSource {
                 },
                 None => "GET".to_string(),
             },
+            _ => panic!("Invalid resolver type"),
         };
 
         debug!("Method: {:?}", method);

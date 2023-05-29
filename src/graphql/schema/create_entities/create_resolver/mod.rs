@@ -1,15 +1,17 @@
+use std::str::FromStr;
+
 use async_graphql::{
     dynamic::{Field, FieldFuture, TypeRef},
     SelectionField,
 };
-use bson::Document;
+use bson::{oid::ObjectId, Document};
 use evalexpr::HashMapContext;
 use http::HeaderMap;
 use log::{debug, info};
 
 use crate::{
     configuration::subgraph::{
-        entities::{service_entity_field::ServiceEntityField, ServiceEntity},
+        entities::{service_entity_field::ServiceEntityField, ScalarOptions, ServiceEntity},
         guard::Guard,
     },
     data_sources::DataSources,
@@ -23,41 +25,62 @@ mod create_resolver_input_value;
 pub struct ResolverConfig {
     resolver_name: String,
     return_type: TypeRef,
+    resolver_type: ResolverType,
 }
 
 impl ServiceSchemaBuilder {
     pub fn create_resolver_config(
         entity: &ServiceEntity,
         resolver_type: ResolverType,
+        field_name: Option<String>,
+        list: Option<bool>,
     ) -> ResolverConfig {
         info!("Creating Resolver Config");
 
-        let resolver_type = match resolver_type {
+        let list = list.unwrap_or(false);
+
+        let resolver_config = match resolver_type {
             ResolverType::FindOne => ResolverConfig {
                 resolver_name: format!("get_{}", &entity.name.to_lowercase()),
                 return_type: TypeRef::named_nn(&entity.name),
+                resolver_type,
             },
             ResolverType::CreateOne => ResolverConfig {
                 resolver_name: format!("create_{}", &entity.name.to_lowercase()),
                 return_type: TypeRef::named_nn(&entity.name),
+                resolver_type,
             },
             ResolverType::FindMany => ResolverConfig {
                 resolver_name: format!("get_{}s", &entity.name.to_lowercase()),
                 return_type: TypeRef::named_nn_list_nn(&entity.name),
+                resolver_type,
             },
             ResolverType::UpdateOne => ResolverConfig {
                 resolver_name: format!("update_{}", &entity.name.to_lowercase()),
                 return_type: TypeRef::named_nn(&entity.name),
+                resolver_type,
             },
             ResolverType::UpdateMany => ResolverConfig {
                 resolver_name: format!("update_{}s", &entity.name.to_lowercase()),
                 return_type: TypeRef::named_nn_list_nn(&entity.name),
+                resolver_type,
+            },
+            ResolverType::InternalType => ResolverConfig {
+                resolver_name: format!("{}", field_name.unwrap()),
+                return_type: match list {
+                    true => TypeRef::named_nn_list_nn(&entity.name),
+                    false => TypeRef::named_nn(&entity.name),
+                },
+                resolver_type: match list {
+                    true => ResolverType::FindMany,
+                    false => ResolverType::FindOne,
+                },
             },
         };
 
-        debug!("Resolver Type: {:?}", resolver_type);
+        debug!("Resolver Type: {:?}", resolver_config);
 
-        resolver_type
+        resolver_config
     }
 
     pub fn guard_nested(
@@ -113,10 +136,17 @@ impl ServiceSchemaBuilder {
         Ok(())
     }
 
-    pub fn create_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
-        info!("Creating Resolver");
+    pub fn create_resolver(
+        &self,
+        entity: &ServiceEntity,
+        resolver_type: ResolverType,
+        field_name: Option<String>,
+        list: Option<bool>,
+    ) -> Field {
+        debug!("Creating Resolver");
 
-        let resolver_config = ServiceSchemaBuilder::create_resolver_config(entity, resolver_type);
+        let resolver_config =
+            ServiceSchemaBuilder::create_resolver_config(entity, resolver_type, field_name, list);
         let cloned_entity = entity.clone();
         let service_guards = self.subgraph_config.service.guards.clone();
         let entity_guards = entity.guards.clone();
@@ -138,9 +168,98 @@ impl ServiceSchemaBuilder {
 
                 FieldFuture::new(async move {
                     let data_sources = ctx.data_unchecked::<DataSources>().clone();
-                    let input = ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
+                    let input_document = match resolver_type {
+                        ResolverType::InternalType => {
+                            let parent_value = ctx.parent_value.downcast_ref::<Document>().unwrap();
+                            debug!("Parent Value: {:?}", parent_value);
+                            let field = ServiceEntityField::get_field(
+                                cloned_entity.fields.clone(),
+                                ctx.field().name().to_string(),
+                            )?;
+                            debug!("Origin Field: {:?}", field);
+                            let join_on = field.join_on.unwrap();
+                            let field_input =
+                                ctx.args.try_get(&format!("{}", ctx.field().name()))?;
+                            let field_input = field_input.deserialize::<Document>().unwrap();
+                            let mut field_input = field_input.clone();
+                            debug!("Field Input: {:?}", field_input);
+                            let scalar = field.scalar;
+                            let list = field.list.unwrap_or(false);
+                            match list {
+                                true => {
+                                    let join_on_value =
+                                        parent_value.get_array(ctx.field().name()).unwrap();
+                                    debug!("Join On Value: {:?}", join_on_value);
+                                    match scalar {
+                                        ScalarOptions::String => {
+                                            let join_on_value = join_on_value
+                                                .iter()
+                                                .map(|value| value.to_string())
+                                                .collect::<Vec<String>>();
+                                            field_input.insert(join_on.clone(), join_on_value);
+                                        }
+                                        ScalarOptions::Int => {
+                                            let join_on_value = join_on_value
+                                                .iter()
+                                                .map(|value| value.as_i64().unwrap())
+                                                .collect::<Vec<i64>>();
+                                            field_input.insert(join_on.clone(), join_on_value);
+                                        }
+                                        ScalarOptions::Boolean => {
+                                            let join_on_value = join_on_value
+                                                .iter()
+                                                .map(|value| value.as_bool().unwrap())
+                                                .collect::<Vec<bool>>();
+                                            field_input.insert(join_on.clone(), join_on_value);
+                                        }
+                                        ScalarOptions::ObjectID => {
+                                            let join_on_value = join_on_value
+                                                .iter()
+                                                .map(|value| {
+                                                    ObjectId::from_str(value.as_str().unwrap())
+                                                        .unwrap()
+                                                })
+                                                .collect::<Vec<ObjectId>>();
+                                            field_input.insert(join_on.clone(), join_on_value);
+                                        }
+                                        _ => panic!("Invalid Scalar Type"),
+                                    }
+                                }
+                                false => match scalar {
+                                    ScalarOptions::Int => {
+                                        let join_on_value =
+                                            parent_value.get_i64(ctx.field().name()).unwrap();
+                                        field_input.insert(join_on.clone(), join_on_value);
+                                    }
+                                    ScalarOptions::String => {
+                                        let join_on_value =
+                                            parent_value.get_str(ctx.field().name()).unwrap();
+                                        field_input.insert(join_on.clone(), join_on_value);
+                                    }
+                                    ScalarOptions::Boolean => {
+                                        let join_on_value =
+                                            parent_value.get_bool(ctx.field().name()).unwrap();
+                                        field_input.insert(join_on.clone(), join_on_value);
+                                    }
+                                    ScalarOptions::ObjectID => {
+                                        let join_on_value =
+                                            parent_value.get_object_id(ctx.field().name()).unwrap();
+                                        field_input.insert(join_on.clone(), join_on_value);
+                                    }
+                                    _ => panic!("Unsupported Scalar Type"),
+                                },
+                            }
+                            debug!("Updated Input: {:?}", field_input);
+                            field_input
+                        }
+                        _ => {
+                            let input =
+                                ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
+                            let input_document = &input.deserialize::<Document>().unwrap();
+                            input_document.clone()
+                        }
+                    };
                     let headers = ctx.data_unchecked::<HeaderMap>().clone();
-                    let input_document = &input.deserialize::<Document>().unwrap();
                     let guard_context = Guard::create_guard_context(
                         headers,
                         input_document.clone(),
@@ -174,14 +293,26 @@ impl ServiceSchemaBuilder {
                         )?;
                     }
 
-                    let results =
-                        DataSources::execute(&data_sources, &input, cloned_entity, resolver_type)
-                            .await?;
+                    let results = DataSources::execute(
+                        &data_sources,
+                        input_document,
+                        cloned_entity,
+                        resolver_config.resolver_type,
+                    )
+                    .await?;
 
                     Ok(Some(results))
                 })
             },
         );
+
+        resolver
+    }
+
+    pub fn add_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
+        info!("Adding Resolver");
+
+        let resolver = self.create_resolver(entity, resolver_type, None, None);
 
         debug!("Resolver: {:?}", resolver);
 

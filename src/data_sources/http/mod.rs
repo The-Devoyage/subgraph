@@ -1,4 +1,5 @@
-use async_graphql::dynamic::{FieldValue, ValueAccessor};
+use async_graphql::dynamic::FieldValue;
+use bson::Document;
 use http::{header::HeaderName, HeaderMap, HeaderValue};
 use log::{debug, info};
 use reqwest::Client;
@@ -59,7 +60,7 @@ impl HttpDataSource {
 
     pub async fn execute_operation<'a>(
         data_source: &DataSource,
-        input: &ValueAccessor<'_>,
+        input: Document,
         entity: ServiceEntity,
         resolver_type: ResolverType,
     ) -> Result<FieldValue<'a>, async_graphql::Error> {
@@ -107,6 +108,7 @@ impl HttpDataSource {
                     results.into_iter().map(|doc| FieldValue::owned_any(doc)),
                 ))
             }
+            _ => panic!("Invalid resolver type"),
         }
     }
 }

@@ -1,4 +1,5 @@
-use async_graphql::dynamic::{FieldValue, ValueAccessor};
+use async_graphql::dynamic::FieldValue;
+use bson::Document;
 use log::debug;
 
 use crate::{
@@ -76,7 +77,7 @@ impl DataSources {
     /// Execute a data source operation.
     pub async fn execute<'a>(
         data_sources: &DataSources,
-        input: &ValueAccessor<'_>,
+        input: Document,
         entity: ServiceEntity,
         resolver_type: ResolverType,
     ) -> Result<FieldValue<'a>, async_graphql::Error> {
