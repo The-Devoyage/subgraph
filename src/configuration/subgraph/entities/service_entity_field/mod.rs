@@ -1,4 +1,4 @@
-use log::debug;
+use log::{debug, error};
 use serde::{Deserialize, Serialize};
 
 use crate::{configuration::subgraph::guard::Guard, graphql::schema::ResolverType};
@@ -15,6 +15,8 @@ pub struct ServiceEntityField {
     pub exclude_from_output: Option<bool>,
     pub fields: Option<Vec<ServiceEntityField>>,
     pub list: Option<bool>,
+    pub as_type: Option<String>,
+    pub join_on: Option<String>,
 }
 
 impl ServiceEntityField {
@@ -25,7 +27,7 @@ impl ServiceEntityField {
         fields: Vec<ServiceEntityField>,
         field_name: String,
     ) -> Result<ServiceEntityField, async_graphql::Error> {
-        debug!("Get Field From Fields: {:?}", field_name);
+        debug!("Get Field From Fields: {:?} in {:?}", field_name, fields);
         if field_name.contains(".") {
             debug!("Field is Nested");
             let mut field_names = ServiceEntityField::split_field_names(&field_name)?;
@@ -50,6 +52,7 @@ impl ServiceEntityField {
                     return Ok(field);
                 }
             }
+            error!("Field {} not found when executing get_field.", field_name);
             Err(async_graphql::Error::new(format!(
                 "Field {} not found",
                 field_name

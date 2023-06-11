@@ -14,7 +14,6 @@ pub struct Services;
 impl Services {
     pub fn create_nested_fields(doc: &Document) -> Document {
         debug!("Creating Nested Filter");
-        debug!("Initial Document/Filter: {:?}", doc);
         let mut set_doc = Document::new();
         for (key, value) in doc.iter() {
             if let Some(sub_doc) = value.as_document() {
@@ -25,19 +24,17 @@ impl Services {
                     set_doc.insert(nested_key, sub_value.clone());
                 }
             } else {
-                debug!("Inserting Key: {:?}, Value: {:?}", key, value);
                 set_doc.insert(key.clone(), value.clone());
             }
         }
+        debug!("Created Nested Filter: {:?}", set_doc);
         set_doc
     }
     pub fn create_nested_find_filter(doc: &Document) -> Document {
-        debug!("Creating Nested Find Filter");
-        debug!("Initial Document/Filter: {:?}", doc);
+        debug!("Creating Nested Find Filter From Doc: {:?}", doc);
         let mut find_doc = Document::new();
         for (key, value) in doc.clone().iter_mut() {
             if let Some(sub_doc) = value.as_document() {
-                debug!("Found Sub Document: {:?}", sub_doc);
                 let sub_set_doc = Services::create_nested_find_filter(sub_doc);
                 for (sub_key, sub_value) in sub_set_doc.iter() {
                     let nested_key = format!("{}.{}", key, sub_key);
@@ -51,7 +48,11 @@ impl Services {
                         for b in array {
                             docs.push(doc! { key.clone(): {"$elemMatch": b}})
                         }
-                        find_doc.insert("$and", docs);
+                        if docs.len() > 0 {
+                            find_doc.insert("$and", docs);
+                        } else {
+                            find_doc.insert(key.clone(), doc! { "$in": array });
+                        }
                     } else {
                         find_doc.insert(key.clone(), doc! { "$in": array });
                     }

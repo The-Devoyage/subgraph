@@ -6,11 +6,13 @@
 
 - Guards to assist with Authorization.
 - Port and Log Level options now supported in config file.
+- Join and extend types between databases.
 
 ### Fixed
 
 - Mongo filter support for arrays and array of objects.
 - List options for boolean input scalars fixed.
+- Object ID lists can now be resolved.
 
 ## [v0.0.8]
 

@@ -1,4 +1,5 @@
-use async_graphql::dynamic::{FieldValue, ValueAccessor};
+use async_graphql::dynamic::FieldValue;
+use bson::Document;
 use log::debug;
 use sqlx::{MySql, Pool, Postgres, Sqlite};
 
@@ -38,6 +39,9 @@ pub enum SqlValueEnum {
     String(String),
     Int(i32),
     Bool(bool),
+    StringList(Vec<String>),
+    IntList(Vec<i32>),
+    BoolList(Vec<bool>),
 }
 
 #[derive(Debug, Clone)]
@@ -92,7 +96,7 @@ impl SqlDataSource {
 
     pub async fn execute_operation<'a>(
         data_source: &DataSource,
-        input: &ValueAccessor<'_>,
+        input: Document,
         entity: ServiceEntity,
         resolver_type: ResolverType,
     ) -> Result<FieldValue<'a>, async_graphql::Error> {
@@ -165,6 +169,7 @@ impl SqlDataSource {
                     results.into_iter().map(|row| FieldValue::owned_any(row)),
                 ))
             }
+            _ => panic!("Invalid resolver type"),
         }
     }
 }

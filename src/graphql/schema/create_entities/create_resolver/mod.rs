@@ -11,6 +11,7 @@ use crate::{
     configuration::subgraph::{
         entities::{service_entity_field::ServiceEntityField, ServiceEntity},
         guard::Guard,
+        SubGraphConfig,
     },
     data_sources::DataSources,
 };
@@ -18,46 +19,68 @@ use crate::{
 use super::{ResolverType, ServiceSchemaBuilder};
 
 mod create_resolver_input_value;
+mod get_internal_input;
 
 #[derive(Debug)]
 pub struct ResolverConfig {
     resolver_name: String,
     return_type: TypeRef,
+    resolver_type: ResolverType,
 }
 
 impl ServiceSchemaBuilder {
     pub fn create_resolver_config(
         entity: &ServiceEntity,
         resolver_type: ResolverType,
+        field_name: Option<String>,
+        list: Option<bool>,
     ) -> ResolverConfig {
         info!("Creating Resolver Config");
 
-        let resolver_type = match resolver_type {
+        let list = list.unwrap_or(false);
+
+        let resolver_config = match resolver_type {
             ResolverType::FindOne => ResolverConfig {
                 resolver_name: format!("get_{}", &entity.name.to_lowercase()),
                 return_type: TypeRef::named_nn(&entity.name),
+                resolver_type,
             },
             ResolverType::CreateOne => ResolverConfig {
                 resolver_name: format!("create_{}", &entity.name.to_lowercase()),
                 return_type: TypeRef::named_nn(&entity.name),
+                resolver_type,
             },
             ResolverType::FindMany => ResolverConfig {
                 resolver_name: format!("get_{}s", &entity.name.to_lowercase()),
                 return_type: TypeRef::named_nn_list_nn(&entity.name),
+                resolver_type,
             },
             ResolverType::UpdateOne => ResolverConfig {
                 resolver_name: format!("update_{}", &entity.name.to_lowercase()),
                 return_type: TypeRef::named_nn(&entity.name),
+                resolver_type,
             },
             ResolverType::UpdateMany => ResolverConfig {
                 resolver_name: format!("update_{}s", &entity.name.to_lowercase()),
                 return_type: TypeRef::named_nn_list_nn(&entity.name),
+                resolver_type,
+            },
+            ResolverType::InternalType => ResolverConfig {
+                resolver_name: format!("{}", field_name.unwrap()),
+                return_type: match list {
+                    true => TypeRef::named_nn_list_nn(&entity.name),
+                    false => TypeRef::named_nn(&entity.name),
+                },
+                resolver_type: match list {
+                    true => ResolverType::FindMany,
+                    false => ResolverType::FindOne,
+                },
             },
         };
 
-        debug!("Resolver Type: {:?}", resolver_type);
+        debug!("Resolver Type: {:?}", resolver_config);
 
-        resolver_type
+        resolver_config
     }
 
     pub fn guard_nested(
@@ -79,7 +102,12 @@ impl ServiceSchemaBuilder {
             Guard::check(&guards.unwrap(), &guard_context)?;
         }
 
-        if selection_field.selection_set().count() > 0 {
+        if field.as_type.is_some() {
+            //NOTE: Guards for as type entities?
+            return Ok(());
+        }
+
+        if selection_field.selection_set().count() > 0 && field.as_type.is_none() {
             for selection_field in selection_field.selection_set().into_iter() {
                 ServiceSchemaBuilder::guard_nested(
                     selection_field,
@@ -108,16 +136,34 @@ impl ServiceSchemaBuilder {
         Ok(())
     }
 
-    pub fn create_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
-        info!("Creating Resolver");
+    pub fn create_resolver(
+        &self,
+        entity: &ServiceEntity,
+        resolver_type: ResolverType,
+        field_name: Option<String>,
+        list: Option<bool>,
+        as_type_parent: Option<String>,
+    ) -> Field {
+        debug!("Creating Resolver");
 
-        let resolver_config = ServiceSchemaBuilder::create_resolver_config(entity, resolver_type);
+        let resolver_config = ServiceSchemaBuilder::create_resolver_config(
+            entity,
+            resolver_type,
+            field_name.clone(),
+            list,
+        );
         let cloned_entity = entity.clone();
         let service_guards = self.subgraph_config.service.guards.clone();
         let entity_guards = entity.guards.clone();
         let resolver = ServiceEntity::get_resolver(&entity, resolver_type);
         let resolver_guards = if resolver.is_some() {
             resolver.unwrap().guards
+        } else {
+            None
+        };
+        let as_type_entity_parent = if as_type_parent.is_some() {
+            SubGraphConfig::get_entity(self.subgraph_config.clone(), &as_type_parent.unwrap())
+                .clone()
         } else {
             None
         };
@@ -130,30 +176,36 @@ impl ServiceSchemaBuilder {
                 let service_guards = service_guards.clone();
                 let entity_guards = entity_guards.clone();
                 let resolver_guards = resolver_guards.clone();
+                let as_type_entity_parent = as_type_entity_parent.clone();
 
                 FieldFuture::new(async move {
                     let data_sources = ctx.data_unchecked::<DataSources>().clone();
-                    let input = ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
+                    let input_document = match resolver_type {
+                        ResolverType::InternalType => {
+                            ServiceSchemaBuilder::get_internal_input(as_type_entity_parent, &ctx)?
+                        }
+                        _ => {
+                            let input =
+                                ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
+                            let input_document = &input.deserialize::<Document>().unwrap();
+                            input_document.clone()
+                        }
+                    };
                     let headers = ctx.data_unchecked::<HeaderMap>().clone();
-                    let input_document = &input.deserialize::<Document>().unwrap();
                     let guard_context = Guard::create_guard_context(
                         headers,
                         input_document.clone(),
                         cloned_entity.clone(),
                     )?;
-
                     if service_guards.is_some() {
                         Guard::check(&service_guards.unwrap(), &guard_context)?;
                     }
-
                     if resolver_guards.is_some() {
                         Guard::check(&resolver_guards.unwrap(), &guard_context)?;
                     }
-
                     if entity_guards.is_some() {
                         Guard::check(&entity_guards.unwrap(), &guard_context)?;
                     }
-
                     let selection_fields = ctx
                         .field()
                         .selection_set()
@@ -169,14 +221,26 @@ impl ServiceSchemaBuilder {
                         )?;
                     }
 
-                    let results =
-                        DataSources::execute(&data_sources, &input, cloned_entity, resolver_type)
-                            .await?;
+                    let results = DataSources::execute(
+                        &data_sources,
+                        input_document,
+                        cloned_entity,
+                        resolver_config.resolver_type,
+                    )
+                    .await?;
 
                     Ok(Some(results))
                 })
             },
         );
+
+        resolver
+    }
+
+    pub fn add_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
+        info!("Adding Resolver");
+
+        let resolver = self.create_resolver(entity, resolver_type, None, None, None);
 
         debug!("Resolver: {:?}", resolver);
 

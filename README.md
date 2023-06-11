@@ -246,6 +246,40 @@ For example, the configuration directly above would result in:
 
 Note, defining a variable uses the prefix `:`. The variable is extracted from the GraphQL Input. If excluded from the GraphQL Input, the path or query string excludes the definition. You may set hard coded values in the config.
 
+**Join and Extend Entities**
+
+Declaring fields can be used automatically join entities to one another within the same service. The `as_type` property allows reference to another type within the service. The `join_on` field allows to associate the parent field with the child field.
+
+```toml
+[[service.entities]]
+name = "user"
+
+[[service.entities.fields]]
+name = "_id"
+scalar = "ObjectID"
+required = true
+exclude_from_input = ["CreateOne", "UpdateOne"]
+
+# Declare a field that is an object id.
+# Use the `as_type` and `join_on` values to tell the service how to extend the user type.
+# The ObjectID Stored in the database under type `User.friends` is the `_id` field of the User Type, joining to the same data set.
+[[service.entities.fields]]
+name = "friends"
+scalar = "ObjectID"
+required = false
+list = true
+as_type = "user"
+join_on = "_id"
+# The `Int` stored in the database under type `User.fav_coffees` is the `id` from type `coffee`, which happens to come from a different data source.
+[[service.entities.fields]]
+name = "fav_coffees"
+scalar = "Int"
+required = false
+list = true
+as_type = "Coffee"
+join_on = "id"
+```
+
 ### CORS Options
 
 Allow specific HTTP Methods, Origins, and Headers if needed. By default this server allows all origins, POST HTTP Methods (since it is a GraphQL server), and `Content-Type` Headers.
@@ -411,14 +445,16 @@ The configuration, `guards.toml`, in the examples folder demonstrates remaining 
 
 #### Field
 
-| Field\*             | Description                                                        | Type           |
-| ------------------- | ------------------------------------------------------------------ | -------------- |
-| name\*              | The name of the field.                                             | String         |
-| scalar\*            | The scalar type of the field.                                      | Scalar Options |
-| required            | Whether or not the field is required. Defaults to false.           | Option<bool>   |
-| exclude_from_input  | A list of resolvers of which not to apply to the associated input. | ResolverType[] |
-| exclude_from_output | A list of resolvers of which not to apply to the associated input. | ResolverType[] |
-| list                | Defines the scalar as a list or a singular value.                  | Option<bool>   |
+| Field\*             | Description                                                         | Type           |
+| ------------------- | ------------------------------------------------------------------- | -------------- |
+| name\*              | The name of the field.                                              | String         |
+| scalar\*            | The scalar type of the field.                                       | Scalar Options |
+| required            | Whether or not the field is required. Defaults to false.            | Option<bool>   |
+| exclude_from_input  | A list of resolvers of which not to apply to the associated input.  | ResolverType[] |
+| exclude_from_output | A list of resolvers of which not to apply to the associated input.  | ResolverType[] |
+| list                | Defines the scalar as a list or a singular value.                   | Option<bool>   |
+| as_type             | Associates the field with another entity type for joining/extending | Option<String> |
+| join_on             | The 'foreign key' of the type to be joined on.                      | Option<String> |
 
 | Scalar Options |
 | -------------- |

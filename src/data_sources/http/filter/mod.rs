@@ -1,4 +1,4 @@
-use async_graphql::{dynamic::ValueAccessor, Json};
+use async_graphql::Json;
 use bson::Document;
 use http::Method;
 use log::{debug, info};
@@ -23,7 +23,7 @@ pub struct HttpDataSourceFilter {
 impl HttpDataSource {
     pub async fn create_filter(
         data_source: &HttpDataSource,
-        input: &ValueAccessor<'_>,
+        input: Document,
         entity: &ServiceEntity,
         resolver_type: ResolverType,
     ) -> Result<HttpDataSourceFilter, async_graphql::Error> {
@@ -33,9 +33,9 @@ impl HttpDataSource {
         debug!("Created Url: {:?}", url);
 
         url = HttpDataSource::create_parameratized_path(url, entity, resolver_type).await?;
-        url = HttpDataSource::create_path_filters(url, input, resolver_type).await?;
+        url = HttpDataSource::create_path_filters(url, input.clone(), resolver_type).await?;
         url = HttpDataSource::create_parameratized_search_query(url, entity, resolver_type).await?;
-        url = HttpDataSource::create_query_string_filters(url, input).await?;
+        url = HttpDataSource::create_query_string_filters(url, input.clone()).await?;
         let request_body = HttpDataSource::create_body_filters(input, resolver_type);
 
         let method = HttpDataSource::get_method(entity, resolver_type);
