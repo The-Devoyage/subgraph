@@ -78,10 +78,11 @@ impl ServiceEntity {
             let resolvers = data_source.unwrap().resolvers;
             if resolvers.is_some() {
                 let resolvers = resolvers.unwrap();
-                debug!("Resolvers: {:?}", resolvers);
+                debug!("Service Entity Resolvers: {:?}", resolvers);
                 return Some(resolvers);
             }
         }
+        debug!("No Resolvers Found");
         None
     }
 
@@ -98,30 +99,35 @@ impl ServiceEntity {
         match resolver_type {
             ResolverType::FindOne => {
                 if resolvers.find_one.is_some() {
+                    debug!("Found Find One Resolver, {:?}", resolvers.find_one);
                     return resolvers.find_one;
                 }
             }
             ResolverType::FindMany => {
                 if resolvers.find_many.is_some() {
+                    debug!("Found Find Many Resolver, {:?}", resolvers.find_many);
                     return resolvers.find_many;
                 }
             }
             ResolverType::CreateOne => {
                 if resolvers.create_one.is_some() {
+                    debug!("Found Create One Resolver, {:?}", resolvers.create_one);
                     return resolvers.create_one;
                 }
             }
             ResolverType::UpdateOne => {
                 if resolvers.update_one.is_some() {
+                    debug!("Found Update One Resolver, {:?}", resolvers.update_one);
                     return resolvers.update_one;
                 }
             }
             ResolverType::UpdateMany => {
                 if resolvers.update_many.is_some() {
+                    debug!("Found Update Many Resolver, {:?}", resolvers.update_many);
                     return resolvers.update_many;
                 }
             }
-            _ => panic!("Invalid resolver type"),
+            _ => {}
         }
         None
     }
