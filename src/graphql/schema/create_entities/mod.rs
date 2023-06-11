@@ -32,7 +32,6 @@ impl ServiceSchemaBuilder {
                         self = self.add_resolver(entity, ResolverType::FindOne);
                         self = self.add_resolver(entity, ResolverType::FindMany);
                         self = self.add_resolver(entity, ResolverType::CreateOne);
-                        self = self.add_resolver(entity, ResolverType::UpdateOne);
                         self = self.add_resolver(entity, ResolverType::UpdateMany);
                     }
                     DialectEnum::SQLITE => {

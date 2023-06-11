@@ -39,6 +39,9 @@ pub enum SqlValueEnum {
     String(String),
     Int(i32),
     Bool(bool),
+    StringList(Vec<String>),
+    IntList(Vec<i32>),
+    BoolList(Vec<bool>),
 }
 
 #[derive(Debug, Clone)]

@@ -2,15 +2,21 @@ use bson::Document;
 use log::debug;
 
 use crate::{
-    configuration::subgraph::{
-        data_sources::sql::DialectEnum,
-        entities::{ScalarOptions, ServiceEntity},
-    },
-    data_sources::sql::SqlValueEnum,
+    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntity},
     graphql::schema::ResolverType,
 };
 
 use super::{SqlDataSource, SqlQuery};
+
+pub mod create_create_one_query;
+pub mod create_find_many_query;
+pub mod create_find_one_query;
+pub mod create_update_many_query;
+pub mod create_update_one_query;
+pub mod create_update_return_key_data;
+pub mod create_where_clause;
+pub mod get_key_data;
+pub mod get_placeholder;
 
 impl SqlDataSource {
     pub fn create_query(
@@ -26,12 +32,18 @@ impl SqlDataSource {
             SqlDataSource::get_key_data(&input, entity, &resolver_type);
 
         let query = match resolver_type {
-            ResolverType::FindOne => {
-                SqlDataSource::create_find_one_query(table_name, &where_keys, &dialect)
-            }
-            ResolverType::FindMany => {
-                SqlDataSource::create_find_many_query(table_name, &where_keys, &dialect)
-            }
+            ResolverType::FindOne => SqlDataSource::create_find_one_query(
+                table_name,
+                &where_keys,
+                &dialect,
+                &where_values,
+            ),
+            ResolverType::FindMany => SqlDataSource::create_find_many_query(
+                table_name,
+                &where_keys,
+                &dialect,
+                &where_values,
+            ),
             ResolverType::CreateOne => {
                 SqlDataSource::create_create_one_query(table_name, &value_keys, &dialect)
             }
@@ -40,12 +52,14 @@ impl SqlDataSource {
                 &value_keys,
                 &dialect,
                 &where_keys,
+                &where_values,
             ),
             ResolverType::UpdateMany => SqlDataSource::create_update_many_query(
                 table_name,
                 &value_keys,
                 &dialect,
                 &where_keys,
+                &where_values,
             ),
             _ => panic!("Invalid resolver type"),
         };
@@ -62,320 +76,5 @@ impl SqlDataSource {
         debug!("Query: {:?}", sql_query);
 
         sql_query
-    }
-
-    pub fn get_key_data(
-        input_object: &Document,
-        entity: &ServiceEntity,
-        resolver_type: &ResolverType,
-    ) -> (
-        Vec<String>,
-        Vec<SqlValueEnum>,
-        Vec<String>,
-        Vec<SqlValueEnum>,
-    ) {
-        let mut where_keys = vec![];
-        let mut where_values = vec![];
-        let mut value_keys = vec![];
-        let mut values = vec![];
-
-        for (key, value) in input_object.iter() {
-            if key != "query" {
-                debug!("Processing Key: {:?}", key);
-                debug!("Processing Value: {:?}", value.to_string());
-
-                let field = ServiceEntity::get_field(entity, key);
-
-                if field.is_err() {
-                    panic!("Field not found: {:?}", key);
-                }
-
-                let is_where_clause = match resolver_type {
-                    ResolverType::FindOne | ResolverType::FindMany => true,
-                    ResolverType::CreateOne
-                    | ResolverType::UpdateOne
-                    | ResolverType::UpdateMany => false,
-                    _ => panic!("Invalid resolver type"),
-                };
-
-                match field.unwrap().scalar {
-                    ScalarOptions::String => {
-                        if is_where_clause {
-                            where_keys.push(key.to_string());
-                            where_values.push(SqlValueEnum::String(value.to_string()));
-                        } else {
-                            value_keys.push(key.to_string());
-                            values.push(SqlValueEnum::String(value.to_string()));
-                        }
-                    }
-                    ScalarOptions::Int => {
-                        if is_where_clause {
-                            where_keys.push(key.to_string());
-                            where_values.push(SqlValueEnum::Int(value.as_i64().unwrap() as i32));
-                        } else {
-                            value_keys.push(key.to_string());
-                            values.push(SqlValueEnum::Int(value.as_i64().unwrap() as i32));
-                        }
-                    }
-                    ScalarOptions::Boolean => {
-                        if is_where_clause {
-                            where_keys.push(key.to_string());
-                            where_values.push(SqlValueEnum::Bool(value.as_bool().unwrap()));
-                        } else {
-                            value_keys.push(key.to_string());
-                            values.push(SqlValueEnum::Bool(value.as_bool().unwrap()));
-                        }
-                    }
-                    _ => {
-                        panic!("Unsupported Scalar Type");
-                    }
-                }
-            } else if key == "query" {
-                debug!("Processing Where Query");
-                let query_object = value.as_document().unwrap();
-
-                for (key, value) in query_object.iter() {
-                    where_keys.push(key.to_string());
-                    if value.as_str().is_some() {
-                        where_values.push(SqlValueEnum::String(value.to_string()));
-                    } else if value.as_i64().is_some() {
-                        where_values.push(SqlValueEnum::Int(value.as_i64().unwrap() as i32));
-                    } else if value.as_bool().is_some() {
-                        where_values.push(SqlValueEnum::Bool(value.as_bool().unwrap()));
-                    }
-                }
-            }
-        }
-
-        (where_keys, where_values, value_keys, values)
-    }
-
-    pub fn get_placeholder(dialect: &DialectEnum, index: Option<i32>) -> String {
-        match dialect {
-            DialectEnum::POSTGRES => "$".to_string() + &(index.unwrap() + 1).to_string(),
-            DialectEnum::MYSQL | DialectEnum::SQLITE => "?".to_string(),
-        }
-    }
-
-    pub fn create_where_clause(
-        where_keys: &Vec<String>,
-        dialect: &DialectEnum,
-        offset: Option<i32>,
-    ) -> String {
-        let parameterized_query = if !where_keys.is_empty() {
-            let mut query = String::new();
-            query.push_str(" WHERE ");
-
-            for i in 0..where_keys.len() {
-                query.push_str(&where_keys[i]);
-                query.push_str(" = ");
-                let index = if offset.is_some() {
-                    Some(i as i32 + offset.unwrap())
-                } else {
-                    Some(0)
-                };
-                query.push_str(&SqlDataSource::get_placeholder(dialect, index));
-                if i != where_keys.len() - 1 {
-                    query.push_str(" AND ");
-                }
-            }
-            query
-        } else {
-            String::new()
-        };
-        parameterized_query
-    }
-
-    pub fn create_find_one_query(
-        table_name: &str,
-        keys: &Vec<String>,
-        dialect: &DialectEnum,
-    ) -> String {
-        let mut query = String::new();
-        query.push_str("SELECT * FROM ");
-        query.push_str(table_name);
-
-        let parameterized_query = SqlDataSource::create_where_clause(keys, dialect, None);
-        query.push_str(&parameterized_query);
-
-        if !query.ends_with(';') {
-            query.push(';');
-        }
-
-        query
-    }
-
-    pub fn create_find_many_query(
-        table_name: &str,
-        where_keys: &Vec<String>,
-        dialect: &DialectEnum,
-    ) -> String {
-        let mut query = String::new();
-        query.push_str("SELECT * FROM ");
-        query.push_str(table_name);
-
-        let parameterized_query = SqlDataSource::create_where_clause(where_keys, dialect, None);
-        query.push_str(&parameterized_query);
-
-        if !query.ends_with(';') {
-            query.push(';');
-        }
-
-        query
-    }
-
-    pub fn create_create_one_query(
-        table_name: &str,
-        value_keys: &Vec<String>,
-        dialect: &DialectEnum,
-    ) -> String {
-        let mut query = String::new();
-        query.push_str("INSERT INTO ");
-        query.push_str(table_name);
-        query.push_str(" (");
-
-        for i in 0..value_keys.len() {
-            query.push_str(&value_keys[i]);
-            if i != value_keys.len() - 1 {
-                query.push_str(", ");
-            }
-        }
-
-        query.push_str(") VALUES (");
-        for i in 0..value_keys.len() {
-            query.push_str(SqlDataSource::get_placeholder(dialect, Some(i as i32)).as_str());
-            if i != value_keys.len() - 1 {
-                query.push_str(", ");
-            }
-        }
-        query.push_str(")");
-
-        match dialect {
-            DialectEnum::POSTGRES => {
-                query.push_str(" RETURNING *");
-            }
-            _ => {}
-        }
-
-        if !query.ends_with(';') {
-            query.push(';');
-        }
-        query
-    }
-
-    pub fn create_update_one_query(
-        table_name: &str,
-        value_keys: &Vec<String>,
-        dialect: &DialectEnum,
-        where_keys: &Vec<String>,
-    ) -> String {
-        let mut query = String::new();
-        query.push_str("UPDATE ");
-        query.push_str(table_name);
-        query.push_str(" SET ");
-
-        for i in 0..value_keys.len() {
-            query.push_str(&value_keys[i]);
-            query.push_str(" = ");
-            query.push_str(SqlDataSource::get_placeholder(dialect, Some(i as i32)).as_str());
-            if i != value_keys.len() - 1 {
-                query.push_str(", ");
-            }
-        }
-
-        let parameterized_query = SqlDataSource::create_where_clause(where_keys, dialect, None);
-        query.push_str(&parameterized_query);
-
-        query.push_str(" LIMIT 1");
-
-        if !query.ends_with(';') {
-            query.push(';');
-        }
-
-        query
-    }
-
-    pub fn create_update_many_query(
-        table_name: &str,
-        value_keys: &Vec<String>,
-        dialect: &DialectEnum,
-        where_keys: &Vec<String>,
-    ) -> String {
-        let mut query = String::new();
-        query.push_str("UPDATE ");
-        query.push_str(table_name);
-        query.push_str(" SET ");
-
-        for i in 0..value_keys.len() {
-            query.push_str(&value_keys[i]);
-            query.push_str(" = ");
-            query.push_str(SqlDataSource::get_placeholder(dialect, Some(i as i32)).as_str());
-            if i != value_keys.len() - 1 {
-                query.push_str(", ");
-            }
-        }
-
-        let offset = Some(value_keys.len() as i32);
-
-        let parameterized_query = SqlDataSource::create_where_clause(where_keys, dialect, offset);
-        query.push_str(&parameterized_query);
-
-        match dialect {
-            DialectEnum::POSTGRES => {
-                query.push_str(" RETURNING *");
-            }
-            _ => {}
-        }
-
-        if !query.ends_with(';') {
-            query.push(';');
-        }
-
-        query
-    }
-
-    pub fn create_update_return_key_data(
-        sql_query_where_keys: &Vec<String>,
-        sql_query_where_values: &Vec<SqlValueEnum>,
-        sql_query_value_keys: &Vec<String>,
-        sql_query_values: &Vec<SqlValueEnum>,
-    ) -> (Vec<String>, Vec<SqlValueEnum>) {
-        let mut where_keys = Vec::new();
-        let mut where_values = Vec::new();
-
-        for key in sql_query_where_keys {
-            where_keys.push(key.clone());
-            let index = sql_query_value_keys
-                .iter()
-                .position(|x| *x.to_string() == key.to_string());
-
-            if index.is_none() {
-                let index = sql_query_where_keys
-                    .iter()
-                    .position(|x| *x.to_string() == key.to_string())
-                    .unwrap();
-                let value = sql_query_where_values.get(index).unwrap();
-                where_values.push(value.clone());
-            } else {
-                if let Some(value) = sql_query_values.get(index.unwrap()) {
-                    where_values.push(value.clone());
-                }
-            }
-        }
-
-        for key in sql_query_value_keys {
-            if !where_keys.contains(key) {
-                where_keys.push(key.clone());
-                let index = sql_query_value_keys
-                    .iter()
-                    .position(|x| *x.to_string() == key.to_string())
-                    .unwrap();
-                if let Some(value) = sql_query_values.get(index) {
-                    where_values.push(value.clone());
-                }
-            }
-        }
-
-        (where_keys, where_values)
     }
 }

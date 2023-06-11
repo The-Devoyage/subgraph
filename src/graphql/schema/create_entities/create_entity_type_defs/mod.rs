@@ -202,14 +202,28 @@ impl ServiceSchemaBuilder {
             if entity_field.as_type.is_some() {
                 debug!("Creating As Type Resolver For: {:?}", entity_field);
                 let list = entity_field.list.unwrap_or(false);
+                let as_type_entity = self
+                    .subgraph_config
+                    .service
+                    .entities
+                    .iter()
+                    .find(|e| e.name == entity_field.clone().as_type.unwrap());
+                if as_type_entity.is_none() {
+                    panic!(
+                        "Could not find entity `{}` for as_type resolver",
+                        entity_field.as_type.unwrap()
+                    );
+                }
+                let as_type_entity = as_type_entity.unwrap();
                 let as_type_resolver = self.create_resolver(
-                    entity,
+                    as_type_entity,
                     ResolverType::InternalType,
                     Some(entity_field.name.clone()),
                     Some(list),
+                    Some(entity.name.clone()),
                 );
                 let resolver_input_name = ServiceSchemaBuilder::get_resolver_input_name(
-                    &entity.name,
+                    &as_type_entity.name,
                     &ResolverType::InternalType,
                     Some(list),
                 );
