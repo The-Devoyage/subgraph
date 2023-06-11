@@ -46,6 +46,7 @@ impl SubGraphConfig {
         let subgraph_config = match subgraph_config {
             Ok(config) => config,
             Err(error) => {
+                println!("{}", error);
                 error!("Invalid Subgraph Config");
                 debug!("{}", error);
                 panic!("Provide Valid Subgraph Config");
@@ -53,5 +54,15 @@ impl SubGraphConfig {
         };
 
         subgraph_config
+    }
+
+    pub fn get_entity(self, entity_name: &str) -> Option<entities::ServiceEntity> {
+        for entity in self.service.entities {
+            if entity.name == entity_name {
+                return Some(entity);
+            }
+        }
+
+        None
     }
 }

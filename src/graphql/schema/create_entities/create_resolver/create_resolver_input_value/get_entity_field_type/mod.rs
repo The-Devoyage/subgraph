@@ -43,6 +43,7 @@ impl ServiceSchemaBuilder {
                     }
                 }
             },
+            _ => panic!("Invalid resolver type"),
         }
     }
 
@@ -78,6 +79,7 @@ impl ServiceSchemaBuilder {
                     }
                 }
             },
+            _ => panic!("Invalid resolver type"),
         }
     }
 
@@ -113,6 +115,7 @@ impl ServiceSchemaBuilder {
                     }
                 }
             },
+            _ => panic!("Invalid resolver type"),
         }
     }
 
@@ -148,6 +151,7 @@ impl ServiceSchemaBuilder {
                     }
                 }
             },
+            _ => panic!("Invalid resolver type"),
         }
     }
 
@@ -164,6 +168,7 @@ impl ServiceSchemaBuilder {
                 format!("{}_{}_input", parent_field_name, child_field_name)
             }
             ResolverType::FindMany => format!("{}_{}s_input", parent_field_name, child_field_name),
+            _ => panic!("Invalid resolver type"),
         }
     }
 
@@ -216,6 +221,7 @@ impl ServiceSchemaBuilder {
                     }
                 }
             },
+            _ => panic!("Invalid resolver type"),
         };
 
         TypeRefWithInputs { type_ref, inputs }
