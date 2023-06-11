@@ -1,5 +1,5 @@
 use bson::spec::ElementType;
-use log::debug;
+use log::{debug, error};
 use serde::{Deserialize, Serialize};
 
 use service_entity_field::ServiceEntityField;
@@ -164,7 +164,8 @@ impl ServiceEntity {
             debug!("Field is Nested");
             let mut fields = vec![];
             let mut field_names = ServiceEntityField::split_field_names(field_name)?;
-            let first_field = ServiceEntity::get_field(entity, field_names[0])?;
+            let first_field =
+                ServiceEntity::get_field(entity.clone(), field_names[0].to_string().clone())?;
             fields.push(first_field.clone());
             let nested_fields = first_field.fields;
             if nested_fields.is_none() {
@@ -193,16 +194,16 @@ impl ServiceEntity {
     /// Gets a field from a given entity.
     /// If field is nested, only returns nested field.
     pub fn get_field(
-        entity: &ServiceEntity,
-        field_name: &str,
+        entity: ServiceEntity,
+        field_name: String,
     ) -> Result<ServiceEntityField, async_graphql::Error> {
-        debug!("Get Field: {:?}", field_name);
+        debug!("Get Field {:?} From {:?}", field_name, entity);
         let entity_fields = &entity.fields;
         if field_name.contains(".") {
             debug!("Field is Nested");
-            let mut field_names = ServiceEntityField::split_field_names(field_name)?;
+            let mut field_names = ServiceEntityField::split_field_names(&field_name)?;
             let first_field_name = field_names[0];
-            let first_field = ServiceEntity::get_field(entity, first_field_name)?;
+            let first_field = ServiceEntity::get_field(entity, first_field_name.to_string())?;
             let nested_fields = first_field.fields;
             if nested_fields.is_none() {
                 return Err(async_graphql::Error::new(format!(
@@ -221,8 +222,9 @@ impl ServiceEntity {
                     return Ok(field.clone());
                 }
             }
+            error!("Field {} not found when executing 'get_field'.", field_name);
             Err(async_graphql::Error::new(format!(
-                "Field {} not found",
+                "Field {} not found.",
                 field_name
             )))
         }

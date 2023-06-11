@@ -20,27 +20,57 @@ impl Services {
                 let mut update_query = sqlx::query(&sql_query.query);
                 for value in &sql_query.values {
                     match value {
-                        SqlValueEnum::String(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::String(v) => {
+                            update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Int(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::Int(v) => {
+                            update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Bool(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::Bool(v) => {
+                            update_query = update_query.bind(v);
+                        }
+                        SqlValueEnum::StringList(values) => {
+                            for string in values {
+                                update_query = update_query.bind(string)
+                            }
+                        }
+                        SqlValueEnum::IntList(values) => {
+                            for int in values {
+                                update_query = update_query.bind(int)
+                            }
+                        }
+                        SqlValueEnum::BoolList(values) => {
+                            for bool in values {
+                                update_query = update_query.bind(bool)
+                            }
                         }
                     }
                 }
                 for value in &sql_query.where_values {
                     match value {
-                        SqlValueEnum::String(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::String(v) => {
+                            update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Int(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::Int(v) => {
+                            update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Bool(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::Bool(v) => {
+                            update_query = update_query.bind(v);
+                        }
+                        SqlValueEnum::StringList(values) => {
+                            for string in values {
+                                update_query = update_query.bind(string)
+                            }
+                        }
+                        SqlValueEnum::IntList(values) => {
+                            for int in values {
+                                update_query = update_query.bind(int)
+                            }
+                        }
+                        SqlValueEnum::BoolList(values) => {
+                            for bool in values {
+                                update_query = update_query.bind(bool)
+                            }
                         }
                     }
                 }
@@ -58,19 +88,35 @@ impl Services {
                     &sql_query.table,
                     &find_many_where_keys,
                     &dialect,
+                    &find_many_where_values,
                 );
                 let mut find_many_query = sqlx::query(&find_many_query_string);
 
                 for value in &find_many_where_values {
                     match value {
-                        SqlValueEnum::String(value) => {
-                            find_many_query = find_many_query.bind(value);
+                        SqlValueEnum::String(v) => {
+                            find_many_query = find_many_query.bind(v);
                         }
-                        SqlValueEnum::Int(value) => {
-                            find_many_query = find_many_query.bind(value);
+                        SqlValueEnum::Int(v) => {
+                            find_many_query = find_many_query.bind(v);
                         }
-                        SqlValueEnum::Bool(value) => {
-                            find_many_query = find_many_query.bind(value);
+                        SqlValueEnum::Bool(v) => {
+                            find_many_query = find_many_query.bind(v);
+                        }
+                        SqlValueEnum::StringList(values) => {
+                            for string in values {
+                                find_many_query = find_many_query.bind(string)
+                            }
+                        }
+                        SqlValueEnum::IntList(values) => {
+                            for int in values {
+                                find_many_query = find_many_query.bind(int)
+                            }
+                        }
+                        SqlValueEnum::BoolList(values) => {
+                            for bool in values {
+                                find_many_query = find_many_query.bind(bool)
+                            }
                         }
                     }
                 }
@@ -87,27 +133,57 @@ impl Services {
                 let mut update_query = sqlx::query(&sql_query.query);
                 for value in &sql_query.values {
                     match value {
-                        SqlValueEnum::String(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::String(v) => {
+                            update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Int(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::Int(v) => {
+                            update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Bool(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::Bool(v) => {
+                            update_query = update_query.bind(v);
+                        }
+                        SqlValueEnum::StringList(values) => {
+                            for string in values {
+                                update_query = update_query.bind(string)
+                            }
+                        }
+                        SqlValueEnum::IntList(values) => {
+                            for int in values {
+                                update_query = update_query.bind(int)
+                            }
+                        }
+                        SqlValueEnum::BoolList(values) => {
+                            for bool in values {
+                                update_query = update_query.bind(bool)
+                            }
                         }
                     }
                 }
                 for value in &sql_query.where_values {
                     match value {
-                        SqlValueEnum::String(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::String(v) => {
+                            update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Int(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::Int(v) => {
+                            update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Bool(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::Bool(v) => {
+                            update_query = update_query.bind(v);
+                        }
+                        SqlValueEnum::StringList(values) => {
+                            for string in values {
+                                update_query = update_query.bind(string)
+                            }
+                        }
+                        SqlValueEnum::IntList(values) => {
+                            for int in values {
+                                update_query = update_query.bind(int)
+                            }
+                        }
+                        SqlValueEnum::BoolList(values) => {
+                            for bool in values {
+                                update_query = update_query.bind(bool)
+                            }
                         }
                     }
                 }
@@ -123,27 +199,57 @@ impl Services {
                 let mut update_query = sqlx::query(&sql_query.query);
                 for value in &sql_query.values {
                     match value {
-                        SqlValueEnum::String(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::String(v) => {
+                            update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Int(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::Int(v) => {
+                            update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Bool(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::Bool(v) => {
+                            update_query = update_query.bind(v);
+                        }
+                        SqlValueEnum::StringList(values) => {
+                            for string in values {
+                                update_query = update_query.bind(string)
+                            }
+                        }
+                        SqlValueEnum::IntList(values) => {
+                            for int in values {
+                                update_query = update_query.bind(int)
+                            }
+                        }
+                        SqlValueEnum::BoolList(values) => {
+                            for bool in values {
+                                update_query = update_query.bind(bool)
+                            }
                         }
                     }
                 }
                 for value in &sql_query.where_values {
                     match value {
-                        SqlValueEnum::String(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::String(v) => {
+                            update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Int(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::Int(v) => {
+                            update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Bool(value) => {
-                            update_query = update_query.bind(value);
+                        SqlValueEnum::Bool(v) => {
+                            update_query = update_query.bind(v);
+                        }
+                        SqlValueEnum::StringList(values) => {
+                            for string in values {
+                                update_query = update_query.bind(string)
+                            }
+                        }
+                        SqlValueEnum::IntList(values) => {
+                            for int in values {
+                                update_query = update_query.bind(int)
+                            }
+                        }
+                        SqlValueEnum::BoolList(values) => {
+                            for bool in values {
+                                update_query = update_query.bind(bool)
+                            }
                         }
                     }
                 }
@@ -162,20 +268,36 @@ impl Services {
                     &sql_query.table,
                     &find_many_where_keys,
                     &dialect,
+                    &sql_query.where_values,
                 );
 
                 let mut find_many_query = sqlx::query(&find_many_query_string);
 
                 for value in &find_many_where_values {
                     match value {
-                        SqlValueEnum::String(value) => {
-                            find_many_query = find_many_query.bind(value);
+                        SqlValueEnum::String(v) => {
+                            find_many_query = find_many_query.bind(v);
                         }
-                        SqlValueEnum::Int(value) => {
-                            find_many_query = find_many_query.bind(value);
+                        SqlValueEnum::Int(v) => {
+                            find_many_query = find_many_query.bind(v);
                         }
-                        SqlValueEnum::Bool(value) => {
-                            find_many_query = find_many_query.bind(value);
+                        SqlValueEnum::Bool(v) => {
+                            find_many_query = find_many_query.bind(v);
+                        }
+                        SqlValueEnum::StringList(values) => {
+                            for string in values {
+                                find_many_query = find_many_query.bind(string)
+                            }
+                        }
+                        SqlValueEnum::IntList(values) => {
+                            for int in values {
+                                find_many_query = find_many_query.bind(int)
+                            }
+                        }
+                        SqlValueEnum::BoolList(values) => {
+                            for bool in values {
+                                find_many_query = find_many_query.bind(bool)
+                            }
                         }
                     }
                 }

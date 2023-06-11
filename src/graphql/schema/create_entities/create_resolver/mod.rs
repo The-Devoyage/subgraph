@@ -13,6 +13,7 @@ use crate::{
     configuration::subgraph::{
         entities::{service_entity_field::ServiceEntityField, ScalarOptions, ServiceEntity},
         guard::Guard,
+        SubGraphConfig,
     },
     data_sources::DataSources,
 };
@@ -107,7 +108,7 @@ impl ServiceSchemaBuilder {
             return Ok(());
         }
 
-        if selection_field.selection_set().count() > 0 {
+        if selection_field.selection_set().count() > 0 && field.as_type.is_none() {
             for selection_field in selection_field.selection_set().into_iter() {
                 ServiceSchemaBuilder::guard_nested(
                     selection_field,
@@ -142,17 +143,28 @@ impl ServiceSchemaBuilder {
         resolver_type: ResolverType,
         field_name: Option<String>,
         list: Option<bool>,
+        as_type_parent: Option<String>,
     ) -> Field {
         debug!("Creating Resolver");
 
-        let resolver_config =
-            ServiceSchemaBuilder::create_resolver_config(entity, resolver_type, field_name, list);
+        let resolver_config = ServiceSchemaBuilder::create_resolver_config(
+            entity,
+            resolver_type,
+            field_name.clone(),
+            list,
+        );
         let cloned_entity = entity.clone();
         let service_guards = self.subgraph_config.service.guards.clone();
         let entity_guards = entity.guards.clone();
         let resolver = ServiceEntity::get_resolver(&entity, resolver_type);
         let resolver_guards = if resolver.is_some() {
             resolver.unwrap().guards
+        } else {
+            None
+        };
+        let as_type_entity_parent = if as_type_parent.is_some() {
+            SubGraphConfig::get_entity(self.subgraph_config.clone(), &as_type_parent.unwrap())
+                .clone()
         } else {
             None
         };
@@ -165,6 +177,7 @@ impl ServiceSchemaBuilder {
                 let service_guards = service_guards.clone();
                 let entity_guards = entity_guards.clone();
                 let resolver_guards = resolver_guards.clone();
+                let as_type_entity_parent = as_type_entity_parent.clone();
 
                 FieldFuture::new(async move {
                     let data_sources = ctx.data_unchecked::<DataSources>().clone();
@@ -172,8 +185,8 @@ impl ServiceSchemaBuilder {
                         ResolverType::InternalType => {
                             let parent_value = ctx.parent_value.downcast_ref::<Document>().unwrap();
                             debug!("Parent Value: {:?}", parent_value);
-                            let field = ServiceEntityField::get_field(
-                                cloned_entity.fields.clone(),
+                            let field = ServiceEntity::get_field(
+                                as_type_entity_parent.unwrap(),
                                 ctx.field().name().to_string(),
                             )?;
                             debug!("Origin Field: {:?}", field);
@@ -187,8 +200,17 @@ impl ServiceSchemaBuilder {
                             let list = field.list.unwrap_or(false);
                             match list {
                                 true => {
-                                    let join_on_value =
-                                        parent_value.get_array(ctx.field().name()).unwrap();
+                                    let join_on_value = parent_value.get_array(ctx.field().name());
+                                    debug!("Join On Value: {:?}", join_on_value);
+                                    let join_on_value = match join_on_value {
+                                        Ok(join_on_value) => join_on_value,
+                                        Err(_) => {
+                                            return Err(async_graphql::Error::new(format!(
+                                                "Field {} not found.",
+                                                ctx.field().name()
+                                            )))
+                                        }
+                                    };
                                     debug!("Join On Value: {:?}", join_on_value);
                                     match scalar {
                                         ScalarOptions::String => {
@@ -201,8 +223,8 @@ impl ServiceSchemaBuilder {
                                         ScalarOptions::Int => {
                                             let join_on_value = join_on_value
                                                 .iter()
-                                                .map(|value| value.as_i64().unwrap())
-                                                .collect::<Vec<i64>>();
+                                                .map(|value| value.as_i32().unwrap())
+                                                .collect::<Vec<i32>>();
                                             field_input.insert(join_on.clone(), join_on_value);
                                         }
                                         ScalarOptions::Boolean => {
@@ -265,19 +287,15 @@ impl ServiceSchemaBuilder {
                         input_document.clone(),
                         cloned_entity.clone(),
                     )?;
-
                     if service_guards.is_some() {
                         Guard::check(&service_guards.unwrap(), &guard_context)?;
                     }
-
                     if resolver_guards.is_some() {
                         Guard::check(&resolver_guards.unwrap(), &guard_context)?;
                     }
-
                     if entity_guards.is_some() {
                         Guard::check(&entity_guards.unwrap(), &guard_context)?;
                     }
-
                     let selection_fields = ctx
                         .field()
                         .selection_set()
@@ -312,7 +330,7 @@ impl ServiceSchemaBuilder {
     pub fn add_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
         info!("Adding Resolver");
 
-        let resolver = self.create_resolver(entity, resolver_type, None, None);
+        let resolver = self.create_resolver(entity, resolver_type, None, None, None);
 
         debug!("Resolver: {:?}", resolver);
 

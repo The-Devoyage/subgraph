@@ -1,5 +1,7 @@
 [service]
 service_name = "restaurants"
+port = 3032
+log_level = "debug"
 
 [[service.data_sources]]
 [service.data_sources.SQL]

@@ -6,6 +6,7 @@
 
 - Guards to assist with Authorization.
 - Port and Log Level options now supported in config file.
+- Join and extend types between databases.
 
 ### Fixed
 
