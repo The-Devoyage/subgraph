@@ -5,28 +5,12 @@ log_level = "debug"
 
 [[service.guards]]
 name = "invalid_access_key"
-if_expr = "headers(\"authorization\") != \"1234\""
+if_expr = "headers(\"authorization\") != \"12345\""
 then_msg = "Invalid Access Key - Permission Denied"
-# [[service.guards]]
-# name = "invalid_role"
-# if_expr = "\"root\" != \"admin\""
-# then_msg = "Invalid Role - Permission Denied"
-# [[service.guards]]
-# name = "invalid_id"
-# if_expr = "input(\"price\") == 1"
-# then_msg = "Invalid ID - Permission Denied"
-# [[service.guards]]
-# name = "cities"
-# if_expr = "contains_any(input(\"cities\"), (\"Dallas\", \"Fort Worth\"))"
-# then_msg = "403 - Forbidden - Access to Dallas Invalid"
-# [[service.guards]]
-# name = "comments.user"
-# if_expr = "contains_any(input(\"comments.user\"), (\"sarah\", \"nick\"))"
-# then_msg = "403 - Forbidden - Can not search by this name"
-# [[service.guards]]
-# name = "attributes.ibu"
-# if_expr = "input(\"attributes.ibu\") == 88"
-# then_msg = "403 - Forbidden - Can not search by this number"
+[[service.guards]]
+name = "invalid_role"
+if_expr = "headers(\"role\") != \"admin\""
+then_msg = "Invalid Role - Permission Denied"
 
 [[service.data_sources]]
 [service.data_sources.SQL]
@@ -42,23 +26,19 @@ db = "sun"
 [[service.entities]]
 name = "Espresso"
 
-# [service.entities.data_source]
-# from = "caffeine_data_source"
-# [service.entities.data_source.resolvers]
-# [service.entities.data_source.resolvers.find_one]
-# [[service.entities.data_source.resolvers.find_one.guards]]
-# name = "invalid_age"
-# if_expr = "3 != 1"
-# then_msg = "Invalid Age - Permission Denied Resolver Access"
-# [[service.entities.data_source.resolvers.find_one.guards]]
-# name = "invalid_butter"
-# if_expr = "3 != 1"
-# then_msg = "Invalid butter - Permission Denied Resolver Access 2"
+[[service.entities.guards]]
+name = "invalid_name"
+if_expr = "input(name) == \"nick\""
+then_msg = "Invalid Name - Permission Denied"
 
-# [[service.entities.guards]]
-# name = "invalid_name"
-# if_expr = "\"laura\" != \"nick\""
-# then_msg = "Invalid Name - Permission Denied"
+[service.entities.data_source]
+from = "caffeine_data_source"
+[service.entities.data_source.resolvers]
+[service.entities.data_source.resolvers.find_one]
+[[service.entities.data_source.resolvers.find_one.guards]]
+name = "invalid_age"
+if_expr = "input(\"age\") < 21"
+then_msg = "Age Restriction - Permission Denied"
 
 [[service.entities.fields]]
 name = "id"
@@ -69,75 +49,18 @@ exclude_from_input = ["CreateOne", "UpdateOne", "UpdateMany"]
 name = "name"
 scalar = "String"
 required = true
-# guards = [
-#   {name = "uniquename", if_expr = "1 > 0", then_msg = "Invalid Name - Field Level" },
-#   {name = "name", if_expr = "1 > 0", then_msg = "Invalid Name - Field Level - Too Longgg" },
-# ]
+guards = [
+  {name = "id", if_expr = "headers(\"role\") != \"admin\"", then_msg = "Invalid Access - Field Level" },
+]
 [[service.entities.fields]]
 name = "price"
 scalar = "Int"
 required = true
 list = false
-# guards = [
-#   {name = "price", if_expr = "1 > 0", then_msg = "Invalid Price - Field Level" },
-# ]
+guards = [
+  {name = "price", if_expr = "headers(\"user_id\") != 1", then_msg = "Access Denied - You do not have permission." },
+]
 [[service.entities.fields]]
 name = "available"
 scalar = "Boolean"
 required = true
-
-[[service.entities]]
-name = "Beer"
-[service.entities.data_source]
-from = "beers_ds"
-
-[[service.entities.fields]]
-name = "_id"
-scalar = "ObjectID"
-required = true
-exclude_from_input = ["CreateOne"]
-
-[[service.entities.fields]]
-name = "name"
-scalar = "String"
-required = true
-guards = [
-  {name = "beername", if_expr = "1 > 0", then_msg = "Invalid beer name - Field Level" },
-]
-
-[[service.entities.fields]]
-name = "cities"
-scalar = "String"
-required = true
-list = true
-
-[[service.entities.fields]]
-name = "comments"
-scalar = "Object"
-required = true
-list = true
-fields = [
-    { name = "user", scalar = "String", required = true },
-    { name = "comment", scalar = "String", required = true },
-]
-
-[[service.entities.fields]]
-name = "scores"
-scalar = "Int"
-list = true
-
-[[service.entities.fields]]
-name = "attributes"
-scalar = "Object"
-required = true
-fields = [
-    { name = "ibu", scalar = "Int", required = true },
-    { name = "abv", scalar = "Int", required = true },
-    { name = "type", scalar = "String", required = true },
-    { name = "address", scalar = "Object", required = true, fields = [
-        { name = "street", scalar = "String", required = true },
-        { name = "city", scalar = "String", required = true },
-        { name = "state", scalar = "String", required = true },
-        { name = "zip", scalar = "String", required = true },
-    ]},
-]
