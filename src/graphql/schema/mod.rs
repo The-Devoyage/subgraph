@@ -13,6 +13,7 @@ pub enum ResolverType {
     CreateOne,
     UpdateOne,
     UpdateMany,
+    InternalType,
 }
 
 pub struct ServiceSchemaBuilder {

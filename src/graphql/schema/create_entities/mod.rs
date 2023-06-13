@@ -23,31 +23,30 @@ impl ServiceSchemaBuilder {
             match data_source {
                 DataSource::SQL(ds) => match ds.config.dialect {
                     DialectEnum::POSTGRES => {
-                        self = self.create_resolver(entity, ResolverType::FindOne);
-                        self = self.create_resolver(entity, ResolverType::FindMany);
-                        self = self.create_resolver(entity, ResolverType::CreateOne);
-                        self = self.create_resolver(entity, ResolverType::UpdateMany);
+                        self = self.add_resolver(entity, ResolverType::FindOne);
+                        self = self.add_resolver(entity, ResolverType::FindMany);
+                        self = self.add_resolver(entity, ResolverType::CreateOne);
+                        self = self.add_resolver(entity, ResolverType::UpdateMany);
                     }
                     DialectEnum::MYSQL => {
-                        self = self.create_resolver(entity, ResolverType::FindOne);
-                        self = self.create_resolver(entity, ResolverType::FindMany);
-                        self = self.create_resolver(entity, ResolverType::CreateOne);
-                        self = self.create_resolver(entity, ResolverType::UpdateOne);
-                        self = self.create_resolver(entity, ResolverType::UpdateMany);
+                        self = self.add_resolver(entity, ResolverType::FindOne);
+                        self = self.add_resolver(entity, ResolverType::FindMany);
+                        self = self.add_resolver(entity, ResolverType::CreateOne);
+                        self = self.add_resolver(entity, ResolverType::UpdateMany);
                     }
                     DialectEnum::SQLITE => {
-                        self = self.create_resolver(entity, ResolverType::FindOne);
-                        self = self.create_resolver(entity, ResolverType::FindMany);
-                        self = self.create_resolver(entity, ResolverType::CreateOne);
-                        self = self.create_resolver(entity, ResolverType::UpdateMany);
+                        self = self.add_resolver(entity, ResolverType::FindOne);
+                        self = self.add_resolver(entity, ResolverType::FindMany);
+                        self = self.add_resolver(entity, ResolverType::CreateOne);
+                        self = self.add_resolver(entity, ResolverType::UpdateMany);
                     }
                 },
                 DataSource::Mongo(_) | DataSource::HTTP(_) => {
-                    self = self.create_resolver(entity, ResolverType::FindOne);
-                    self = self.create_resolver(entity, ResolverType::FindMany);
-                    self = self.create_resolver(entity, ResolverType::CreateOne);
-                    self = self.create_resolver(entity, ResolverType::UpdateOne);
-                    self = self.create_resolver(entity, ResolverType::UpdateMany);
+                    self = self.add_resolver(entity, ResolverType::FindOne);
+                    self = self.add_resolver(entity, ResolverType::FindMany);
+                    self = self.add_resolver(entity, ResolverType::CreateOne);
+                    self = self.add_resolver(entity, ResolverType::UpdateOne);
+                    self = self.add_resolver(entity, ResolverType::UpdateMany);
                 }
             }
         }

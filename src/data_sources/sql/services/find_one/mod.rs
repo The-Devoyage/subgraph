@@ -17,14 +17,29 @@ impl Services {
 
                 for value in &sql_query.where_values {
                     match value {
-                        SqlValueEnum::String(value) => {
-                            query = query.bind(value);
+                        SqlValueEnum::String(v) => {
+                            query = query.bind(v);
                         }
-                        SqlValueEnum::Int(value) => {
-                            query = query.bind(value);
+                        SqlValueEnum::Int(v) => {
+                            query = query.bind(v);
                         }
-                        SqlValueEnum::Bool(value) => {
-                            query = query.bind(value);
+                        SqlValueEnum::Bool(v) => {
+                            query = query.bind(v);
+                        }
+                        SqlValueEnum::StringList(values) => {
+                            for string in values {
+                                query = query.bind(string)
+                            }
+                        }
+                        SqlValueEnum::IntList(values) => {
+                            for int in values {
+                                query = query.bind(int)
+                            }
+                        }
+                        SqlValueEnum::BoolList(values) => {
+                            for bool in values {
+                                query = query.bind(bool)
+                            }
                         }
                     }
                 }
@@ -45,14 +60,29 @@ impl Services {
 
                 for value in &sql_query.where_values {
                     match value {
-                        SqlValueEnum::String(value) => {
-                            query = query.bind(value);
+                        SqlValueEnum::String(v) => {
+                            query = query.bind(v);
                         }
-                        SqlValueEnum::Int(value) => {
-                            query = query.bind(value);
+                        SqlValueEnum::Int(v) => {
+                            query = query.bind(v);
                         }
-                        SqlValueEnum::Bool(value) => {
-                            query = query.bind(value);
+                        SqlValueEnum::Bool(v) => {
+                            query = query.bind(v);
+                        }
+                        SqlValueEnum::StringList(values) => {
+                            for string in values {
+                                query = query.bind(string)
+                            }
+                        }
+                        SqlValueEnum::IntList(values) => {
+                            for int in values {
+                                query = query.bind(int)
+                            }
+                        }
+                        SqlValueEnum::BoolList(values) => {
+                            for bool in values {
+                                query = query.bind(bool)
+                            }
                         }
                     }
                 }
@@ -71,14 +101,29 @@ impl Services {
 
                 for value in &sql_query.where_values {
                     match value {
-                        SqlValueEnum::String(value) => {
-                            query = query.bind(value);
+                        SqlValueEnum::String(v) => {
+                            query = query.bind(v);
                         }
-                        SqlValueEnum::Int(value) => {
-                            query = query.bind(value);
+                        SqlValueEnum::Int(v) => {
+                            query = query.bind(v);
                         }
-                        SqlValueEnum::Bool(value) => {
-                            query = query.bind(value);
+                        SqlValueEnum::Bool(v) => {
+                            query = query.bind(v);
+                        }
+                        SqlValueEnum::StringList(values) => {
+                            for string in values {
+                                query = query.bind(string)
+                            }
+                        }
+                        SqlValueEnum::IntList(values) => {
+                            for int in values {
+                                query = query.bind(int)
+                            }
+                        }
+                        SqlValueEnum::BoolList(values) => {
+                            for bool in values {
+                                query = query.bind(bool)
+                            }
                         }
                     }
                 }

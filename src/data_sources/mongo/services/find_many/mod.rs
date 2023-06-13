@@ -12,7 +12,7 @@ impl Services {
     ) -> Result<Vec<Document>, async_graphql::Error> {
         let coll = db.collection::<Document>(&collection);
 
-        let filter = Services::create_nested_fields(&filter);
+        let filter = Services::create_nested_find_filter(&filter);
 
         let mut cursor = coll.find(filter, None).await?;
 

@@ -127,7 +127,7 @@ impl ServiceSchemaBuilder {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 let value = documents
                     .into_iter()
-                    .map(|value| Value::from(value.as_object_id().unwrap().to_string()))
+                    .map(|value| Value::from(value.as_str().unwrap()))
                     .collect::<Vec<Value>>();
                 debug!("Found ObjectID Value: {:?}", value);
                 return Ok(Value::List(value));
@@ -207,7 +207,7 @@ impl ServiceSchemaBuilder {
         if value.is_none() {
             return Ok(Value::Null);
         }
-        debug!("---Found Object Value: {:?}", value);
+        debug!("Found Object Value: {:?}", value);
 
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {

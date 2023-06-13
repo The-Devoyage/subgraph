@@ -1,4 +1,3 @@
-use async_graphql::dynamic::ValueAccessor;
 use bson::{to_document, Document};
 use log::{debug, info};
 use reqwest::Url;
@@ -151,27 +150,28 @@ impl HttpDataSource {
                 url.set_path(&path);
                 url
             }
+            _ => panic!("Invalid resolver type"),
         };
         Ok(url)
     }
 
     pub async fn create_path_filters(
         url: Url,
-        input: &ValueAccessor<'_>,
+        mut input: Document,
         resolver_type: ResolverType,
     ) -> Result<Url, async_graphql::Error> {
         debug!("Creating Path Filters");
 
         let mut path_segments = url.path_segments().ok_or_else(|| "URL Has no path.")?;
-        let mut document = input.deserialize::<Document>()?;
-        debug!("Deserialized Input {:?}", document);
+        debug!("Deserialized Input {:?}", input);
         let mut url = Url::parse(url.as_str())?;
 
-        document = match resolver_type {
-            ResolverType::FindOne | ResolverType::FindMany | ResolverType::CreateOne => document,
+        input = match resolver_type {
+            ResolverType::FindOne | ResolverType::FindMany | ResolverType::CreateOne => input,
             ResolverType::UpdateOne | ResolverType::UpdateMany => {
-                to_document(document.get("query").unwrap())?
+                to_document(input.get("query").unwrap())?
             }
+            _ => panic!("Invalid resolver type"),
         };
 
         while let Some(path_segment) = path_segments.next() {
@@ -181,7 +181,7 @@ impl HttpDataSource {
                 if identifier.to_string() == ":" {
                     let mut chars = path_segment.chars();
                     chars.next();
-                    let param = document.get(chars.as_str());
+                    let param = input.get(chars.as_str());
                     debug!("Param Found: {:?}", param);
                     if param.is_some() {
                         url = url.join(&param.unwrap().to_string()).unwrap_or(url.clone());
