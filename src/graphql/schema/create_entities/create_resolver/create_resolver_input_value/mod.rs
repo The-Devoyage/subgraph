@@ -1,5 +1,5 @@
 use crate::{
-    configuration::subgraph::entities::{ServiceEntity, ServiceEntityField},
+    configuration::subgraph::entities::{service_entity_field::ServiceEntityField, ServiceEntity},
     graphql::schema::{ResolverType, ServiceSchemaBuilder},
 };
 use async_graphql::dynamic::{Field, InputObject, InputValue, TypeRef};
@@ -8,6 +8,30 @@ use log::{debug, info};
 pub mod get_entity_field_type;
 
 impl ServiceSchemaBuilder {
+    pub fn get_resolver_input_name(
+        entity_name: &str,
+        resolver_type: &ResolverType,
+        list: Option<bool>,
+    ) -> String {
+        info!("Getting Resolver Input Name");
+        let input_name = match resolver_type {
+            ResolverType::FindOne => format!("get_{}_input", &entity_name.to_lowercase()),
+            ResolverType::CreateOne => format!("create_{}_input", &entity_name.to_lowercase()),
+            ResolverType::FindMany => format!("get_{}s_input", &entity_name.to_lowercase()),
+            ResolverType::UpdateOne => format!("update_{}_input", &entity_name.to_lowercase()),
+            ResolverType::UpdateMany => format!("update_{}s_input", &entity_name.to_lowercase()),
+            ResolverType::InternalType => {
+                if list.unwrap_or(false) {
+                    format!("get_{}s_input", &entity_name.to_lowercase())
+                } else {
+                    format!("get_{}_input", &entity_name.to_lowercase())
+                }
+            }
+        };
+        debug!("Resolver Input Name: {}", input_name);
+        input_name
+    }
+
     pub fn is_excluded_input_field(
         entity_field: &ServiceEntityField,
         resolver_type: &ResolverType,
@@ -31,7 +55,9 @@ impl ServiceSchemaBuilder {
         mut resolver: Field,
         resolver_type: &ResolverType,
     ) -> Self {
-        let resolver_input_name = format!("get_{}_input", &entity.name.to_lowercase());
+        let resolver_input_name =
+            ServiceSchemaBuilder::get_resolver_input_name(&entity.name, resolver_type, None);
+
         debug!("Creating Find One Resolver Input: {}", resolver_input_name);
 
         let inputs = ServiceSchemaBuilder::create_input(
@@ -56,7 +82,8 @@ impl ServiceSchemaBuilder {
         mut resolver: Field,
         resolver_type: &ResolverType,
     ) -> Self {
-        let resolver_input_name = format!("get_{}s_input", &entity.name.to_lowercase());
+        let resolver_input_name =
+            ServiceSchemaBuilder::get_resolver_input_name(&entity.name, resolver_type, None);
         info!("Creating Find Many Resolver Input: {}", resolver_input_name);
 
         let inputs = ServiceSchemaBuilder::create_input(
@@ -81,7 +108,8 @@ impl ServiceSchemaBuilder {
         mut resolver: Field,
         resolver_type: &ResolverType,
     ) -> Self {
-        let resolver_input_name = format!("create_{}_input", &entity.name.to_lowercase());
+        let resolver_input_name =
+            ServiceSchemaBuilder::get_resolver_input_name(&entity.name, resolver_type, None);
         info!(
             "Creating Create One Resolver Input: {}",
             resolver_input_name
@@ -109,7 +137,8 @@ impl ServiceSchemaBuilder {
         mut resolver: Field,
         resolver_type: &ResolverType,
     ) -> Self {
-        let resolver_input_name = format!("update_{}_input", &entity.name.to_lowercase());
+        let resolver_input_name =
+            ServiceSchemaBuilder::get_resolver_input_name(&entity.name, resolver_type, None);
         debug!(
             "Creating Update One Resolver Input: {}",
             resolver_input_name
@@ -149,7 +178,8 @@ impl ServiceSchemaBuilder {
         mut resolver: Field,
         resolver_type: &ResolverType,
     ) -> Self {
-        let resolver_input_name = format!("update_{}s_input", &entity.name.to_lowercase());
+        let resolver_input_name =
+            ServiceSchemaBuilder::get_resolver_input_name(&entity.name, resolver_type, None);
         debug!(
             "Creating Update Many Resolver Input: {}",
             resolver_input_name
@@ -247,6 +277,7 @@ impl ServiceSchemaBuilder {
             ResolverType::UpdateMany => {
                 self = self.create_update_many_input(&entity, resolver, &resolver_type);
             }
+            _ => panic!("Resolver Type Not Supported"),
         }
         self
     }

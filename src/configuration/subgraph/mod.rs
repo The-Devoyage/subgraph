@@ -2,15 +2,21 @@ use log::{debug, error};
 use serde::{Deserialize, Serialize};
 use std::{fs::File, io::Read};
 
-use crate::cli_args::CliArgs;
+use crate::{cli_args::CliArgs, utils::log_level::LogLevelEnum};
+
+use self::guard::Guard;
 
 pub mod cors;
 pub mod data_sources;
 pub mod entities;
+pub mod guard;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceConfig {
     pub service_name: String,
+    pub port: Option<u16>,
+    pub log_level: Option<LogLevelEnum>,
+    pub guards: Option<Vec<Guard>>,
     pub entities: Vec<entities::ServiceEntity>,
     pub data_sources: Vec<data_sources::ServiceDataSourceConfig>,
     pub cors: Option<cors::CorsConfigOptions>,
@@ -40,6 +46,7 @@ impl SubGraphConfig {
         let subgraph_config = match subgraph_config {
             Ok(config) => config,
             Err(error) => {
+                println!("{}", error);
                 error!("Invalid Subgraph Config");
                 debug!("{}", error);
                 panic!("Provide Valid Subgraph Config");
@@ -47,5 +54,15 @@ impl SubGraphConfig {
         };
 
         subgraph_config
+    }
+
+    pub fn get_entity(self, entity_name: &str) -> Option<entities::ServiceEntity> {
+        for entity in self.service.entities {
+            if entity.name == entity_name {
+                return Some(entity);
+            }
+        }
+
+        None
     }
 }

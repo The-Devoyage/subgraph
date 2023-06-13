@@ -14,24 +14,19 @@ impl Services {
 
         let collection = db.collection(&collection);
 
-        info!("Created Collection");
-        debug!("{:?}", collection);
+        debug!("Created Collection: {:?}", collection);
 
-        let filter = Services::create_nested_fields(&filter);
+        let filter = Services::create_nested_find_filter(&filter);
 
-        let document = collection.find_one(filter, None).await;
+        debug!("Created Filter: {:?}", filter);
 
-        if let Ok(doc_exists) = document {
-            if let Some(user_document) = doc_exists {
-                Ok(user_document)
-            } else {
-                Err(Error::new("Document not found")
-                    .extend_with(|err, e| e.set("details", err.message.as_str())))
-            }
+        let document = collection.find_one(filter, None).await?;
+
+        if let Some(user_document) = document {
+            Ok(user_document)
         } else {
-            info!("Dastabase Error");
-            debug!("{:?}", document);
-            Err(Error::new("Database Error"))
+            Err(Error::new("Document not found")
+                .extend_with(|err, e| e.set("details", err.message.as_str())))
         }
     }
 }

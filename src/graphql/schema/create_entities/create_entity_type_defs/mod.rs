@@ -1,144 +1,29 @@
 use crate::{
-    configuration::subgraph::entities::{ScalarOptions, ServiceEntity, ServiceEntityField},
+    configuration::subgraph::entities::{service_entity_field::ServiceEntityField, ServiceEntity},
     data_sources::{sql::services::ResponseRow, DataSource, DataSources},
+    graphql::schema::ResolverType,
 };
 
 use super::ServiceSchemaBuilder;
 use async_graphql::{
-    dynamic::{Field, FieldFuture, Object, TypeRef},
+    dynamic::{Field, FieldFuture, InputValue, Object, TypeRef},
     ErrorExtensions,
 };
 use bson::{to_document, Document};
 use json::JsonValue;
 use log::debug;
 
+pub mod get_field_type_ref;
 pub mod resolve_fields;
 
 #[derive(Debug)]
 pub struct TypeRefsAndDefs {
     type_ref: TypeRef,
     type_defs: Vec<Object>,
+    is_root_object: bool,
 }
 
 impl ServiceSchemaBuilder {
-    pub fn get_field_type_ref(
-        entity_field: &ServiceEntityField,
-        data_sources: &DataSources,
-        entity: &ServiceEntity,
-    ) -> TypeRefsAndDefs {
-        debug!("Getting Field Type Ref And Defs");
-        let mut type_defs = Vec::new();
-
-        let type_ref = match entity_field.required {
-            Some(true) => match entity_field.scalar.clone() {
-                ScalarOptions::String => {
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_nn_list_nn(TypeRef::STRING)
-                    } else {
-                        TypeRef::named_nn(TypeRef::STRING)
-                    }
-                }
-                ScalarOptions::Int => {
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_nn_list_nn(TypeRef::INT)
-                    } else {
-                        TypeRef::named_nn(TypeRef::INT)
-                    }
-                }
-                ScalarOptions::Boolean => {
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_nn_list_nn(TypeRef::BOOLEAN)
-                    } else {
-                        TypeRef::named_nn(TypeRef::BOOLEAN)
-                    }
-                }
-                ScalarOptions::ObjectID => {
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_nn_list_nn("ObjectID")
-                    } else {
-                        TypeRef::named_nn("ObjectID")
-                    }
-                }
-                ScalarOptions::Object => {
-                    let object_type_defs = ServiceSchemaBuilder::create_type_defs(
-                        data_sources,
-                        entity,
-                        entity_field.name.clone(),
-                        entity_field.fields.clone().unwrap_or(Vec::new()),
-                        false,
-                    );
-
-                    for object in object_type_defs {
-                        type_defs.push(object);
-                    }
-
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_nn_list_nn(entity_field.name.clone())
-                    } else {
-                        TypeRef::named_nn(entity_field.name.clone())
-                    }
-                }
-            },
-            _ => match entity_field.scalar.clone() {
-                ScalarOptions::String => {
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_list_nn(TypeRef::STRING)
-                    } else {
-                        TypeRef::named(TypeRef::STRING)
-                    }
-                }
-                ScalarOptions::Int => {
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_list_nn(TypeRef::INT)
-                    } else {
-                        TypeRef::named(TypeRef::INT)
-                    }
-                }
-                ScalarOptions::Boolean => {
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_list_nn(TypeRef::BOOLEAN)
-                    } else {
-                        TypeRef::named(TypeRef::BOOLEAN)
-                    }
-                }
-                ScalarOptions::ObjectID => {
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_list_nn("ObjectID")
-                    } else {
-                        TypeRef::named("ObjectID")
-                    }
-                }
-                ScalarOptions::Object => {
-                    let object_type_defs = ServiceSchemaBuilder::create_type_defs(
-                        data_sources,
-                        entity,
-                        entity_field.name.clone(),
-                        entity_field.fields.clone().unwrap_or(vec![]),
-                        false,
-                    );
-
-                    for object in object_type_defs {
-                        type_defs.push(object)
-                    }
-
-                    if entity_field.list.is_some() && entity_field.list.unwrap() {
-                        TypeRef::named_list_nn(entity_field.name.clone())
-                    } else {
-                        TypeRef::named(entity_field.name.clone())
-                    }
-                }
-            },
-        };
-
-        debug!("Created Type Ref: {:?}", type_ref);
-        debug!("Created Type Defs: {:?}", type_defs);
-
-        TypeRefsAndDefs {
-            type_ref,
-            type_defs,
-        }
-    }
-
     pub fn create_field(
         entity_field: ServiceEntityField,
         type_ref: TypeRef,
@@ -287,13 +172,14 @@ impl ServiceSchemaBuilder {
     }
 
     pub fn create_type_defs(
+        &self,
         data_sources: &DataSources,
         entity: &ServiceEntity,
         type_name: String,
         fields: Vec<ServiceEntityField>,
-        is_root_object: bool,
     ) -> Vec<Object> {
         let mut type_defs = Vec::new();
+
         debug!("Creating Type For: `{}`", type_name);
         let mut type_def = Object::new(type_name);
 
@@ -305,8 +191,7 @@ impl ServiceSchemaBuilder {
             }
 
             debug!("Creating Field Def For:\n {:?}", entity_field);
-            let type_defs_and_refs =
-                ServiceSchemaBuilder::get_field_type_ref(&entity_field, &data_sources, entity);
+            let type_defs_and_refs = self.get_field_type_ref(&entity_field, &data_sources, entity);
 
             debug!("Field Type Defs and Ref, {:?}", type_defs_and_refs);
 
@@ -314,14 +199,48 @@ impl ServiceSchemaBuilder {
                 type_defs.push(object_type_def);
             }
 
-            let cloned_entity_field = entity_field.clone();
-            type_def = ServiceSchemaBuilder::add_field(
-                type_def,
-                cloned_entity_field,
-                type_defs_and_refs.type_ref,
-                data_source.clone(),
-                is_root_object,
-            )
+            if entity_field.as_type.is_some() {
+                debug!("Creating As Type Resolver For: {:?}", entity_field);
+                let list = entity_field.list.unwrap_or(false);
+                let as_type_entity = self
+                    .subgraph_config
+                    .service
+                    .entities
+                    .iter()
+                    .find(|e| e.name == entity_field.clone().as_type.unwrap());
+                if as_type_entity.is_none() {
+                    panic!(
+                        "Could not find entity `{}` for as_type resolver",
+                        entity_field.as_type.unwrap()
+                    );
+                }
+                let as_type_entity = as_type_entity.unwrap();
+                let as_type_resolver = self.create_resolver(
+                    as_type_entity,
+                    ResolverType::InternalType,
+                    Some(entity_field.name.clone()),
+                    Some(list),
+                    Some(entity.name.clone()),
+                );
+                let resolver_input_name = ServiceSchemaBuilder::get_resolver_input_name(
+                    &as_type_entity.name,
+                    &ResolverType::InternalType,
+                    Some(list),
+                );
+                type_def = type_def.field(as_type_resolver.argument(InputValue::new(
+                    format!("{}", entity_field.name),
+                    TypeRef::named_nn(resolver_input_name),
+                )));
+            } else {
+                let cloned_entity_field = entity_field.clone();
+                type_def = ServiceSchemaBuilder::add_field(
+                    type_def,
+                    cloned_entity_field,
+                    type_defs_and_refs.type_ref,
+                    data_source.clone(),
+                    type_defs_and_refs.is_root_object,
+                );
+            }
         }
 
         type_defs.push(type_def);
@@ -342,12 +261,11 @@ impl ServiceSchemaBuilder {
 
     pub fn create_entity_type_defs(mut self, entity: &ServiceEntity) -> Self {
         debug!("Creating Types For Entity: {}", &entity.name);
-        let entity_type_defs = ServiceSchemaBuilder::create_type_defs(
+        let entity_type_defs = self.create_type_defs(
             &self.data_sources.clone(),
             entity,
             entity.name.clone(),
             entity.fields.clone(),
-            true,
         );
 
         self = self.register_types(entity_type_defs);

@@ -1,5 +1,5 @@
 use crate::{
-    configuration::subgraph::entities::{ScalarOptions, ServiceEntityField},
+    configuration::subgraph::entities::{service_entity_field::ServiceEntityField, ScalarOptions},
     graphql::schema::{ResolverType, ServiceSchemaBuilder},
 };
 use async_graphql::dynamic::{InputObject, TypeRef};
@@ -43,6 +43,7 @@ impl ServiceSchemaBuilder {
                     }
                 }
             },
+            _ => panic!("Invalid resolver type"),
         }
     }
 
@@ -78,6 +79,7 @@ impl ServiceSchemaBuilder {
                     }
                 }
             },
+            _ => panic!("Invalid resolver type"),
         }
     }
 
@@ -91,7 +93,7 @@ impl ServiceSchemaBuilder {
             | ResolverType::FindMany
             | ResolverType::UpdateOne
             | ResolverType::UpdateMany => {
-                if true {
+                if is_list {
                     TypeRef::named_nn_list(TypeRef::BOOLEAN)
                 } else {
                     TypeRef::named(TypeRef::BOOLEAN)
@@ -113,6 +115,7 @@ impl ServiceSchemaBuilder {
                     }
                 }
             },
+            _ => panic!("Invalid resolver type"),
         }
     }
 
@@ -148,6 +151,7 @@ impl ServiceSchemaBuilder {
                     }
                 }
             },
+            _ => panic!("Invalid resolver type"),
         }
     }
 
@@ -164,6 +168,7 @@ impl ServiceSchemaBuilder {
                 format!("{}_{}_input", parent_field_name, child_field_name)
             }
             ResolverType::FindMany => format!("{}_{}s_input", parent_field_name, child_field_name),
+            _ => panic!("Invalid resolver type"),
         }
     }
 
@@ -216,6 +221,7 @@ impl ServiceSchemaBuilder {
                     }
                 }
             },
+            _ => panic!("Invalid resolver type"),
         };
 
         TypeRefWithInputs { type_ref, inputs }

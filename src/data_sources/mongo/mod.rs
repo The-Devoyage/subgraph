@@ -1,4 +1,4 @@
-use async_graphql::dynamic::{FieldValue, ValueAccessor};
+use async_graphql::dynamic::FieldValue;
 use bson::{oid::ObjectId, to_document, Document};
 use log::{debug, info};
 use mongodb::{options::ClientOptions, Client, Database};
@@ -43,7 +43,7 @@ impl MongoDataSource {
         })
     }
 
-    pub fn convert_object_id_string_to_object_id(mut filter: Document) -> Document {
+    pub fn convert_object_id_string_to_object_id_from_doc(mut filter: Document) -> Document {
         info!("Converting String, `_id`, In Filter to Object ID");
         let object_id_string = filter.get_str("_id");
         if object_id_string.is_err() {
@@ -61,7 +61,7 @@ impl MongoDataSource {
 
         if filter.contains_key("_id") {
             info!("Found `_id` In Filter");
-            filter = MongoDataSource::convert_object_id_string_to_object_id(filter);
+            filter = MongoDataSource::convert_object_id_string_to_object_id_from_doc(filter);
         }
 
         info!("Filter Finalized");
@@ -72,15 +72,11 @@ impl MongoDataSource {
 
     pub async fn execute_operation<'a>(
         data_source: &DataSource,
-        input: &ValueAccessor<'_>,
+        mut input: Document,
         entity: ServiceEntity,
         resolver_type: ResolverType,
     ) -> Result<FieldValue<'a>, async_graphql::Error> {
         debug!("Executing Operation - Mongo Data Source");
-
-        let mut input = input.deserialize::<Document>().unwrap();
-
-        debug!("Found Input: {:?}", input);
 
         input = MongoDataSource::finalize_filter(input);
 
@@ -121,6 +117,7 @@ impl MongoDataSource {
                     results.into_iter().map(|doc| FieldValue::owned_any(doc)),
                 ))
             }
+            _ => panic!("Invalid resolver type"),
         }
     }
 }

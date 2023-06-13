@@ -1,0 +1,119 @@
+[service]
+service_name = "friends"
+port = 4050
+log_level = "debug"
+
+[[service.data_sources]]
+[service.data_sources.Mongo]
+name = "friends_data_source"
+uri = "mongodb://sun:sun@127.0.0.1:27017/sun"
+db = "sun"
+
+[[service.data_sources]]
+[service.data_sources.SQL]
+name = "coffee_data_source"
+uri = "sqlite:/home/nickisyourfan/Desktop/DEV/dbs/caffeine.db"
+dialect = "SQLITE"
+
+[[service.data_sources]]
+[service.data_sources.HTTP]
+name = "todos"
+url = "https://jsonplaceholder.typicode.com"
+
+[[service.entities]]
+name = "user"
+
+[[service.entities.fields]]
+name = "_id"
+scalar = "ObjectID"
+required = true
+exclude_from_input = ["CreateOne", "UpdateOne"]
+[[service.entities.fields]]
+name = "name"
+scalar = "String"
+required = true
+[[service.entities.fields]]
+name = "age"
+scalar = "Int"
+required = false
+[[service.entities.fields]]
+name = "married"
+scalar = "Boolean"
+required = true
+[[service.entities.fields]]
+name = "friends"
+scalar = "ObjectID"
+required = false
+list = true
+as_type = "user"
+join_on = "_id"
+[[service.entities.fields]]
+name = "fav_coffees"
+scalar = "Int"
+required = false
+as_type = "Coffee"
+list = true
+join_on = "id"
+[[service.entities.fields]]
+name = "todos"
+scalar = "Int"
+required = false
+as_type = "todo"
+list = true
+join_on = "id"
+[[service.entities.fields]]
+name = "todo"
+scalar = "Int"
+required = false
+as_type = "todo"
+join_on = "id"
+
+[[service.entities]]
+name = "Coffee"
+[service.entities.data_source]
+from = "coffee_data_source"
+
+[[service.entities.fields]]
+name = "id"
+scalar= "Int"
+required = true
+exclude_from_input = ["CreateOne", "UpdateOne", "UpdateMany"] 
+[[service.entities.fields]]
+name = "name"
+scalar = "String"
+required = true
+[[service.entities.fields]]
+name = "price"
+scalar = "Int"
+required = true
+[[service.entities.fields]]
+name = "available"
+scalar = "Boolean"
+required = true
+
+[[service.entities]]
+name = "todo"
+[service.entities.data_source]
+from = "todos"
+path = "/todos"
+[service.entities.data_source.resolvers]
+[service.entities.data_source.resolvers.find_one]
+path = "/:id"
+[service.entities.data_source.resolvers.find_many]
+search_query = [["userId", ":userId"], ["completed", ":completed"], ["id", ":id"]]
+[[service.entities.fields]]
+name = "userId"
+scalar = "Int"
+required = true
+[[service.entities.fields]]
+name = "id"
+scalar = "Int"
+required = true
+[[service.entities.fields]]
+name = "title"
+scalar = "String"
+required = true
+[[service.entities.fields]]
+name = "completed"
+scalar = "Boolean"
+required = true
