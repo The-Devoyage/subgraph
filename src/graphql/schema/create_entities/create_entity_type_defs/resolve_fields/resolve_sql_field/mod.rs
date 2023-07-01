@@ -59,8 +59,14 @@ impl ServiceSchemaBuilder {
 
         match response_row {
             ResponseRow::MySql(row) => {
-                let value: i32 = row.try_get(field_name)?;
-                Ok(Value::from(value))
+                let value = row.try_get_unchecked::<i32, _>(field_name);
+                match value {
+                    Ok(value) => Ok(Value::from(value)),
+                    Err(_) => {
+                        let value: i64 = row.try_get(field_name)?;
+                        Ok(Value::from(value))
+                    }
+                }
             }
             ResponseRow::SqLite(row) => {
                 let value: i32 = row.try_get(field_name)?;

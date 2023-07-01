@@ -189,7 +189,9 @@ impl ServiceSchemaBuilder {
             input_name.clone(),
             entity_field.fields.clone().unwrap_or(Vec::new()),
             resolver_type,
+            None,
         );
+
         for input in object_inputs {
             inputs.push(input);
         }

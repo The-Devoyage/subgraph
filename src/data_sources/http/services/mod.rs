@@ -22,41 +22,63 @@ impl Services {
         let response = match filter.method {
             Method::GET => {
                 debug!("Using GET Method");
-                client.get(filter.url).send().await?.text().await?
+                let res = client.get(filter.url).send().await?;
+                match res.status().is_success() {
+                    true => res.text().await?,
+                    _ => {
+                        debug!("Response Status: {:?}", res.status());
+                        Err(async_graphql::Error::new("HTTP Request Failed"))?
+                    }
+                }
             }
             Method::POST => {
                 debug!("Using POST Method");
-                client
+                let res = client
                     .post(filter.url)
                     .json(&filter.request_body)
                     .send()
-                    .await?
-                    .text()
-                    .await?
+                    .await?;
+                match res.status().is_success() {
+                    true => res.text().await?,
+                    _ => {
+                        debug!("Response Status: {:?}", res.status());
+                        Err(async_graphql::Error::new("HTTP Request Failed"))?
+                    }
+                }
             }
             Method::PUT => {
                 debug!("Using PUT Method");
-                client
+                let res = client
                     .put(filter.url)
                     .json(&filter.request_body)
                     .send()
-                    .await?
-                    .text()
-                    .await?
+                    .await?;
+                match res.status().is_success() {
+                    true => res.text().await?,
+                    _ => {
+                        debug!("Response Status: {:?}", res.status());
+                        Err(async_graphql::Error::new("HTTP Request Failed"))?
+                    }
+                }
             }
             Method::PATCH => {
                 debug!("Using PATCH Method");
-                client
+                let res = client
                     .patch(filter.url)
                     .json(&filter.request_body)
                     .send()
-                    .await?
-                    .text()
-                    .await?
+                    .await?;
+                match res.status().is_success() {
+                    true => res.text().await?,
+                    _ => {
+                        debug!("Response Status: {:?}", res.status());
+                        Err(async_graphql::Error::new("HTTP Request Failed"))?
+                    }
+                }
             }
             _ => {
-                debug!("Using Default Method: GET");
-                client.get(filter.url).send().await?.text().await?
+                debug!("Unsupported Method");
+                Err(async_graphql::Error::new("Unsupported Method"))?
             }
         };
         Ok(response)

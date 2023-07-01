@@ -268,7 +268,7 @@ impl Services {
                     &sql_query.table,
                     &find_many_where_keys,
                     &dialect,
-                    &sql_query.where_values,
+                    &find_many_where_values,
                 );
 
                 let mut find_many_query = sqlx::query(&find_many_query_string);
