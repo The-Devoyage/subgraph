@@ -19,6 +19,7 @@ Check out some [Example Configurations](examples) for SqLite, MySQL, Postgres, H
 ```toml
 [service]
 service_name = "dogs"
+port = 5011
 
 [[service.data_sources]]
 [service.data_sources.Mongo]
@@ -28,24 +29,12 @@ db = "db_name"
 
 [[service.entities]]
 name = "Dog"
-
-[[service.entities.fields]]
-name = "_id"
-scalar = "ObjectID"
-required = true
-
-[[service.entities.fields]]
-name = "name"
-scalar = "String"
-required = true
-
-[[service.entities.fields]]
-name = "age"
-scalar = "Int"
-
-[[service.entities.fields]]
-name = "is_love"
-scalar = "Boolean"
+fields = [
+    { name = "_id", scalar = "ObjectID", required = true },
+    { name = "name", scalar = "String", required = true },
+    { name = "age", scalar = "Int" },
+    { name = "is_love", scalar = "Boolean"}
+]
 ```
 
 ### 3. Start the Service
@@ -53,13 +42,13 @@ scalar = "Boolean"
 From binary release:
 
 ```bash
-subgraph --config path-to-config.toml --port 5011
+subgraph --config ./path-to-config.toml
 ```
 
 From repo
 
 ```bash
-cargo run -- -c ./config.toml -p 5011
+cargo run -- -c ./config.toml
 ```
 
 ### 4. Start Querying
@@ -89,7 +78,8 @@ Resolvers are created for each defined entity allowing you to find and manipulat
 - Update One
 - Update Many
 
-\*Note, Update One Resolvers are excluded from MySQL and SQLite Data Sources as a true `LIMIT 1` query is invalid syntax when using these dialects.
+\*Note, Update One Resolvers are excluded from Postgres and SQLite Data Sources as a true `LIMIT 1` query is invalid syntax when using these dialects.
+\*Note, Mongo DB will upsert update documents.
 
 ### Data Sources
 
@@ -164,26 +154,12 @@ Entities are the assets returned from the data source. You may define multiple e
 ```toml
 [[service.entities]]
 name = "Person"
-
-[[service.entities.fields]]
-name = "_id"
-scalar = "ObjectID"
-required = true
-
-[[service.entities.fields]]
-name = "name"
-scalar = "String"
-required = true
-
-[[service.entities.fields]]
-name = "age"
-scalar = "String"
-# required = false by default
-
-[[service.entities.fields]]
-name = "friends"
-scalar = "String"
-list = true # Support for lists
+fields = [
+    { name = "_id", scalar = "ObjectID", required = true },
+    { name = "name", scalar = "String", required = true },
+    { name = "age", scalar = "Int" },
+    { name = "friends", scalar = "String", list = true }
+]
 ```
 
 Fields may be nested using Object Scalars. See a full list of available scalars within the API Section of this README.
@@ -322,7 +298,7 @@ Guards grant access to various datapoints such as Headers and Input values.
 
 Guard Service:
 
-```
+```toml
 [service]
 service_name = "espresso"
 
@@ -445,16 +421,16 @@ The configuration, `guards.toml`, in the examples folder demonstrates remaining 
 
 #### Field
 
-| Field\*             | Description                                                         | Type           |
-| ------------------- | ------------------------------------------------------------------- | -------------- |
-| name\*              | The name of the field.                                              | String         |
-| scalar\*            | The scalar type of the field.                                       | Scalar Options |
-| required            | Whether or not the field is required. Defaults to false.            | Option<bool>   |
-| exclude_from_input  | A list of resolvers of which not to apply to the associated input.  | ResolverType[] |
-| exclude_from_output | A list of resolvers of which not to apply to the associated input.  | ResolverType[] |
-| list                | Defines the scalar as a list or a singular value.                   | Option<bool>   |
-| as_type             | Associates the field with another entity type for joining/extending | Option<String> |
-| join_on             | The 'foreign key' of the type to be joined on.                      | Option<String> |
+| Field\*             | Description                                                         | Type               |
+| ------------------- | ------------------------------------------------------------------- | ------------------ |
+| name\*              | The name of the field.                                              | String             |
+| scalar\*            | The scalar type of the field.                                       | Scalar Options     |
+| required            | Whether or not the field is required. Defaults to false.            | Option<bool>       |
+| exclude_from_input  | A list of resolvers of which not to apply to the associated input.  | ExcludeFromInput[] |
+| exclude_from_output | A list of resolvers of which not to apply to the associated input.  | bool               |
+| list                | Defines the scalar as a list or a singular value.                   | Option<bool>       |
+| as_type             | Associates the field with another entity type for joining/extending | Option<String>     |
+| join_on             | The 'foreign key' of the type to be joined on.                      | Option<String>     |
 
 | Scalar Options |
 | -------------- |
@@ -471,6 +447,16 @@ The configuration, `guards.toml`, in the examples folder demonstrates remaining 
 | CreateOne    |
 | UpdateOne    |
 | UpdateMany   |
+
+| ExcludeFromInput |
+| ---------------- |
+| FindOne          |
+| FindMany         |
+| CreateOne        |
+| UpdateOne        |
+| UpdateMany       |
+| UpdateOneQuery   |
+| UpdateManyQuery  |
 
 #### Guard
 

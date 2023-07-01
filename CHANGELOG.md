@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.0.10]
+
+### Fixed
+
+- SqLite Update Many Return Failure.
+- MySQL Resolves i32 and i64 Integers - When using BigInt as datatype to for ID, resolver had mix matched types.
+- Re-enable MySQL Update One Resolver. - Was inadvertently removed from resolvers in previous version refactor. Now reflected correctly in docs.
+- HTTP Data Sources return failure response if not response status 200-299.
+- Update Query Input is now unique and not the same as `find_one` input.
+- `exclude_from_input` options now allow excluding fields from update query inputs.
+
 ## [v0.0.9]
 
 ### Added
