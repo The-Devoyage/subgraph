@@ -220,3 +220,151 @@ async fn find_one_by_list() {
 
     assert!(response.is_ok());
 }
+
+#[tokio::test]
+async fn find_joined_to_mongo_ds() {
+    let owner = async_graphql::Request::new(
+        r#"
+        mutation {
+            create_user(create_user_input: { 
+                name: "Laura", 
+                age: 33,
+                married: true,
+            }) {
+                _id
+            }
+        }
+        "#,
+    );
+    let user_response = execute(owner, None).await;
+    let user_json = user_response.data.into_json().unwrap();
+    let user_id = user_json["create_user"]["_id"].as_str().unwrap();
+
+    let fav_car = async_graphql::Request::new(
+        r#"
+        mutation {
+            create_car(create_car_input: { model: "Camero", price: 1, status: true }) {
+                id
+            }
+        }
+        "#,
+    );
+    let car_response = execute(fav_car, None).await;
+    let car_json = car_response.data.into_json().unwrap();
+    let car_id = car_json["create_car"]["id"].as_i64().unwrap();
+
+    let fav_coffee = async_graphql::Request::new(
+        r#"
+        mutation {
+            create_coffee(create_coffee_input: { name: "Ascension", price: 14, available: false }) {
+                id
+            }
+        }
+        "#,
+    );
+    let coffee_response = execute(fav_coffee, None).await;
+    let coffee_json = coffee_response.data.into_json().unwrap();
+    let coffee_id = coffee_json["create_coffee"]["id"].as_i64().unwrap();
+
+    let comment_one = async_graphql::Request::new(
+        r#"
+        mutation {
+            create_comment(create_comment_input: { content: "join_one test", status: true }) {
+                id
+            }
+        }
+        "#,
+    );
+    let comment_one_response = execute(comment_one, None).await;
+    let comment_one_json = comment_one_response.data.into_json().unwrap();
+    let comment_one_id = comment_one_json["create_comment"]["id"].as_i64().unwrap();
+
+    let comment_two = async_graphql::Request::new(
+        r#"
+        mutation {
+            create_comment(create_comment_input: { content: "join_two test", status: true }) {
+                id
+            }
+        }
+        "#,
+    );
+    let comment_two_response = execute(comment_two, None).await;
+    let comment_two_json = comment_two_response.data.into_json().unwrap();
+    let comment_two_id = comment_two_json["create_comment"]["id"].as_i64().unwrap();
+
+    println!(
+        "{}, {}, {}, {}, {}",
+        user_id, car_id, coffee_id, comment_one_id, comment_two_id
+    );
+
+    let request = async_graphql::Request::new(format!(
+        r#"
+        mutation {{
+            create_dog(create_dog_input: {{
+                name: "Buddy",
+                age: 5,
+                owner: "{}",
+                fav_car: {},
+                fav_coffee: {},
+                todo: 1,
+                comments: [{}, {}]
+            }}) {{
+                _id
+            }}
+        }}
+        "#,
+        user_id, car_id, coffee_id, comment_one_id, comment_two_id
+    ));
+
+    let response = execute(request, None).await;
+
+    let dog_json = response.data.into_json().unwrap();
+    let dog_id = dog_json["create_dog"]["_id"].as_str().unwrap();
+    println!("DogID: {}", dog_id);
+
+    let request = async_graphql::Request::new(format!(
+        r#"
+        {{
+            get_dog(get_dog_input: {{ _id: "{}" }}) {{
+                _id
+                name
+                age
+                owner(owner: {{}}) {{
+                    _id
+                    name
+                    age
+                    married
+                }}
+                fav_car(fav_car: {{}}) {{
+                    id
+                    model
+                    price
+                    status
+                }}
+                fav_coffee(fav_coffee: {{}}) {{
+                    id
+                    name
+                    price
+                    available
+                }}
+                todo(todo: {{}}) {{
+                    id
+                    userId
+                    title
+                    completed
+                }}
+                comments(comments: {{}}) {{
+                    id
+                    content
+                    status
+                }}
+            }}
+        }}
+        "#,
+        dog_id
+    ));
+
+    let response = execute(request, None).await;
+
+    assert!(response.is_ok());
+}

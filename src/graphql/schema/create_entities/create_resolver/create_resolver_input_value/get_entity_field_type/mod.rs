@@ -72,7 +72,7 @@ impl ServiceSchemaBuilder {
                     }
                 }
                 _ => {
-                    if is_required {
+                    if is_list {
                         TypeRef::named_nn_list(TypeRef::INT)
                     } else {
                         TypeRef::named(TypeRef::INT)

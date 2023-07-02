@@ -100,3 +100,17 @@ fields = [
     { name = "name", scalar = "String", required = true },
   ]}
 ]
+
+[[service.entities]]
+name = "Dog"
+fields = [
+  { name = "_id", scalar = "ObjectID", required = true, exclude_from_input = ["CreateOne", "UpdateOne", "UpdateMany"] },
+  { name = "name", scalar = "String", required = true },
+  { name = "age", scalar = "Int", required = true },
+  { name = "owner", scalar = "ObjectID", as_type = "user", join_on = "_id" },
+  { name = "fav_car", scalar = "Int", as_type = "Car", join_on = "id" },
+  { name = "fav_coffee", scalar = "Int", as_type = "Coffee", join_on = "id" },
+  { name = "todo", scalar = "Int", as_type = "todo", join_on = "id" },
+  { name = "comments", scalar = "Int", as_type = "Comment", join_on = "id", list = true },
+]
+
