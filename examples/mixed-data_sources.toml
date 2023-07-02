@@ -1,6 +1,6 @@
 [service]
 # This is the name of the service
-service_name = "pets"
+name = "pets"
 
 # This is a list of data sources used by the service
 [[service.data_sources]]

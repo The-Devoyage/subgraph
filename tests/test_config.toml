@@ -1,5 +1,5 @@
 [service]
-service_name = "subgraph_tests"
+name = "subgraph_tests"
 port = 0
 log_level = "debug"
 
@@ -88,4 +88,15 @@ fields = [
   { name = "model", scalar = "String", required = true },
   { name = "price", scalar = "Int", required = true },
   { name = "status", scalar = "Boolean", required = true }
+]
+
+[[service.entities]]
+name = "Beer"
+fields = [
+  { name = "_id", scalar = "ObjectID", required = true, exclude_from_input = ["CreateOne", "UpdateOne", "UpdateMany"] },
+  { name = "name", scalar = "String", required = true },
+  { name = "ratings", scalar = "Int", required = true, list = true },
+  { name = "brand", scalar = "Object", required = true, fields = [
+    { name = "name", scalar = "String", required = true },
+  ]}
 ]

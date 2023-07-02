@@ -18,7 +18,7 @@ Check out some [Example Configurations](examples) for SqLite, MySQL, Postgres, H
 
 ```toml
 [service]
-service_name = "dogs"
+name = "dogs"
 port = 5011
 
 [[service.data_sources]]
@@ -117,7 +117,7 @@ Define the service at the top of the config.
 
 ```toml
 [service]
-service_name = "demo"
+name = "demo"
 ```
 
 ### Defining Data Sources
@@ -126,7 +126,7 @@ You must define at least one Data Source. See the `Data Source Enum` table in th
 
 ```toml
 [service]
-service_name = "demo"
+name = "demo"
 
 [[service.data_sources]]
 [service.data_sources.Mongo]
@@ -300,7 +300,7 @@ Guard Service:
 
 ```toml
 [service]
-service_name = "espresso"
+name = "espresso"
 
 [[service.guards]]
 name = "role"
@@ -323,7 +323,7 @@ The configuration, `guards.toml`, in the examples folder demonstrates remaining 
 
 | Service\*    | Description                          | Type          |
 | ------------ | ------------------------------------ | ------------- |
-| service_name | The name of this service.            | String        |
+| name         | The name of this service.            | String        |
 | data_sources | Where the data is located.           | Data Source[] |
 | entities\*   | The data to be defined.              | Entity[]      |
 | cors         | Cors options for the GraphQL Server. | Cors Config   |

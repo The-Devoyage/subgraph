@@ -1,5 +1,5 @@
 [service]
-service_name = "friends"
+name = "friends"
 port = 4050
 log_level = "debug"
 
