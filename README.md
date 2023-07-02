@@ -221,6 +221,7 @@ For example, the configuration directly above would result in:
 - Find Many - `/users?userId=1&completed=true`
 
 Note, defining a variable uses the prefix `:`. The variable is extracted from the GraphQL Input. If excluded from the GraphQL Input, the path or query string excludes the definition. You may set hard coded values in the config.
+Additionally, HTTP Data sources are limited by what the API expects to receive. Use best judgement when working with these data sources.
 
 **Join and Extend Entities**
 

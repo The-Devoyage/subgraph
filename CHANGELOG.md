@@ -11,6 +11,7 @@
 - Update Query Input is now unique and not the same as `find_one` input.
 - `exclude_from_input` options now allow excluding fields from update query inputs.
 - Update `service_name` field to `name` in configuration.
+- Create one, non required, input value list option fixed.
 
 ## [v0.0.9]
 
