@@ -156,3 +156,67 @@ async fn returns_correct_scalars() {
     assert_eq!(age, 2);
     assert_eq!(married, true);
 }
+
+#[tokio::test]
+async fn find_one_by_nested_object() {
+    let request = async_graphql::Request::new(
+        r#"
+        mutation {
+            create_beer(create_beer_input: { 
+                name: "Mosiac", 
+                ratings: [5, 4, 5, 4, 3],
+                brand: { 
+                    name: "Community" 
+                } 
+            }) {
+                _id
+            }
+        }
+        "#,
+    );
+    execute(request, None).await;
+    let request = async_graphql::Request::new(
+        r#"
+        {
+            get_beer(get_beer_input: { brand: { name: "Community" } }) {
+                _id
+            }
+        }
+        "#,
+    );
+    let response = execute(request, None).await;
+
+    assert!(response.is_ok());
+}
+
+#[tokio::test]
+async fn find_one_by_list() {
+    let request = async_graphql::Request::new(
+        r#"
+        mutation {
+            create_beer(create_beer_input: { 
+                name: "Mosiac", 
+                ratings: [5, 4, 5, 4, 3],
+                brand: { 
+                    name: "Community" 
+                } 
+            }) {
+                _id
+            }
+        }
+        "#,
+    );
+    execute(request, None).await;
+    let request = async_graphql::Request::new(
+        r#"
+        {
+            get_beer(get_beer_input: { ratings: [5] }) {
+                _id
+            }
+        }
+        "#,
+    );
+    let response = execute(request, None).await;
+
+    assert!(response.is_ok());
+}

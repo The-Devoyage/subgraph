@@ -13,7 +13,7 @@ pub mod guard;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceConfig {
-    pub service_name: String,
+    pub name: String,
     pub port: Option<u16>,
     pub log_level: Option<LogLevelEnum>,
     pub guards: Option<Vec<Guard>>,

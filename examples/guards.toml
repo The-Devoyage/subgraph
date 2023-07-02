@@ -1,5 +1,5 @@
 [service]
-service_name = "espresso"
+name = "espresso"
 port = 3030
 log_level = "debug"
 
