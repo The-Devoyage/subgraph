@@ -179,6 +179,7 @@ impl ServiceSchemaBuilder {
                 let as_type_entity_parent = as_type_entity_parent.clone();
 
                 FieldFuture::new(async move {
+                    debug!("Resolving Field: {}", ctx.field().name());
                     let data_sources = ctx.data_unchecked::<DataSources>().clone();
                     let input_document = match resolver_type {
                         ResolverType::InternalType => {

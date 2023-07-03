@@ -1,5 +1,5 @@
 [service]
-service_name = "double_mongo"
+name = "double_mongo"
 
 # Define Two Mongo Data Sources
 [[service.data_sources]] # Self Hosted

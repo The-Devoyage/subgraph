@@ -91,7 +91,7 @@ impl Services {
                     &sql_query.table,
                     &find_one_where_keys,
                     &dialect,
-                    &sql_query.where_values,
+                    &find_one_where_values,
                 );
 
                 let mut find_one_query = sqlx::query(&find_one_query_string);
