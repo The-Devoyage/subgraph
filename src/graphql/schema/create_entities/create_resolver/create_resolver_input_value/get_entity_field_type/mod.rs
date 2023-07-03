@@ -72,7 +72,7 @@ impl ServiceSchemaBuilder {
                     }
                 }
                 _ => {
-                    if is_required {
+                    if is_list {
                         TypeRef::named_nn_list(TypeRef::INT)
                     } else {
                         TypeRef::named(TypeRef::INT)
@@ -189,7 +189,9 @@ impl ServiceSchemaBuilder {
             input_name.clone(),
             entity_field.fields.clone().unwrap_or(Vec::new()),
             resolver_type,
+            None,
         );
+
         for input in object_inputs {
             inputs.push(input);
         }

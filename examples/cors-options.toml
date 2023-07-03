@@ -1,5 +1,5 @@
 [service]
-service_name = "dev"
+name = "dev"
 
 [[service.data_sources]]
 [service.data_sources.Mongo]

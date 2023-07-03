@@ -136,9 +136,14 @@ impl SqlDataSource {
                 }
             } else if key == "query" {
                 debug!("Processing Where Query");
-                let query_object = value.as_document().unwrap();
+                let query_object = value.as_document();
 
-                for (key, value) in query_object.iter() {
+                if query_object.is_none() {
+                    //HACK: Should prob return result, to notify user of invalid query object.
+                    panic!("Invalid Query Object");
+                }
+
+                for (key, value) in query_object.unwrap().iter() {
                     where_keys.push(key.to_string());
 
                     if value.as_array().is_some() {

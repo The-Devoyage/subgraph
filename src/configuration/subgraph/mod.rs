@@ -2,7 +2,7 @@ use log::{debug, error};
 use serde::{Deserialize, Serialize};
 use std::{fs::File, io::Read};
 
-use crate::{cli_args::CliArgs, utils::log_level::LogLevelEnum};
+use crate::{cli_args::CliArgs, utils::logger::LogLevelEnum};
 
 use self::guard::Guard;
 
@@ -13,7 +13,7 @@ pub mod guard;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceConfig {
-    pub service_name: String,
+    pub name: String,
     pub port: Option<u16>,
     pub log_level: Option<LogLevelEnum>,
     pub guards: Option<Vec<Guard>>,
@@ -29,6 +29,7 @@ pub struct SubGraphConfig {
 
 impl SubGraphConfig {
     pub fn init(args: &CliArgs) -> SubGraphConfig {
+        debug!("Initializing Subgraph Config");
         let read_file = File::open(&args.config);
 
         let mut file_config = String::new();
@@ -38,7 +39,7 @@ impl SubGraphConfig {
                 f.read_to_string(&mut file_config)
                     .expect("Failed To Read Config File");
             }
-            Err(_) => println!("Error Reading Config File"),
+            Err(err) => println!("Error Reading Config File: {}", err),
         };
 
         let subgraph_config = toml::from_str::<SubGraphConfig>(&file_config);
@@ -52,6 +53,8 @@ impl SubGraphConfig {
                 panic!("Provide Valid Subgraph Config");
             }
         };
+
+        debug!("Subgraph Config: {:?}", subgraph_config);
 
         subgraph_config
     }
