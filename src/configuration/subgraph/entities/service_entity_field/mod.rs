@@ -1,7 +1,7 @@
 use log::{debug, error};
 use serde::{Deserialize, Serialize};
 
-use crate::{configuration::subgraph::guard::Guard, graphql::schema::ResolverType};
+use crate::{configuration::subgraph::guard::Guard, graphql::schema::ExcludeFromInput};
 
 use super::ScalarOptions;
 
@@ -11,7 +11,7 @@ pub struct ServiceEntityField {
     pub guards: Option<Vec<Guard>>,
     pub scalar: ScalarOptions,
     pub required: Option<bool>,
-    pub exclude_from_input: Option<Vec<ResolverType>>,
+    pub exclude_from_input: Option<Vec<ExcludeFromInput>>,
     pub exclude_from_output: Option<bool>,
     pub fields: Option<Vec<ServiceEntityField>>,
     pub list: Option<bool>,

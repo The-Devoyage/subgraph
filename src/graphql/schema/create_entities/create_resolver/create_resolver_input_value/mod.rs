@@ -1,6 +1,6 @@
 use crate::{
     configuration::subgraph::entities::{service_entity_field::ServiceEntityField, ServiceEntity},
-    graphql::schema::{ResolverType, ServiceSchemaBuilder},
+    graphql::schema::{ExcludeFromInput, ResolverType, ServiceSchemaBuilder},
 };
 use async_graphql::dynamic::{Field, InputObject, InputValue, TypeRef};
 use log::{debug, info};
@@ -34,19 +34,26 @@ impl ServiceSchemaBuilder {
 
     pub fn is_excluded_input_field(
         entity_field: &ServiceEntityField,
-        resolver_type: &ResolverType,
+        excluded: Option<ExcludeFromInput>,
     ) -> bool {
         info!("Checking If Field Should Be Excluded From Input");
         let exclude_from_input = entity_field.exclude_from_input.clone();
         debug!("Exclude From Input Config: {:?}", exclude_from_input);
-        let mut exclude = false;
-        if exclude_from_input.is_some() {
-            if exclude_from_input.unwrap().contains(&resolver_type) {
-                exclude = true;
-            }
+
+        if exclude_from_input.is_none() {
+            return false;
         }
-        debug!("Exclude {}: {}", entity_field.name, exclude);
-        exclude
+
+        match exclude_from_input {
+            Some(exclude_from_input) => {
+                if exclude_from_input.contains(&excluded.unwrap()) {
+                    true
+                } else {
+                    false
+                }
+            }
+            None => false,
+        }
     }
 
     pub fn create_find_one_input(
@@ -64,6 +71,7 @@ impl ServiceSchemaBuilder {
             resolver_input_name.clone(),
             entity.fields.clone(),
             resolver_type,
+            Some(ExcludeFromInput::FindOne),
         );
 
         resolver = resolver.argument(InputValue::new(
@@ -90,6 +98,7 @@ impl ServiceSchemaBuilder {
             resolver_input_name.clone(),
             entity.fields.clone(),
             resolver_type,
+            Some(ExcludeFromInput::FindMany),
         );
 
         resolver = resolver.argument(InputValue::new(
@@ -119,6 +128,7 @@ impl ServiceSchemaBuilder {
             resolver_input_name.clone(),
             entity.fields.clone(),
             resolver_type,
+            Some(ExcludeFromInput::CreateOne),
         );
 
         resolver = resolver.argument(InputValue::new(
@@ -148,19 +158,32 @@ impl ServiceSchemaBuilder {
             resolver_input_name.clone(),
             entity.fields.clone(),
             resolver_type,
+            Some(ExcludeFromInput::UpdateOne),
         );
 
-        let mut input = inputs
+        let mut update_one_input = inputs
             .iter()
             .position(|input| input.type_name() == resolver_input_name)
             .map(|i| inputs.remove(i))
             .unwrap();
-        let query_input_name = format!("get_{}_input", &entity.name.to_lowercase());
-        input = input.field(InputValue::new(
+        let update_one_query_input_name = ServiceSchemaBuilder::get_resolver_input_name(
+            &format!("{}_query", &entity.name.to_lowercase()),
+            &ResolverType::UpdateOne,
+            None,
+        );
+        let update_one_inputs = ServiceSchemaBuilder::create_input(
+            update_one_query_input_name.clone(),
+            entity.fields.clone(),
+            &ResolverType::FindOne,
+            Some(ExcludeFromInput::UpdateOneQuery),
+        );
+        update_one_input = update_one_input.field(InputValue::new(
             "query",
-            TypeRef::named_nn(query_input_name.clone()),
+            TypeRef::named_nn(update_one_query_input_name.clone()),
         ));
-        inputs.push(input);
+
+        inputs.push(update_one_input);
+        inputs.extend(update_one_inputs);
 
         resolver = resolver.argument(InputValue::new(
             &resolver_input_name,
@@ -189,19 +212,32 @@ impl ServiceSchemaBuilder {
             resolver_input_name.clone(),
             entity.fields.clone(),
             resolver_type,
+            Some(ExcludeFromInput::UpdateMany),
         );
 
-        let mut input = inputs
+        let mut update_many_input = inputs
             .iter()
             .position(|input| input.type_name() == resolver_input_name)
             .map(|i| inputs.remove(i))
             .unwrap();
-        let query_input_name = format!("get_{}_input", &entity.name.to_lowercase());
-        input = input.field(InputValue::new(
+        let update_many_query_input_name = ServiceSchemaBuilder::get_resolver_input_name(
+            &format!("{}_query", &entity.name.to_lowercase()),
+            &ResolverType::UpdateMany,
+            None,
+        );
+        let update_many_inputs = ServiceSchemaBuilder::create_input(
+            update_many_query_input_name.clone(),
+            entity.fields.clone(),
+            &ResolverType::FindOne,
+            Some(ExcludeFromInput::UpdateManyQuery),
+        );
+        update_many_input = update_many_input.field(InputValue::new(
             "query",
-            TypeRef::named_nn(query_input_name.clone()),
+            TypeRef::named_nn(update_many_query_input_name.clone()),
         ));
-        inputs.push(input);
+
+        inputs.push(update_many_input);
+        inputs.extend(update_many_inputs);
 
         resolver = resolver.argument(InputValue::new(
             &resolver_input_name,
@@ -217,12 +253,13 @@ impl ServiceSchemaBuilder {
         input_name: String,
         fields: Vec<ServiceEntityField>,
         resolver_type: &ResolverType,
+        exclude_from_input: Option<ExcludeFromInput>,
     ) -> Vec<InputObject> {
         debug!("Creating Input: {}", input_name);
         let mut inputs = Vec::new();
         let mut input = InputObject::new(&input_name);
         for field in &fields {
-            if !ServiceSchemaBuilder::is_excluded_input_field(field, resolver_type) {
+            if !ServiceSchemaBuilder::is_excluded_input_field(field, exclude_from_input.clone()) {
                 let parent_input_name = input_name.clone().replace("_input", "");
                 let type_ref_with_inputs = ServiceSchemaBuilder::get_entity_field_type(
                     field,
