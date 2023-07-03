@@ -1,5 +1,5 @@
 [service]
-service_name = "chat_gpt"
+name = "chat_gpt"
 
 [service.cors]
 allow_headers = ["Authorization", "Content-Type"]

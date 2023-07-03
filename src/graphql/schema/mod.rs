@@ -16,6 +16,17 @@ pub enum ResolverType {
     InternalType,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+pub enum ExcludeFromInput {
+    FindOne,
+    FindMany,
+    CreateOne,
+    UpdateOne,
+    UpdateMany,
+    UpdateOneQuery,
+    UpdateManyQuery,
+}
+
 pub struct ServiceSchemaBuilder {
     pub subgraph_config: SubGraphConfig,
     pub schema_builder: SchemaBuilder,
