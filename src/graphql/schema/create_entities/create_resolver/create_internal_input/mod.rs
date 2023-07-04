@@ -10,20 +10,42 @@ use crate::{
 };
 
 impl ServiceSchemaBuilder {
-    pub fn get_internal_input(
-        as_type_entity_parent: Option<ServiceEntity>,
+    pub fn create_internal_input(
+        as_type_entity_parent: ServiceEntity,
         ctx: &ResolverContext,
     ) -> Result<Document, async_graphql::Error> {
         debug!("Getting Internal Input");
-        let field_input = ctx.args.try_get(&format!("{}", ctx.field().name()))?;
         let field_name = ctx.field().name().to_string();
-        let parent_value = ctx.parent_value.downcast_ref::<Document>().unwrap().clone();
-        let field = ServiceEntity::get_field(as_type_entity_parent.unwrap(), field_name.clone())?;
-        let join_on = field.join_on.unwrap();
-        let field_input = field_input.deserialize::<Document>().unwrap();
+        let parent_value = match ctx.parent_value.downcast_ref::<Document>() {
+            Some(parent_value) => parent_value,
+            None => return Err(async_graphql::Error::new("Invalid Parent Value")),
+        };
+        let field = ServiceEntity::get_field(as_type_entity_parent, field_name.clone())?;
+        let join_on = match field.join_on {
+            Some(join_on) => join_on,
+            None => {
+                return Err(async_graphql::Error::new(format!(
+                    "No join on found for field: {}",
+                    field_name
+                )))
+            }
+        };
+
+        let field_input = ctx.args.try_get(&format!("{}", ctx.field().name()))?;
+        let field_input = match field_input.deserialize::<Document>() {
+            Ok(field_input) => field_input,
+            Err(_) => {
+                return Err(async_graphql::Error::new(format!(
+                    "Invalid input for field: {}",
+                    field_name
+                )))
+            }
+        };
         let mut field_input = field_input.clone();
+
         let scalar = field.scalar;
         let list = field.list.unwrap_or(false);
+
         match list {
             true => {
                 let join_on_value = parent_value.get_array(field_name.clone());

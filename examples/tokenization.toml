@@ -1,0 +1,58 @@
+[service]
+name = "auth"
+
+[[service.data_sources]]
+[service.data_sources.Mongo]
+name = "users_data_source"
+uri = "mongodb://subgraph_mongo:subgraph_mongo@127.0.0.1:27017/subgraph_mongo"
+db = "subgraph_mongo"
+
+[[service.entities]]
+name = "account"
+[[service.entities.fields]]
+name = "_id"
+scalar = "ObjectID"
+required = true
+exclude_from_input = ["CreateOne", "UpdateOne", "UpdateMany"]
+[[service.entities.fields]]
+name = "email"
+scalar = "String"
+required = true
+exclude_from_output = true
+[[service.entities.fields]]
+name = "password"
+scalar = "String"
+required = true
+exclude_from_output = true
+exclude_from_input = [
+  "FindOne",
+  "FindMany",
+  "UpdateManyQuery",
+  "UpdateOneQuery",
+  "UpdateMany"
+]
+[[service.entities.fields]]
+name = "auth_token"
+scalar = "Object"
+exclude_from_input = [
+  "FindOne",
+  "FindMany",
+  "UpdateManyQuery",
+  "UpdateOneQuery",
+  "UpdateMany",
+  "UpdateOne",
+  "CreateOne"
+]
+fields = [
+  { name = "user", scalar = "String", required = true, as_type = "user", join_on = "email" },
+]
+
+[[service.entities]]
+name = "user"
+fields = [
+  { name = "_id", scalar = "ObjectID", required = true, exclude_from_input = ["CreateOne", "UpdateOne", "UpdateMany"]},
+  { name = "email", scalar = "String", required = true, exclude_from_input = ["UpdateMany"]},
+  { name = "name", scalar = "String", required = true },
+  { name = "age", scalar = "Int", required = false },
+  { name = "married", scalar = "Boolean", required = true }
+]

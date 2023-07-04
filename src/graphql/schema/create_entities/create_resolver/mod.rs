@@ -18,8 +18,8 @@ use crate::{
 
 use super::{ResolverType, ServiceSchemaBuilder};
 
+mod create_internal_input;
 mod create_resolver_input_value;
-mod get_internal_input;
 
 #[derive(Debug)]
 pub struct ResolverConfig {
@@ -183,7 +183,19 @@ impl ServiceSchemaBuilder {
                     let data_sources = ctx.data_unchecked::<DataSources>().clone();
                     let input_document = match resolver_type {
                         ResolverType::InternalType => {
-                            ServiceSchemaBuilder::get_internal_input(as_type_entity_parent, &ctx)?
+                            let as_type_entity_parent = match as_type_entity_parent {
+                                Some(entity) => entity.clone(),
+                                None => {
+                                    return Err(async_graphql::Error::new(format!(
+                                        "No as type entity parent found for field: {}",
+                                        ctx.field().name()
+                                    )))
+                                }
+                            };
+                            ServiceSchemaBuilder::create_internal_input(
+                                as_type_entity_parent,
+                                &ctx,
+                            )?
                         }
                         _ => {
                             let input =

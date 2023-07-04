@@ -1,5 +1,5 @@
 use async_graphql::{Error, ErrorExtensions};
-use log::{debug, info};
+use log::debug;
 use mongodb::{bson::Document, Database};
 
 use super::Services;
@@ -10,11 +10,9 @@ impl Services {
         filter: Document,
         collection: String,
     ) -> Result<Document, async_graphql::Error> {
-        info!("Executing Find One - Mongo Data Source");
+        debug!("Executing Find One - Mongo Data Source: {:?}", collection);
 
         let collection = db.collection(&collection);
-
-        debug!("Created Collection: {:?}", collection);
 
         let filter = Services::create_nested_find_filter(&filter);
 

@@ -5,7 +5,7 @@ async fn find_one() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_user(create_user_input: { name: "Bongo", age: 10, married: false }) {
+            create_user(create_user_input: { name: "Bongo", age: 10, married: false, email: "nickisyourfan@gmail.com" }) {
                 _id
             }
         }
@@ -15,7 +15,7 @@ async fn find_one() {
     let request = async_graphql::Request::new(
         r#"
         {
-            get_user(get_user_input: { name: "Bongo", age: 10, married: false }) {
+            get_user(get_user_input: { name: "Bongo", age: 10, married: false, email: "nickisyourfan@gmail.com" }) {
                 _id
             }
         }
@@ -31,7 +31,7 @@ async fn find_one_fails() {
     let request = async_graphql::Request::new(
         r#"
         {
-            get_user(get_user_input: { name: "Foo", age: 100, married: true}) {
+            get_user(get_user_input: { name: "Foo", age: 100, married: true }) {
                 _id
             }
         }
@@ -46,7 +46,7 @@ async fn find_one_by_string() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_user(create_user_input: { name: "Squirrel", age: 7, married: false }) {
+            create_user(create_user_input: { name: "Squirrel", age: 7, married: false, email: "squirrel@noemail.com" }) {
                 _id
             }
         }
@@ -72,7 +72,7 @@ async fn find_one_by_int() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_user(create_user_input: { name: "Turtle", age: 77, married: false }) {
+            create_user(create_user_input: { name: "Turtle", age: 77, married: false, email: "turtle@noemail.com" }) {
                 _id
             }
         }
@@ -98,7 +98,7 @@ async fn find_one_by_bool() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_user(create_user_input: { name: "Jackson", age: 14, married: true }) {
+            create_user(create_user_input: { name: "Jackson", age: 14, married: true, email: "jackson@noemail.com" }) {
                 _id
             }
         }
@@ -124,7 +124,7 @@ async fn returns_correct_scalars() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_user(create_user_input: { name: "Jordan", age: 2, married: true}) {
+            create_user(create_user_input: { name: "Jordan", age: 2, married: true, email: "jordan@noemail.com" }) {
                 _id
             }
         }
@@ -230,6 +230,7 @@ async fn find_joined_to_mongo_ds() {
                 name: "Laura", 
                 age: 33,
                 married: true,
+                email: "laura@laura.com"
             }) {
                 _id
             }
@@ -364,6 +365,45 @@ async fn find_joined_to_mongo_ds() {
         dog_id
     ));
 
+    let response = execute(request, None).await;
+
+    assert!(response.is_ok());
+}
+
+#[tokio::test]
+async fn find_with_nested_object() {
+    let request = async_graphql::Request::new(
+        r#"
+        mutation {
+            create_user(create_user_input: { 
+                name: "Rory", 
+                age: 22, 
+                married: false, 
+                email: "rory@rory.com",
+                address: {
+                    line_one: "address lineone",
+                    line_two: "address linetwo",
+                    city: "address city",
+                    state: "address state",
+                    zip: "address zip"
+                }
+            }) {
+                _id
+            }
+        }
+        "#,
+    );
+    execute(request, None).await;
+
+    let request = async_graphql::Request::new(
+        r#"
+        {
+            get_user(get_user_input: { address: { line_one: "address lineone" } }) {
+                _id
+            }
+        }
+        "#,
+    );
     let response = execute(request, None).await;
 
     assert!(response.is_ok());

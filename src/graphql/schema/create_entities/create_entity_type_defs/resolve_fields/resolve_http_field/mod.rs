@@ -6,7 +6,7 @@ use json::JsonValue;
 use log::{debug, info};
 
 impl ServiceSchemaBuilder {
-    pub async fn resolve_http_field(
+    pub fn resolve_http_field(
         json_value: &JsonValue,
         field_name: &str,
         scalar: ScalarOptions,

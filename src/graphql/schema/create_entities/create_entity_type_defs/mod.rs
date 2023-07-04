@@ -1,20 +1,17 @@
 use crate::{
     configuration::subgraph::entities::{service_entity_field::ServiceEntityField, ServiceEntity},
-    data_sources::{sql::services::ResponseRow, DataSource, DataSources},
+    data_sources::{DataSource, DataSources},
     graphql::schema::ResolverType,
 };
 
 use super::ServiceSchemaBuilder;
-use async_graphql::{
-    dynamic::{Field, FieldFuture, InputValue, Object, TypeRef},
-    ErrorExtensions,
-};
-use bson::{to_document, Document};
-use json::JsonValue;
+use async_graphql::dynamic::{Field, FieldFuture, InputValue, Object, TypeRef};
 use log::debug;
 
 pub mod get_field_type_ref;
 pub mod resolve_fields;
+pub mod resolve_nested;
+pub mod resolve_root;
 
 #[derive(Debug)]
 pub struct TypeRefsAndDefs {
@@ -31,116 +28,17 @@ impl ServiceSchemaBuilder {
         is_root_object: bool,
     ) -> Field {
         debug!("Creating Field, {:?}", entity_field.name);
-        let cloned_entity_field = entity_field.clone();
-        let cloned_data_source = data_source.clone();
-
-        let field = Field::new(&entity_field.name, type_ref, move |ctx| {
-            let cloned_entity_field = cloned_entity_field.clone();
-            let data_source = cloned_data_source.clone();
-
-            // Resolve Field
+        let entity_field = entity_field.clone();
+        let data_source = data_source.clone();
+        let field = Field::new(&entity_field.name.clone(), type_ref, move |ctx| {
+            let cloned_entity_field = entity_field.clone();
+            let data_source = data_source.clone();
             FieldFuture::new(async move {
-                debug!("---Resolving Entity Field");
-                let scalar = cloned_entity_field.scalar;
-
-                let field_name = ctx.field().name();
-                debug!("---Field Name: {:?} as {:?}", field_name, scalar);
-                debug!("---Is Root Object: {:?}", is_root_object);
-
                 match is_root_object {
-                    false => {
-                        let object = ctx.parent_value.as_value().unwrap();
-                        let json = object.clone().into_json().unwrap();
-                        debug!("---Found JSON: {:?}", json);
-
-                        let json_object: serde_json::Value;
-                        if json.is_string() {
-                            debug!("---Found String: {:?}", json.as_str().unwrap());
-                            json_object = serde_json::from_str(&json.as_str().unwrap()).unwrap();
-                        } else {
-                            json_object = json;
-                        }
-
-                        debug!("---Converted To JSON Object: {:?}", json_object);
-
-                        let document: Document;
-
-                        if json_object.is_array() {
-                            document = to_document(&json_object[0]).unwrap();
-                        } else if json_object.is_object() {
-                            document = to_document(&json_object).unwrap();
-                        } else {
-                            return Err(async_graphql::Error::new(
-                                "Invalid JSON Object - Received unexpected JSON type",
-                            )
-                            .extend_with(|_err, e| {
-                                e.set("field", field_name);
-                                e.set("received", json_object.to_string());
-                            }));
-                        }
-
-                        debug!("---Converted To Document: {:?}", document);
-
-                        let value = ServiceSchemaBuilder::resolve_document_field(
-                            &document,
-                            field_name,
-                            scalar.clone(),
-                            cloned_entity_field.list.unwrap_or(false),
-                        )
-                        .unwrap();
-
-                        debug!(
-                            "---Found Document Field Value: {:?}: {:?} - {:?}",
-                            field_name, value, scalar
-                        );
-
-                        Ok(Some(value.clone()))
+                    false => ServiceSchemaBuilder::resolve_nested(&ctx, &cloned_entity_field),
+                    true => {
+                        ServiceSchemaBuilder::resolve_root(&ctx, &data_source, &cloned_entity_field)
                     }
-                    true => match data_source {
-                        DataSource::Mongo(_ds) => {
-                            let doc = ctx.parent_value.try_downcast_ref::<Document>().unwrap();
-                            debug!("---Found Document: {:?}", doc);
-
-                            let value = ServiceSchemaBuilder::resolve_document_field(
-                                doc,
-                                field_name,
-                                scalar.clone(),
-                                entity_field.list.unwrap_or(false),
-                            )
-                            .unwrap();
-
-                            debug!(
-                                "---Found Document Field Value: {:?}: {:?} - {:?}",
-                                field_name, value, scalar
-                            );
-
-                            Ok(Some(value))
-                        }
-                        DataSource::HTTP(_ds) => {
-                            let json_value =
-                                ctx.parent_value.try_downcast_ref::<JsonValue>().unwrap();
-                            debug!("---Found Json Value: {:?}", json_value);
-
-                            let value = ServiceSchemaBuilder::resolve_http_field(
-                                json_value, field_name, scalar,
-                            )
-                            .await;
-
-                            Ok(Some(value.unwrap()))
-                        }
-                        DataSource::SQL(_ds) => {
-                            let response_row =
-                                ctx.parent_value.try_downcast_ref::<ResponseRow>().unwrap();
-
-                            let value = ServiceSchemaBuilder::resolve_sql_field(
-                                response_row,
-                                field_name,
-                                scalar,
-                            );
-
-                            Ok(Some(value.unwrap()))
-                        }
-                    },
                 }
             })
         });
