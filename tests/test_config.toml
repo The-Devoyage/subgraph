@@ -40,7 +40,15 @@ fields = [
   { name = "_id", scalar = "ObjectID", required = true, exclude_from_input = ["CreateOne", "UpdateOne", "UpdateMany"]},
   { name = "name", scalar = "String", required = true },
   { name = "age", scalar = "Int", required = false },
-  { name = "married", scalar = "Boolean", required = true }
+  { name = "married", scalar = "Boolean", required = true },
+  { name = "email", scalar = "String", required = true, exclude_from_input = ["UpdateMany"]},
+  { name = "address", scalar = "Object", fields = [
+    { name = "line_one", scalar = "String", required = true },
+    { name = "line_two", scalar = "String" },
+    { name = "city", scalar = "String", required = true },
+    { name = "state", scalar = "String", required = true },
+    { name = "zip", scalar = "String", required = true },
+  ] },
 ]
 
 [[service.entities]]
@@ -112,5 +120,45 @@ fields = [
   { name = "fav_coffee", scalar = "Int", as_type = "Coffee", join_on = "id" },
   { name = "todo", scalar = "Int", as_type = "todo", join_on = "id" },
   { name = "comments", scalar = "Int", as_type = "Comment", join_on = "id", list = true },
+]
+
+[[service.entities]]
+name = "account"
+[[service.entities.fields]]
+name = "_id"
+scalar = "ObjectID"
+required = true
+exclude_from_input = ["CreateOne", "UpdateOne", "UpdateMany"]
+[[service.entities.fields]]
+name = "email"
+scalar = "String"
+required = true
+exclude_from_output = true
+[[service.entities.fields]]
+name = "password"
+scalar = "String"
+required = true
+exclude_from_output = true
+exclude_from_input = [
+  "FindOne",
+  "FindMany",
+  "UpdateManyQuery",
+  "UpdateOneQuery",
+  "UpdateMany"
+]
+[[service.entities.fields]]
+name = "auth_token"
+scalar = "Object"
+exclude_from_input = [
+  "FindOne",
+  "FindMany",
+  "UpdateManyQuery",
+  "UpdateOneQuery",
+  "UpdateMany",
+  "UpdateOne",
+  "CreateOne"
+]
+fields = [
+  { name = "user", scalar = "String", required = true, as_type = "user", join_on = "email" },
 ]
 

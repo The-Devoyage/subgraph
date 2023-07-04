@@ -6,6 +6,10 @@
 
 ### Fixed
 
+### Changed
+
+- Refactored various field resolvers and provided better error handling.
+
 ## [v0.0.10]
 
 ### Fixed
