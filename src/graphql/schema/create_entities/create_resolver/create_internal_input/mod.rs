@@ -5,30 +5,22 @@ use bson::{oid::ObjectId, Document};
 use log::{debug, error};
 
 use crate::{
-    configuration::subgraph::entities::{ScalarOptions, ServiceEntity},
+    configuration::subgraph::entities::{service_entity_field::ServiceEntityField, ScalarOptions},
     graphql::schema::ServiceSchemaBuilder,
 };
 
 impl ServiceSchemaBuilder {
     pub fn create_internal_input(
-        as_type_entity_parent: ServiceEntity,
         ctx: &ResolverContext,
+        field: ServiceEntityField,
     ) -> Result<Document, async_graphql::Error> {
-        debug!("Getting Internal Input");
+        debug!("Creating Internal Input: {:?}", ctx.field().name());
         let field_name = ctx.field().name().to_string();
-        let parent_value = match ctx.parent_value.downcast_ref::<Document>() {
-            Some(parent_value) => parent_value,
-            None => return Err(async_graphql::Error::new("Invalid Parent Value")),
-        };
-        let field = ServiceEntity::get_field(as_type_entity_parent, field_name.clone())?;
-        let join_on = match field.join_on {
-            Some(join_on) => join_on,
-            None => {
-                return Err(async_graphql::Error::new(format!(
-                    "No join on found for field: {}",
-                    field_name
-                )))
-            }
+        let parent_value = ctx.parent_value.downcast_ref::<Document>();
+
+        let parent_document: Document = match parent_value {
+            Some(parent_value) => parent_value.clone(),
+            None => Document::new(),
         };
 
         let field_input = ctx.args.try_get(&format!("{}", ctx.field().name()))?;
@@ -43,12 +35,19 @@ impl ServiceSchemaBuilder {
         };
         let mut field_input = field_input.clone();
 
-        let scalar = field.scalar;
+        let join_on = match field.join_on.clone() {
+            Some(join_on) => join_on,
+            None => {
+                return Ok(field_input);
+            }
+        };
+
+        let scalar = field.scalar.clone();
         let list = field.list.unwrap_or(false);
 
         match list {
             true => {
-                let join_on_value = parent_value.get_array(field_name.clone());
+                let join_on_value = parent_document.get_array(field_name.clone());
                 let join_on_value = match join_on_value {
                     Ok(join_on_value) => join_on_value,
                     Err(_) => {
@@ -92,7 +91,7 @@ impl ServiceSchemaBuilder {
             }
             false => match scalar {
                 ScalarOptions::Int => {
-                    let join_on_value = parent_value.get_i32(field_name.clone());
+                    let join_on_value = parent_document.get_i32(field_name.clone());
                     let join_on_value = match join_on_value {
                         Ok(join_on_value) => join_on_value,
                         Err(_) => {
@@ -106,7 +105,7 @@ impl ServiceSchemaBuilder {
                     field_input.insert(join_on.clone(), join_on_value);
                 }
                 ScalarOptions::String => {
-                    let join_on_value = parent_value.get_str(field_name.clone());
+                    let join_on_value = parent_document.get_str(field_name.clone());
                     let join_on_value = match join_on_value {
                         Ok(join_on_value) => join_on_value,
                         Err(_) => {
@@ -120,7 +119,7 @@ impl ServiceSchemaBuilder {
                     field_input.insert(join_on.clone(), join_on_value);
                 }
                 ScalarOptions::Boolean => {
-                    let join_on_value = parent_value.get_bool(field_name.clone());
+                    let join_on_value = parent_document.get_bool(field_name.clone());
                     let join_on_value = match join_on_value {
                         Ok(join_on_value) => join_on_value,
                         Err(_) => {
@@ -134,12 +133,12 @@ impl ServiceSchemaBuilder {
                     field_input.insert(join_on.clone(), join_on_value);
                 }
                 ScalarOptions::ObjectID => {
-                    let join_on_value = parent_value.get_object_id(field_name.clone());
+                    let join_on_value = parent_document.get_object_id(field_name.clone());
                     debug!("Join On Value: {:?}", join_on_value);
                     let join_on_value = match join_on_value {
                         Ok(join_on_value) => join_on_value,
                         Err(_) => {
-                            let strign_object_id = parent_value.get_str(field_name.clone())?;
+                            let strign_object_id = parent_document.get_str(field_name.clone())?;
                             let join_on_value = ObjectId::from_str(strign_object_id)?;
                             join_on_value
                         }

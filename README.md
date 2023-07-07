@@ -227,6 +227,8 @@ Additionally, HTTP Data sources are limited by what the API expects to receive. 
 
 Declaring fields can be used automatically join entities to one another within the same service. The `as_type` property allows reference to another type within the service. The `join_on` field allows to associate the parent field with the child field.
 
+The `join_on` field may be left empty to create a "virtual" join based on the input values without a parent value constraint.
+
 ```toml
 [[service.entities]]
 name = "user"

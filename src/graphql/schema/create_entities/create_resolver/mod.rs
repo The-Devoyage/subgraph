@@ -11,7 +11,6 @@ use crate::{
     configuration::subgraph::{
         entities::{service_entity_field::ServiceEntityField, ServiceEntity},
         guard::Guard,
-        SubGraphConfig,
     },
     data_sources::DataSources,
 };
@@ -32,10 +31,18 @@ impl ServiceSchemaBuilder {
     pub fn create_resolver_config(
         entity: &ServiceEntity,
         resolver_type: ResolverType,
-        field_name: Option<String>,
-        list: Option<bool>,
+        field: Option<ServiceEntityField>,
     ) -> ResolverConfig {
         info!("Creating Resolver Config");
+        let field_name = match field.clone() {
+            Some(field) => Some(field.name),
+            None => None,
+        };
+
+        let list = match field {
+            Some(field) => field.list,
+            None => None,
+        };
 
         let list = list.unwrap_or(false);
 
@@ -140,30 +147,18 @@ impl ServiceSchemaBuilder {
         &self,
         entity: &ServiceEntity,
         resolver_type: ResolverType,
-        field_name: Option<String>,
-        list: Option<bool>,
-        as_type_parent: Option<String>,
+        field: Option<ServiceEntityField>,
     ) -> Field {
         debug!("Creating Resolver");
 
-        let resolver_config = ServiceSchemaBuilder::create_resolver_config(
-            entity,
-            resolver_type,
-            field_name.clone(),
-            list,
-        );
+        let resolver_config =
+            ServiceSchemaBuilder::create_resolver_config(entity, resolver_type, field.clone());
         let cloned_entity = entity.clone();
         let service_guards = self.subgraph_config.service.guards.clone();
         let entity_guards = entity.guards.clone();
         let resolver = ServiceEntity::get_resolver(&entity, resolver_type);
         let resolver_guards = if resolver.is_some() {
             resolver.unwrap().guards
-        } else {
-            None
-        };
-        let as_type_entity_parent = if as_type_parent.is_some() {
-            SubGraphConfig::get_entity(self.subgraph_config.clone(), &as_type_parent.unwrap())
-                .clone()
         } else {
             None
         };
@@ -176,27 +171,16 @@ impl ServiceSchemaBuilder {
                 let service_guards = service_guards.clone();
                 let entity_guards = entity_guards.clone();
                 let resolver_guards = resolver_guards.clone();
-                let as_type_entity_parent = as_type_entity_parent.clone();
+                let field = field.clone();
 
                 FieldFuture::new(async move {
                     debug!("Resolving Field: {}", ctx.field().name());
                     let data_sources = ctx.data_unchecked::<DataSources>().clone();
                     let input_document = match resolver_type {
-                        ResolverType::InternalType => {
-                            let as_type_entity_parent = match as_type_entity_parent {
-                                Some(entity) => entity.clone(),
-                                None => {
-                                    return Err(async_graphql::Error::new(format!(
-                                        "No as type entity parent found for field: {}",
-                                        ctx.field().name()
-                                    )))
-                                }
-                            };
-                            ServiceSchemaBuilder::create_internal_input(
-                                as_type_entity_parent,
-                                &ctx,
-                            )?
-                        }
+                        ResolverType::InternalType => ServiceSchemaBuilder::create_internal_input(
+                            &ctx,
+                            field.unwrap().clone(),
+                        )?,
                         _ => {
                             let input =
                                 ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
@@ -253,7 +237,7 @@ impl ServiceSchemaBuilder {
     pub fn add_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
         info!("Adding Resolver");
 
-        let resolver = self.create_resolver(entity, resolver_type, None, None, None);
+        let resolver = self.create_resolver(entity, resolver_type, None);
 
         debug!("Resolver: {:?}", resolver);
 

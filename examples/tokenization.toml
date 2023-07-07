@@ -44,7 +44,7 @@ exclude_from_input = [
   "CreateOne"
 ]
 fields = [
-  { name = "user", scalar = "String", required = true, as_type = "user", join_on = "email" },
+  { name = "user", scalar = "String", required = true, as_type = "user"  },
 ]
 
 [[service.entities]]

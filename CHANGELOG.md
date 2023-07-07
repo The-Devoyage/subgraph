@@ -9,6 +9,7 @@
 ### Changed
 
 - Refactored various field resolvers and provided better error handling.
+- Entity field property, `join_on`, is now optional. Leaving it as a None value will result in a virtual join based on the input criteria.
 
 ## [v0.0.10]
 
