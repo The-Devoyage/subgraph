@@ -4,7 +4,7 @@ use crate::{
     graphql::schema::ServiceSchemaBuilder,
 };
 
-use async_graphql::{dynamic::ResolverContext, Value};
+use async_graphql::{dynamic::ResolverContext, ErrorExtensions, Value};
 use bson::Document;
 use json::JsonValue;
 use log::debug;
@@ -27,8 +27,19 @@ impl ServiceSchemaBuilder {
                     field_name,
                     entity_field.scalar.clone(),
                     entity_field.list.unwrap_or(false),
-                )
-                .unwrap();
+                );
+
+                let value = match value {
+                    Ok(value) => value,
+                    Err(_) => {
+                        return Err(
+                            async_graphql::Error::new("Failed to resolve document field.")
+                                .extend_with(|_err, e| {
+                                    e.set("field", field_name);
+                                }),
+                        )
+                    }
+                };
 
                 Ok(Some(value))
             }

@@ -3,7 +3,7 @@ use crate::{
     graphql::schema::ServiceSchemaBuilder,
 };
 
-use async_graphql::{dynamic::ResolverContext, ErrorExtensions, Value};
+use async_graphql::{dynamic::ResolverContext, indexmap::IndexMap, ErrorExtensions, Value};
 use bson::to_document;
 use log::debug;
 
@@ -12,19 +12,15 @@ impl ServiceSchemaBuilder {
         ctx: &ResolverContext,
         entity_field: &ServiceEntityField,
     ) -> Result<Option<Value>, async_graphql::Error> {
-        debug!("Resolving Nested Field");
+        debug!("Resolving Nested Field: {:?}", ctx.field().name());
 
         let field_name = ctx.field().name();
 
         let object = match ctx.parent_value.as_value() {
             Some(value) => value,
             None => {
-                return Err(async_graphql::Error::new(
-                    "No Parent Value Found - Failed to resolve nested field",
-                )
-                .extend_with(|_err, e| {
-                    e.set("field", field_name);
-                }))
+                let index_map = IndexMap::new();
+                return Ok(Some(Value::from(index_map)));
             }
         };
 

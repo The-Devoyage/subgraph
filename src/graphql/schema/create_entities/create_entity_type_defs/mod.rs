@@ -116,9 +116,7 @@ impl ServiceSchemaBuilder {
                 let as_type_resolver = self.create_resolver(
                     as_type_entity,
                     ResolverType::InternalType,
-                    Some(entity_field.name.clone()),
-                    Some(list),
-                    Some(entity.name.clone()),
+                    Some(entity_field.clone()),
                 );
                 let resolver_input_name = ServiceSchemaBuilder::get_resolver_input_name(
                     &as_type_entity.name,
