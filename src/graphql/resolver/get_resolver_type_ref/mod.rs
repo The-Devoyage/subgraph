@@ -3,9 +3,9 @@ use log::debug;
 
 use crate::graphql::schema::ResolverType;
 
-use super::ServiceResolverBuilder;
+use super::ServiceResolver;
 
-impl ServiceResolverBuilder {
+impl ServiceResolver {
     pub fn get_resolver_type_ref(&self) -> TypeRef {
         debug!("Getting Resolver Type Ref");
 

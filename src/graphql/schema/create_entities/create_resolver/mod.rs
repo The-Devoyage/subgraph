@@ -13,6 +13,7 @@ use crate::{
         guard::Guard,
     },
     data_sources::DataSources,
+    graphql::resolver::ServiceResolver,
 };
 
 use super::{ResolverType, ServiceSchemaBuilder};
@@ -236,11 +237,7 @@ impl ServiceSchemaBuilder {
 
     pub fn add_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
         info!("Adding Resolver");
-
-        let resolver = self.create_resolver(entity, resolver_type, None);
-
-        debug!("Resolver: {:?}", resolver);
-
+        let resolver = ServiceResolver::new(resolver_type, entity.clone(), None).build();
         self = self.create_resolver_input_value(&entity, resolver, &resolver_type);
         self
     }
