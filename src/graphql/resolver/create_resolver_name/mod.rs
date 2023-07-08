@@ -2,9 +2,9 @@ use log::debug;
 
 use crate::graphql::schema::ResolverType;
 
-use super::ServiceResolverBuilder;
+use super::ServiceResolver;
 
-impl ServiceResolverBuilder {
+impl ServiceResolver {
     pub fn create_resolver_name(&self) -> String {
         debug!("Creating Resolver Name");
 

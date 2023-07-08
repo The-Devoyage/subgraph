@@ -1,15 +1,11 @@
 use async_graphql::dynamic::{FieldFuture, ResolverContext};
-use bson::Document;
 use log::debug;
 
-use crate::{
-    data_sources::DataSources,
-    graphql::schema::{ResolverType, ServiceSchemaBuilder},
-};
+use crate::data_sources::DataSources;
 
-use super::ServiceResolverBuilder;
+use super::ServiceResolver;
 
-impl ServiceResolverBuilder {
+impl ServiceResolver {
     pub fn create_resolver_function(
         &self,
     ) -> Box<(dyn for<'a> Fn(ResolverContext<'a>) -> FieldFuture<'a> + Send + Sync)> {
@@ -26,17 +22,8 @@ impl ServiceResolverBuilder {
 
             FieldFuture::new(async move {
                 let data_sources = ctx.data_unchecked::<DataSources>().clone();
-                let input_document = match resolver_type {
-                    ResolverType::InternalType => ServiceSchemaBuilder::create_internal_input(
-                        &ctx,
-                        as_field.unwrap().clone(),
-                    )?,
-                    _ => {
-                        let input = ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
-                        let input_document = &input.deserialize::<Document>().unwrap();
-                        input_document.clone()
-                    }
-                };
+                let input_document =
+                    ServiceResolver::get_resolver_input(&ctx, &as_field, &resolver_type)?;
 
                 let results = DataSources::execute(
                     &data_sources,
