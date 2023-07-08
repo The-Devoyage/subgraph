@@ -8,7 +8,7 @@ pub mod parse_subgraph_config;
 pub struct Environment {}
 
 impl Environment {
-    pub fn init() -> HashMap<String, String> {
+    pub fn new() -> HashMap<String, String> {
         std::env::vars().collect()
     }
 }
