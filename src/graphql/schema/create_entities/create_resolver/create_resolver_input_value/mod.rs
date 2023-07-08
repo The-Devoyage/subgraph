@@ -46,6 +46,9 @@ impl ServiceSchemaBuilder {
 
         match exclude_from_input {
             Some(exclude_from_input) => {
+                if exclude_from_input.contains(&ExcludeFromInput::All) {
+                    return true;
+                }
                 if exclude_from_input.contains(&excluded.unwrap()) {
                     true
                 } else {
@@ -74,10 +77,12 @@ impl ServiceSchemaBuilder {
             Some(ExcludeFromInput::FindOne),
         );
 
-        resolver = resolver.argument(InputValue::new(
-            &resolver_input_name,
-            TypeRef::named_nn(resolver_input_name.clone()),
-        ));
+        if !inputs.is_empty() {
+            resolver = resolver.argument(InputValue::new(
+                &resolver_input_name,
+                TypeRef::named_nn(resolver_input_name.clone()),
+            ));
+        }
 
         self.query = self.query.field(resolver);
         self = self.register_inputs(inputs);
@@ -101,10 +106,12 @@ impl ServiceSchemaBuilder {
             Some(ExcludeFromInput::FindMany),
         );
 
-        resolver = resolver.argument(InputValue::new(
-            &resolver_input_name,
-            TypeRef::named_nn(resolver_input_name.clone()),
-        ));
+        if !inputs.is_empty() {
+            resolver = resolver.argument(InputValue::new(
+                &resolver_input_name,
+                TypeRef::named_nn(resolver_input_name.clone()),
+            ));
+        }
 
         self.query = self.query.field(resolver);
         self = self.register_inputs(inputs);
@@ -131,10 +138,12 @@ impl ServiceSchemaBuilder {
             Some(ExcludeFromInput::CreateOne),
         );
 
-        resolver = resolver.argument(InputValue::new(
-            &resolver_input_name,
-            TypeRef::named_nn(resolver_input_name.clone()),
-        ));
+        if !inputs.is_empty() {
+            resolver = resolver.argument(InputValue::new(
+                &resolver_input_name,
+                TypeRef::named_nn(resolver_input_name.clone()),
+            ));
+        }
 
         self.mutation = self.mutation.field(resolver);
         self = self.register_inputs(inputs);
@@ -161,11 +170,15 @@ impl ServiceSchemaBuilder {
             Some(ExcludeFromInput::UpdateOne),
         );
 
-        let mut update_one_input = inputs
+        let mut update_one_input = match inputs
             .iter()
             .position(|input| input.type_name() == resolver_input_name)
             .map(|i| inputs.remove(i))
-            .unwrap();
+        {
+            Some(input) => input,
+            None => return self,
+        };
+
         let update_one_query_input_name = ServiceSchemaBuilder::get_resolver_input_name(
             &format!("{}_query", &entity.name.to_lowercase()),
             &ResolverType::UpdateOne,
@@ -185,10 +198,12 @@ impl ServiceSchemaBuilder {
         inputs.push(update_one_input);
         inputs.extend(update_one_inputs);
 
-        resolver = resolver.argument(InputValue::new(
-            &resolver_input_name,
-            TypeRef::named_nn(resolver_input_name.clone()),
-        ));
+        if !inputs.is_empty() {
+            resolver = resolver.argument(InputValue::new(
+                &resolver_input_name,
+                TypeRef::named_nn(resolver_input_name.clone()),
+            ));
+        }
 
         self.mutation = self.mutation.field(resolver);
         self = self.register_inputs(inputs);
@@ -215,14 +230,18 @@ impl ServiceSchemaBuilder {
             Some(ExcludeFromInput::UpdateMany),
         );
 
-        let mut update_many_input = inputs
+        let mut update_many_input = match inputs
             .iter()
             .position(|input| input.type_name() == resolver_input_name)
             .map(|i| inputs.remove(i))
-            .unwrap();
+        {
+            Some(input) => input,
+            None => return self,
+        };
+
         let update_many_query_input_name = ServiceSchemaBuilder::get_resolver_input_name(
-            &format!("{}_query", &entity.name.to_lowercase()),
-            &ResolverType::UpdateMany,
+            &format!("{}s_query", &entity.name.to_lowercase()),
+            &ResolverType::UpdateOne, //HACK: UpdateMany uses UpdateOne query input to pluralize
             None,
         );
         let update_many_inputs = ServiceSchemaBuilder::create_input(
@@ -239,10 +258,12 @@ impl ServiceSchemaBuilder {
         inputs.push(update_many_input);
         inputs.extend(update_many_inputs);
 
-        resolver = resolver.argument(InputValue::new(
-            &resolver_input_name,
-            TypeRef::named_nn(resolver_input_name.clone()),
-        ));
+        if !inputs.is_empty() {
+            resolver = resolver.argument(InputValue::new(
+                &resolver_input_name,
+                TypeRef::named_nn(resolver_input_name.clone()),
+            ));
+        }
 
         self.mutation = self.mutation.field(resolver);
         self = self.register_inputs(inputs);
@@ -258,6 +279,7 @@ impl ServiceSchemaBuilder {
         debug!("Creating Input: {}", input_name);
         let mut inputs = Vec::new();
         let mut input = InputObject::new(&input_name);
+        let mut excluded_count = 0;
         for field in &fields {
             if !ServiceSchemaBuilder::is_excluded_input_field(field, exclude_from_input.clone()) {
                 let parent_input_name = input_name.clone().replace("_input", "");
@@ -275,9 +297,14 @@ impl ServiceSchemaBuilder {
                     field.name.clone(),
                     type_ref_with_inputs.type_ref,
                 ));
+            } else {
+                excluded_count = excluded_count + 1
             }
         }
-        inputs.push(input);
+        if excluded_count != fields.len() {
+            inputs.push(input);
+        }
+        debug!("Created Inputs: {:?}", inputs);
         inputs
     }
 

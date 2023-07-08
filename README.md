@@ -460,6 +460,7 @@ The configuration, `guards.toml`, in the examples folder demonstrates remaining 
 | UpdateMany       |
 | UpdateOneQuery   |
 | UpdateManyQuery  |
+| All              |
 
 #### Guard
 

@@ -25,8 +25,8 @@ impl Document {
         field: ServiceEntityField,
     ) -> Result<GetDocumentResultType, async_graphql::Error> {
         debug!(
-            "Resolving Mongo Field/Scalar: '{}: {:?}'",
-            field.name, field.scalar
+            "Resolving Mongo Field {}, of type {:?} in {:?}",
+            field.name, field.scalar, document
         );
 
         match field.scalar {

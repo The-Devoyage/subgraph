@@ -13,8 +13,8 @@ impl ServiceSchemaBuilder {
         is_list: bool,
     ) -> Result<Value, async_graphql::Error> {
         debug!(
-            "Resolving Mongo Field/Scalar: '{}: {:?}'",
-            field_name, scalar
+            "Resolving Mongo Field: '{}, of type {:?} in {:?}'",
+            field_name, scalar, document
         );
 
         match scalar {

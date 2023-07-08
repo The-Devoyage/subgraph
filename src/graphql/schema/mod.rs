@@ -25,6 +25,7 @@ pub enum ExcludeFromInput {
     UpdateMany,
     UpdateOneQuery,
     UpdateManyQuery,
+    All,
 }
 
 pub struct ServiceSchemaBuilder {
