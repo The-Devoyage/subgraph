@@ -4,7 +4,11 @@
 
 ### Added
 
+- New option to exclude field from "All" inputs.
+
 ### Fixed
+
+- Including all options as `exclude_from_input` caused playground to not introspect. Now excludes inputs that are empty.
 
 ### Changed
 
@@ -69,7 +73,7 @@
 
 ## [v0.0.5]
 
-###
+### Added
 
 - Simple CORS Configuration including Headers, Methods, and Allowed Origins.
 
