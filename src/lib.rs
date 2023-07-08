@@ -19,8 +19,8 @@ pub async fn run(
     args: cli_args::CliArgs,
     subgraph_config: SubGraphConfig,
 ) -> Result<(impl Future<Output = ()>, Schema), std::io::Error> {
-    println!("⛵ Starting Subgraph Service ⛵");
-    println!("Using Args: {:?}", args);
+    info!("⛵ Starting Subgraph Service ⛵");
+    info!("Using Args: {:?}", args);
 
     let data_sources =
         data_sources::DataSources::init(subgraph_config.service.data_sources.clone()).await;

@@ -9,8 +9,8 @@ use subgraph::{
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
     let args = cli_args::CliArgs::parse();
-    let environment = Environment::init();
-    let mut subgraph_config = SubGraphConfig::init(&args);
+    let environment = Environment::new();
+    let mut subgraph_config = SubGraphConfig::new(&args);
     subgraph_config = Environment::replace_env_vars_in_config(subgraph_config, environment);
 
     utils::logger::Logger::init(&args, &subgraph_config);
