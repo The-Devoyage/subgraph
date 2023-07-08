@@ -1,7 +1,7 @@
 use crate::{
     configuration::subgraph::entities::{service_entity_field::ServiceEntityField, ServiceEntity},
     data_sources::{DataSource, DataSources},
-    graphql::schema::ResolverType,
+    graphql::{resolver::ServiceResolver, schema::ResolverType},
 };
 
 use super::ServiceSchemaBuilder;
@@ -113,11 +113,13 @@ impl ServiceSchemaBuilder {
                     );
                 }
                 let as_type_entity = as_type_entity.unwrap();
-                let as_type_resolver = self.create_resolver(
-                    as_type_entity,
+                let as_type_resolver = ServiceResolver::new(
+                    self.subgraph_config.clone(),
                     ResolverType::InternalType,
+                    as_type_entity.clone(),
                     Some(entity_field.clone()),
-                );
+                )
+                .build();
                 let resolver_input_name = ServiceSchemaBuilder::get_resolver_input_name(
                     &as_type_entity.name,
                     &ResolverType::InternalType,

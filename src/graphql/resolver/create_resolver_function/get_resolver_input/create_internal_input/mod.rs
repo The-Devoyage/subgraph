@@ -6,8 +6,8 @@ use crate::configuration::subgraph::entities::service_entity_field::ServiceEntit
 
 use super::ServiceResolver;
 
-pub mod combine_list_values;
-pub mod combine_primitive_value;
+mod combine_list_values;
+mod combine_primitive_value;
 
 impl ServiceResolver {
     pub fn create_internal_input(
