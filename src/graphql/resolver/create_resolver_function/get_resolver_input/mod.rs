@@ -8,7 +8,7 @@ use crate::{
 
 use super::ServiceResolver;
 
-pub mod create_internal_input;
+mod create_internal_input;
 
 impl ServiceResolver {
     pub fn get_resolver_input(

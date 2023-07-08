@@ -1,19 +1,20 @@
 use async_graphql::dynamic::Field;
 use log::debug;
 
-use crate::configuration::subgraph::entities::{
-    service_entity_field::ServiceEntityField, ServiceEntity,
+use crate::configuration::subgraph::{
+    entities::{service_entity_field::ServiceEntityField, ServiceEntity},
+    SubGraphConfig,
 };
 
 use super::schema::ResolverType;
 
 mod create_resolver_function;
 mod create_resolver_name;
-mod get_resolver_input;
 mod get_resolver_type_ref;
 
 #[derive(Debug)]
 pub struct ServiceResolver {
+    subgraph_config: SubGraphConfig,
     resolver_type: ResolverType,
     entity: ServiceEntity,
     as_field: Option<ServiceEntityField>,
@@ -21,12 +22,14 @@ pub struct ServiceResolver {
 
 impl ServiceResolver {
     pub fn new(
+        subgraph_config: SubGraphConfig,
         resolver_type: ResolverType,
         entity: ServiceEntity,
         as_field: Option<ServiceEntityField>,
     ) -> Self {
         debug!("Creating Service Resolver Builder");
         Self {
+            subgraph_config,
             resolver_type,
             entity,
             as_field,
