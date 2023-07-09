@@ -2,7 +2,9 @@ use async_graphql::dynamic::{InputObject, TypeRef};
 use log::debug;
 
 use crate::{
-    configuration::subgraph::entities::{service_entity_field::ServiceEntityField, ScalarOptions},
+    configuration::subgraph::entities::{
+        service_entity_field::ServiceEntityFieldConfig, ScalarOptions,
+    },
     graphql::schema::ResolverType,
 };
 
@@ -21,7 +23,7 @@ mod get_entity_string_field_type;
 
 impl ServiceInput {
     pub fn get_entity_field_type(
-        entity_field: &ServiceEntityField,
+        entity_field: &ServiceEntityFieldConfig,
         resolver_type: &ResolverType,
         parent_input_prefix: &str,
     ) -> TypeRefWithInputs {

@@ -1,5 +1,5 @@
 use crate::{
-    configuration::subgraph::entities::service_entity_field::ServiceEntityField,
+    configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
     data_sources::{sql::services::ResponseRow, DataSource},
     graphql::schema::ServiceSchemaBuilder,
 };
@@ -13,7 +13,7 @@ impl ServiceSchemaBuilder {
     pub fn resolve_root(
         ctx: &ResolverContext,
         data_source: &DataSource,
-        entity_field: &ServiceEntityField,
+        entity_field: &ServiceEntityFieldConfig,
     ) -> Result<Option<Value>, async_graphql::Error> {
         debug!("Resolving Root Field");
 

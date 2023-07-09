@@ -6,33 +6,33 @@ use crate::{configuration::subgraph::guard::Guard, graphql::schema::ExcludeFromI
 use super::ScalarOptions;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ServiceEntityField {
+pub struct ServiceEntityFieldConfig {
     pub name: String,
     pub guards: Option<Vec<Guard>>,
     pub scalar: ScalarOptions,
     pub required: Option<bool>,
     pub exclude_from_input: Option<Vec<ExcludeFromInput>>,
     pub exclude_from_output: Option<bool>,
-    pub fields: Option<Vec<ServiceEntityField>>,
+    pub fields: Option<Vec<ServiceEntityFieldConfig>>,
     pub list: Option<bool>,
     pub as_type: Option<String>,
     pub join_on: Option<String>,
 }
 
-impl ServiceEntityField {
+impl ServiceEntityFieldConfig {
     /// Get a field from a list of fields.
     /// This function will recursively search for a field in a list of fields.
     /// Ex: `user.name` will search for `user` and then `name` in the `user` field.
     pub fn get_field(
-        fields: Vec<ServiceEntityField>,
+        fields: Vec<ServiceEntityFieldConfig>,
         field_name: String,
-    ) -> Result<ServiceEntityField, async_graphql::Error> {
+    ) -> Result<ServiceEntityFieldConfig, async_graphql::Error> {
         debug!("Get Field From Fields: {:?} in {:?}", field_name, fields);
         if field_name.contains(".") {
             debug!("Field is Nested");
-            let mut field_names = ServiceEntityField::split_field_names(&field_name)?;
+            let mut field_names = ServiceEntityFieldConfig::split_field_names(&field_name)?;
             let first_field =
-                ServiceEntityField::get_field(fields.clone(), field_names[0].to_string())?;
+                ServiceEntityFieldConfig::get_field(fields.clone(), field_names[0].to_string())?;
             let nested_fields = first_field.fields;
             if nested_fields.is_none() {
                 return Err(async_graphql::Error::new(format!(
@@ -42,7 +42,7 @@ impl ServiceEntityField {
             }
             field_names.remove(0);
             let field =
-                ServiceEntityField::get_field(nested_fields.unwrap(), field_names.join("."))?;
+                ServiceEntityFieldConfig::get_field(nested_fields.unwrap(), field_names.join("."))?;
             debug!("Found Field: {:?}", field);
             return Ok(field);
         } else {
@@ -62,15 +62,15 @@ impl ServiceEntityField {
 
     /// Get fields from a list of fields.
     pub fn get_fields_recursive(
-        fields: Vec<ServiceEntityField>,
+        fields: Vec<ServiceEntityFieldConfig>,
         field_name: String,
-    ) -> Result<Vec<ServiceEntityField>, async_graphql::Error> {
+    ) -> Result<Vec<ServiceEntityFieldConfig>, async_graphql::Error> {
         debug!("Get Field From Fields: {:?}", field_name);
         if field_name.contains(".") {
             debug!("Field is Nested");
-            let mut field_names = ServiceEntityField::split_field_names(&field_name)?;
+            let mut field_names = ServiceEntityFieldConfig::split_field_names(&field_name)?;
             let first_field =
-                ServiceEntityField::get_field(fields.clone(), field_names[0].to_string())?;
+                ServiceEntityFieldConfig::get_field(fields.clone(), field_names[0].to_string())?;
             let nested_fields = first_field.fields;
             if nested_fields.is_none() {
                 return Err(async_graphql::Error::new(format!(
@@ -79,7 +79,7 @@ impl ServiceEntityField {
                 )));
             }
             field_names.remove(0);
-            let fields = ServiceEntityField::get_fields_recursive(
+            let fields = ServiceEntityFieldConfig::get_fields_recursive(
                 nested_fields.unwrap(),
                 field_names.join("."),
             )?;
@@ -99,7 +99,7 @@ impl ServiceEntityField {
         }
     }
 
-    pub fn get_guards(field: ServiceEntityField) -> Option<Vec<Guard>> {
+    pub fn get_guards(field: ServiceEntityFieldConfig) -> Option<Vec<Guard>> {
         debug!("Get Guards From Field: {:?}", field);
         let field_guards = field.guards.clone();
         if field_guards.is_none() {
@@ -121,7 +121,7 @@ impl ServiceEntityField {
     }
 
     pub fn is_excluded_input_field(
-        entity_field: &ServiceEntityField,
+        entity_field: &ServiceEntityFieldConfig,
         excluded: Option<ExcludeFromInput>,
     ) -> bool {
         debug!("Validate Exclude From Input");

@@ -1,5 +1,5 @@
 use crate::{
-    configuration::subgraph::entities::ServiceEntity,
+    configuration::subgraph::entities::ServiceEntityConfig,
     graphql::{
         input::ServiceInput,
         schema::{ExcludeFromInput, ResolverType, ServiceSchemaBuilder},
@@ -14,7 +14,7 @@ mod register_inputs;
 impl ServiceSchemaBuilder {
     pub fn create_resolver_input_value(
         mut self,
-        entity: &ServiceEntity,
+        entity: &ServiceEntityConfig,
         mut resolver: Field,
         resolver_type: &ResolverType,
     ) -> Self {

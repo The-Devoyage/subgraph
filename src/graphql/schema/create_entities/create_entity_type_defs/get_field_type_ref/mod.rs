@@ -1,6 +1,6 @@
 use crate::{
     configuration::subgraph::entities::{
-        service_entity_field::ServiceEntityField, ScalarOptions, ServiceEntity,
+        service_entity_field::ServiceEntityFieldConfig, ScalarOptions, ServiceEntityConfig,
     },
     data_sources::DataSources,
 };
@@ -12,9 +12,9 @@ use log::debug;
 impl ServiceSchemaBuilder {
     pub fn get_field_type_ref(
         &self,
-        entity_field: &ServiceEntityField,
+        entity_field: &ServiceEntityFieldConfig,
         data_sources: &DataSources,
-        entity: &ServiceEntity,
+        entity: &ServiceEntityConfig,
     ) -> TypeRefsAndDefs {
         debug!("Getting Field Type Ref And Defs");
 
@@ -37,7 +37,7 @@ impl ServiceSchemaBuilder {
 
     pub fn create_internal_type_field_refs(
         &self,
-        entity_field: &ServiceEntityField,
+        entity_field: &ServiceEntityFieldConfig,
     ) -> TypeRefsAndDefs {
         debug!("Creating Internal Type Field Refs");
 
@@ -66,8 +66,8 @@ impl ServiceSchemaBuilder {
 
     pub fn create_required_type_refs(
         &self,
-        entity: &ServiceEntity,
-        entity_field: &ServiceEntityField,
+        entity: &ServiceEntityConfig,
+        entity_field: &ServiceEntityFieldConfig,
         data_sources: &DataSources,
     ) -> TypeRefsAndDefs {
         debug!("Creating Required Type Refs");
@@ -135,8 +135,8 @@ impl ServiceSchemaBuilder {
 
     pub fn create_optional_type_refs(
         &self,
-        entity: &ServiceEntity,
-        entity_field: &ServiceEntityField,
+        entity: &ServiceEntityConfig,
+        entity_field: &ServiceEntityFieldConfig,
         data_sources: &DataSources,
     ) -> TypeRefsAndDefs {
         debug!("Creating Optional Type Refs");

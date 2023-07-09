@@ -6,11 +6,11 @@ use log::{debug, error};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    configuration::subgraph::entities::{ScalarOptions, ServiceEntity},
+    configuration::subgraph::entities::{ScalarOptions, ServiceEntityConfig},
     utils::{self, document::get_from_document::GetDocumentResultType},
 };
 
-use super::entities::service_entity_field::ServiceEntityField;
+use super::entities::service_entity_field::ServiceEntityFieldConfig;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Guard {
@@ -57,7 +57,7 @@ impl Guard {
 
     pub fn get_input_value(
         input_document: Document,
-        mut fields: Vec<ServiceEntityField>,
+        mut fields: Vec<ServiceEntityFieldConfig>,
     ) -> Result<Value, EvalexprError> {
         debug!("Getting from Document");
         let document_value =
@@ -173,7 +173,7 @@ impl Guard {
     pub fn create_guard_context<'a>(
         headers: HeaderMap,
         input_document: Document,
-        entity: ServiceEntity,
+        entity: ServiceEntityConfig,
     ) -> Result<HashMapContext, async_graphql::Error> {
         debug!("Creating Guard Context");
 
@@ -181,7 +181,7 @@ impl Guard {
             "input" => Function::new(move |argument| {
                 debug!("Input Argument: {:?}", argument);
                 let key = argument.as_string()?;
-                let fields = ServiceEntity::get_fields_recursive(&entity.clone(), &key);
+                let fields = ServiceEntityConfig::get_fields_recursive(&entity.clone(), &key);
                 if fields.is_err() {
                     return Err(EvalexprError::CustomMessage(
                         "Fields not found.".to_string(),

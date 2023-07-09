@@ -9,7 +9,9 @@ pub mod request_body;
 pub mod url_path;
 pub mod url_search_query;
 
-use crate::{configuration::subgraph::entities::ServiceEntity, graphql::schema::ResolverType};
+use crate::{
+    configuration::subgraph::entities::ServiceEntityConfig, graphql::schema::ResolverType,
+};
 
 use super::HttpDataSource;
 
@@ -24,7 +26,7 @@ impl HttpDataSource {
     pub async fn create_filter(
         data_source: &HttpDataSource,
         input: Document,
-        entity: &ServiceEntity,
+        entity: &ServiceEntityConfig,
         resolver_type: ResolverType,
     ) -> Result<HttpDataSourceFilter, async_graphql::Error> {
         info!("Creating Path Filters");

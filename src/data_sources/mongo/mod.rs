@@ -6,7 +6,7 @@ use std::str::FromStr;
 
 use crate::{
     configuration::subgraph::{
-        data_sources::mongo::MongoDataSourceConfig, entities::ServiceEntity,
+        data_sources::mongo::MongoDataSourceConfig, entities::ServiceEntityConfig,
     },
     graphql::schema::ResolverType,
 };
@@ -73,7 +73,7 @@ impl MongoDataSource {
     pub async fn execute_operation<'a>(
         data_source: &DataSource,
         mut input: Document,
-        entity: ServiceEntity,
+        entity: ServiceEntityConfig,
         resolver_type: ResolverType,
     ) -> Result<FieldValue<'a>, async_graphql::Error> {
         debug!("Executing Operation - Mongo Data Source");
@@ -87,7 +87,7 @@ impl MongoDataSource {
 
         debug!("Database Found");
 
-        let collection_name = ServiceEntity::get_mongo_collection_name(&entity);
+        let collection_name = ServiceEntityConfig::get_mongo_collection_name(&entity);
 
         info!("Found Collection Name");
         debug!("{:?}", collection_name);

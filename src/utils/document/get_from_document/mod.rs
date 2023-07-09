@@ -2,7 +2,7 @@ use bson::Bson;
 use log::debug;
 
 use crate::configuration::subgraph::entities::{
-    service_entity_field::ServiceEntityField, ScalarOptions,
+    service_entity_field::ServiceEntityFieldConfig, ScalarOptions,
 };
 
 use super::Document;
@@ -22,7 +22,7 @@ impl Document {
     /// Get a value from a document.
     pub fn get_from_document(
         document: &bson::Document,
-        field: ServiceEntityField,
+        field: ServiceEntityFieldConfig,
     ) -> Result<GetDocumentResultType, async_graphql::Error> {
         debug!(
             "Resolving Mongo Field {}, of type {:?} in {:?}",

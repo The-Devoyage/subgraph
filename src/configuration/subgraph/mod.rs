@@ -17,7 +17,7 @@ pub struct ServiceConfig {
     pub port: Option<u16>,
     pub log_level: Option<LogLevelEnum>,
     pub guards: Option<Vec<Guard>>,
-    pub entities: Vec<entities::ServiceEntity>,
+    pub entities: Vec<entities::ServiceEntityConfig>,
     pub data_sources: Vec<data_sources::ServiceDataSourceConfig>,
     pub cors: Option<cors::CorsConfigOptions>,
 }
@@ -59,7 +59,7 @@ impl SubGraphConfig {
         subgraph_config
     }
 
-    pub fn get_entity(self, entity_name: &str) -> Option<entities::ServiceEntity> {
+    pub fn get_entity(self, entity_name: &str) -> Option<entities::ServiceEntityConfig> {
         for entity in self.service.entities {
             if entity.name == entity_name {
                 return Some(entity);

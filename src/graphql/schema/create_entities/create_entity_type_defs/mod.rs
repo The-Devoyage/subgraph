@@ -1,5 +1,7 @@
 use crate::{
-    configuration::subgraph::entities::{service_entity_field::ServiceEntityField, ServiceEntity},
+    configuration::subgraph::entities::{
+        service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig,
+    },
     data_sources::{DataSource, DataSources},
     graphql::{resolver::ServiceResolver, schema::ResolverType},
 };
@@ -22,7 +24,7 @@ pub struct TypeRefsAndDefs {
 
 impl ServiceSchemaBuilder {
     pub fn create_field(
-        entity_field: ServiceEntityField,
+        entity_field: ServiceEntityFieldConfig,
         type_ref: TypeRef,
         data_source: &DataSource,
         is_root_object: bool,
@@ -48,7 +50,7 @@ impl ServiceSchemaBuilder {
 
     pub fn add_field(
         mut entity_type: Object,
-        entity_field: ServiceEntityField,
+        entity_field: ServiceEntityFieldConfig,
         type_ref: TypeRef,
         data_source: DataSource,
         is_root_object: bool,
@@ -72,16 +74,16 @@ impl ServiceSchemaBuilder {
     pub fn create_type_defs(
         &self,
         data_sources: &DataSources,
-        entity: &ServiceEntity,
+        entity: &ServiceEntityConfig,
         type_name: String,
-        fields: Vec<ServiceEntityField>,
+        fields: Vec<ServiceEntityFieldConfig>,
     ) -> Vec<Object> {
         let mut type_defs = Vec::new();
 
         debug!("Creating Type For: `{}`", type_name);
         let mut type_def = Object::new(type_name);
 
-        let data_source = DataSources::get_data_source_for_entity(data_sources, entity);
+        let data_source = DataSources::get_entity_data_soruce(data_sources, entity);
 
         for entity_field in fields {
             if entity_field.exclude_from_output.unwrap_or(false) {
@@ -157,7 +159,7 @@ impl ServiceSchemaBuilder {
         self
     }
 
-    pub fn create_entity_type_defs(mut self, entity: &ServiceEntity) -> Self {
+    pub fn create_entity_type_defs(mut self, entity: &ServiceEntityConfig) -> Self {
         debug!("Creating Types For Entity: {}", &entity.name);
         let entity_type_defs = self.create_type_defs(
             &self.data_sources.clone(),

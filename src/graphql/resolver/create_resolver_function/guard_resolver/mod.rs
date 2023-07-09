@@ -6,7 +6,7 @@ use log::debug;
 
 use crate::{
     configuration::subgraph::{
-        entities::{service_entity_field::ServiceEntityField, ServiceEntity},
+        entities::{service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig},
         guard::Guard,
     },
     graphql::schema::ResolverType,
@@ -18,17 +18,18 @@ impl ServiceResolver {
     pub fn guard_resolver(
         ctx: &ResolverContext,
         input_document: &Document,
-        entity: &ServiceEntity,
+        entity: &ServiceEntityConfig,
         service_guards: Option<Vec<Guard>>,
         resolver_type: &ResolverType,
     ) -> Result<(), async_graphql::Error> {
         let headers = ctx.data_unchecked::<HeaderMap>().clone();
         let guard_context =
             Guard::create_guard_context(headers, input_document.clone(), entity.clone())?;
-        let resolver_guards = match ServiceEntity::get_resolver(&entity, resolver_type.clone()) {
-            Some(resolver) => resolver.guards,
-            None => None,
-        };
+        let resolver_guards =
+            match ServiceEntityConfig::get_resolver(&entity, resolver_type.clone()) {
+                Some(resolver) => resolver.guards,
+                None => None,
+            };
         let entity_guards = entity.guards.clone();
 
         if service_guards.is_some() {
@@ -57,12 +58,12 @@ impl ServiceResolver {
 
     pub fn guard_field(
         selection_field: SelectionField,
-        entity: &ServiceEntity,
+        entity: &ServiceEntityConfig,
         guard_context: HashMapContext,
     ) -> Result<(), async_graphql::Error> {
         debug!("Guard Field");
         let field_name = selection_field.name();
-        let fields = ServiceEntityField::get_fields_recursive(
+        let fields = ServiceEntityFieldConfig::get_fields_recursive(
             entity.fields.clone(),
             field_name.to_string(),
         )?;
@@ -72,7 +73,7 @@ impl ServiceResolver {
 
     pub fn guard_nested(
         selection_field: SelectionField,
-        fields: Vec<ServiceEntityField>,
+        fields: Vec<ServiceEntityFieldConfig>,
         field_name: &str,
         guard_context: HashMapContext,
     ) -> Result<(), async_graphql::Error> {
@@ -83,7 +84,7 @@ impl ServiceResolver {
             .iter()
             .find(|field| field.name == field_name)
             .unwrap();
-        let guards = ServiceEntityField::get_guards(field.clone());
+        let guards = ServiceEntityFieldConfig::get_guards(field.clone());
 
         if guards.is_some() {
             Guard::check(&guards.unwrap(), &guard_context)?;
