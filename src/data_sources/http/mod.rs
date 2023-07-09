@@ -7,7 +7,7 @@ use reqwest::Client;
 use crate::{
     configuration::subgraph::{
         data_sources::http::{DefaultHeader, HttpDataSourceConfig},
-        entities::ServiceEntity,
+        entities::ServiceEntityConfig,
     },
     graphql::schema::ResolverType,
 };
@@ -61,7 +61,7 @@ impl HttpDataSource {
     pub async fn execute_operation<'a>(
         data_source: &DataSource,
         input: Document,
-        entity: ServiceEntity,
+        entity: ServiceEntityConfig,
         resolver_type: ResolverType,
     ) -> Result<FieldValue<'a>, async_graphql::Error> {
         info!("Executing HTTP Data Source Operation");

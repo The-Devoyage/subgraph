@@ -2,7 +2,7 @@ use async_graphql::dynamic::ResolverContext;
 use bson::Document;
 
 use crate::{
-    configuration::subgraph::entities::service_entity_field::ServiceEntityField,
+    configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
     graphql::schema::ResolverType,
 };
 
@@ -13,7 +13,7 @@ mod create_internal_input;
 impl ServiceResolver {
     pub fn get_resolver_input(
         ctx: &ResolverContext,
-        as_field: &Option<ServiceEntityField>,
+        as_field: &Option<ServiceEntityFieldConfig>,
         resolver_type: &ResolverType,
     ) -> Result<Document, async_graphql::Error> {
         let input_document = match resolver_type {

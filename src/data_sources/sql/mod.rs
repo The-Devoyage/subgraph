@@ -6,7 +6,7 @@ use sqlx::{MySql, Pool, Postgres, Sqlite};
 use crate::{
     configuration::subgraph::{
         data_sources::sql::{DialectEnum, SqlDataSourceConfig},
-        entities::ServiceEntity,
+        entities::ServiceEntityConfig,
     },
     graphql::schema::ResolverType,
 };
@@ -97,7 +97,7 @@ impl SqlDataSource {
     pub async fn execute_operation<'a>(
         data_source: &DataSource,
         input: Document,
-        entity: ServiceEntity,
+        entity: ServiceEntityConfig,
         resolver_type: ResolverType,
     ) -> Result<FieldValue<'a>, async_graphql::Error> {
         debug!("Executing SQL Operation");
@@ -107,7 +107,7 @@ impl SqlDataSource {
             _ => unreachable!(),
         };
 
-        let entity_data_source = ServiceEntity::get_entity_data_source(&entity);
+        let entity_data_source = ServiceEntityConfig::get_entity_data_source(&entity);
 
         let table;
 

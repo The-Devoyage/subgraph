@@ -1,7 +1,7 @@
 use async_graphql::dynamic::{InputObject, InputValue};
 use log::debug;
 
-use crate::configuration::subgraph::entities::service_entity_field::ServiceEntityField;
+use crate::configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig;
 
 use super::schema::{ExcludeFromInput, ResolverType};
 
@@ -9,7 +9,7 @@ mod get_entity_field_type;
 
 pub struct ServiceInput {
     input_name: String,
-    fields: Vec<ServiceEntityField>,
+    fields: Vec<ServiceEntityFieldConfig>,
     resolver_type: ResolverType,
     exclude_from_input: Option<ExcludeFromInput>,
 }
@@ -17,7 +17,7 @@ pub struct ServiceInput {
 impl ServiceInput {
     pub fn new(
         input_name: String,
-        fields: Vec<ServiceEntityField>,
+        fields: Vec<ServiceEntityFieldConfig>,
         resolver_type: ResolverType,
         exclude_from_input: Option<ExcludeFromInput>,
     ) -> Self {
@@ -36,8 +36,10 @@ impl ServiceInput {
         let mut excluded_count = 0;
 
         for field in &self.fields {
-            let is_excluded =
-                ServiceEntityField::is_excluded_input_field(field, self.exclude_from_input.clone());
+            let is_excluded = ServiceEntityFieldConfig::is_excluded_input_field(
+                field,
+                self.exclude_from_input.clone(),
+            );
 
             if !is_excluded {
                 let parent_input_name = &self.input_name.clone().replace("_input", "");

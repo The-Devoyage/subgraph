@@ -1,5 +1,5 @@
 use crate::{
-    configuration::subgraph::entities::service_entity_field::ServiceEntityField,
+    configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
     graphql::schema::ServiceSchemaBuilder,
 };
 
@@ -10,7 +10,7 @@ use log::debug;
 impl ServiceSchemaBuilder {
     pub fn resolve_nested(
         ctx: &ResolverContext,
-        entity_field: &ServiceEntityField,
+        entity_field: &ServiceEntityFieldConfig,
     ) -> Result<Option<Value>, async_graphql::Error> {
         debug!("Resolving Nested Field: {:?}", ctx.field().name());
 

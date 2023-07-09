@@ -1,12 +1,14 @@
 use http::Method;
 use log::{debug, info};
 
-use crate::{configuration::subgraph::entities::ServiceEntity, graphql::schema::ResolverType};
+use crate::{
+    configuration::subgraph::entities::ServiceEntityConfig, graphql::schema::ResolverType,
+};
 
 use super::HttpDataSource;
 
 impl HttpDataSource {
-    pub fn get_method(entity: &ServiceEntity, resolver_type: ResolverType) -> Method {
+    pub fn get_method(entity: &ServiceEntityConfig, resolver_type: ResolverType) -> Method {
         info!("Getting Method for Resolver Type: {:?}", resolver_type);
         let cloned_entity = entity.clone();
         let method = match resolver_type {

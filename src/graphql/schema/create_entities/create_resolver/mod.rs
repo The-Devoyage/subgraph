@@ -1,13 +1,19 @@
 use log::debug;
 
-use crate::{configuration::subgraph::entities::ServiceEntity, graphql::resolver::ServiceResolver};
+use crate::{
+    configuration::subgraph::entities::ServiceEntityConfig, graphql::resolver::ServiceResolver,
+};
 
 use super::{ResolverType, ServiceSchemaBuilder};
 
 mod create_resolver_input_value;
 
 impl ServiceSchemaBuilder {
-    pub fn add_resolver(mut self, entity: &ServiceEntity, resolver_type: ResolverType) -> Self {
+    pub fn create_resolver(
+        mut self,
+        entity: &ServiceEntityConfig,
+        resolver_type: ResolverType,
+    ) -> Self {
         debug!("Adding Resolver");
 
         let resolver = ServiceResolver::new(

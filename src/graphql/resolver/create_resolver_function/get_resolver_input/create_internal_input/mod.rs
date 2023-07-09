@@ -2,7 +2,7 @@ use async_graphql::dynamic::ResolverContext;
 use bson::Document;
 use log::debug;
 
-use crate::configuration::subgraph::entities::service_entity_field::ServiceEntityField;
+use crate::configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig;
 
 use super::ServiceResolver;
 
@@ -12,7 +12,7 @@ mod combine_primitive_value;
 impl ServiceResolver {
     pub fn create_internal_input(
         ctx: &ResolverContext,
-        field: ServiceEntityField,
+        field: ServiceEntityFieldConfig,
     ) -> Result<Document, async_graphql::Error> {
         debug!("Creating Internal Input: {:?}", ctx.field().name());
 

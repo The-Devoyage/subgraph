@@ -2,7 +2,7 @@ use bson::Document;
 use log::debug;
 
 use crate::{
-    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntity},
+    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
     graphql::schema::ResolverType,
 };
 
@@ -24,7 +24,7 @@ impl SqlDataSource {
         resolver_type: ResolverType,
         table_name: &str,
         dialect: DialectEnum,
-        entity: &ServiceEntity,
+        entity: &ServiceEntityConfig,
     ) -> SqlQuery {
         debug!("Creating SQL Query");
 
