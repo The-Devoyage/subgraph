@@ -119,4 +119,30 @@ impl ServiceEntityField {
         }
         Ok(field_names)
     }
+
+    pub fn is_excluded_input_field(
+        entity_field: &ServiceEntityField,
+        excluded: Option<ExcludeFromInput>,
+    ) -> bool {
+        debug!("Validate Exclude From Input");
+        let exclude_from_input = entity_field.exclude_from_input.clone();
+
+        if exclude_from_input.is_none() {
+            return false;
+        }
+
+        match exclude_from_input {
+            Some(exclude_from_input) => {
+                if exclude_from_input.contains(&ExcludeFromInput::All) {
+                    return true;
+                }
+                if exclude_from_input.contains(&excluded.unwrap()) {
+                    true
+                } else {
+                    false
+                }
+            }
+            None => false,
+        }
+    }
 }
