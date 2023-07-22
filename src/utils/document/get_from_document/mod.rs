@@ -5,7 +5,7 @@ use crate::configuration::subgraph::entities::{
     service_entity_field::ServiceEntityFieldConfig, ScalarOptions,
 };
 
-use super::Document;
+use super::DocumentUtils;
 
 pub enum GetDocumentResultType {
     String(String),
@@ -18,11 +18,11 @@ pub enum GetDocumentResultType {
     DocumentArray(Vec<bson::Document>),
 }
 
-impl Document {
+impl DocumentUtils {
     /// Get a value from a document.
     pub fn get_from_document(
         document: &bson::Document,
-        field: ServiceEntityFieldConfig,
+        field: &ServiceEntityFieldConfig,
     ) -> Result<GetDocumentResultType, async_graphql::Error> {
         debug!(
             "Resolving Mongo Field {}, of type {:?} in {:?}",
@@ -30,27 +30,27 @@ impl Document {
         );
 
         match field.scalar {
-            ScalarOptions::String => Document::get_document_string_scalar(
+            ScalarOptions::String => DocumentUtils::get_document_string_scalar(
                 document,
                 &field.name,
                 field.list.unwrap_or(false),
             ),
-            ScalarOptions::Int => Document::get_document_int_scalar(
+            ScalarOptions::Int => DocumentUtils::get_document_int_scalar(
                 document,
                 &field.name,
                 field.list.unwrap_or(false),
             ),
-            ScalarOptions::Boolean => Document::get_document_boolean_scalar(
+            ScalarOptions::Boolean => DocumentUtils::get_document_boolean_scalar(
                 document,
                 &field.name,
                 field.list.unwrap_or(false),
             ),
-            ScalarOptions::ObjectID => Document::get_document_object_id_scalar(
+            ScalarOptions::ObjectID => DocumentUtils::get_document_object_id_scalar(
                 document,
                 &field.name,
                 field.list.unwrap_or(false),
             ),
-            ScalarOptions::Object => Document::get_document_object_scalar(
+            ScalarOptions::Object => DocumentUtils::get_document_object_scalar(
                 document,
                 &field.name,
                 field.list.unwrap_or(false),

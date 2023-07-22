@@ -10,6 +10,7 @@ use super::schema::ResolverType;
 
 mod create_resolver_function;
 mod create_resolver_name;
+mod get_resolver_input_name;
 mod get_resolver_type_ref;
 
 #[derive(Debug)]
