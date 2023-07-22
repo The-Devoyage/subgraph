@@ -61,7 +61,7 @@ impl Guard {
     ) -> Result<Value, EvalexprError> {
         debug!("Getting from Document");
         let document_value =
-            utils::document::Document::get_from_document(&input_document, fields[0].clone());
+            utils::document::DocumentUtils::get_from_document(&input_document, &fields[0]);
 
         if document_value.is_err() {
             return Err(EvalexprError::CustomMessage(

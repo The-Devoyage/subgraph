@@ -4,10 +4,10 @@ use sqlx::Row;
 
 use crate::{
     configuration::subgraph::entities::ScalarOptions, data_sources::sql::services::ResponseRow,
-    graphql::schema::ServiceSchemaBuilder,
+    graphql::entity::ServiceEntity,
 };
 
-impl ServiceSchemaBuilder {
+impl ServiceEntity {
     pub fn resolve_sql_field(
         response_row: &ResponseRow,
         field_name: &str,
@@ -17,13 +17,11 @@ impl ServiceSchemaBuilder {
 
         match scalar {
             ScalarOptions::String => {
-                ServiceSchemaBuilder::resolve_sql_string_scalar(response_row, field_name)
+                ServiceEntity::resolve_sql_string_scalar(response_row, field_name)
             }
-            ScalarOptions::Int => {
-                ServiceSchemaBuilder::resolve_sql_int_scalar(response_row, field_name)
-            }
+            ScalarOptions::Int => ServiceEntity::resolve_sql_int_scalar(response_row, field_name),
             ScalarOptions::Boolean => {
-                ServiceSchemaBuilder::resolve_sql_bool_scalar(response_row, field_name)
+                ServiceEntity::resolve_sql_bool_scalar(response_row, field_name)
             }
             _ => unreachable!("Unreachable scalar type: {:?}", scalar),
         }
