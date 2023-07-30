@@ -20,6 +20,7 @@ impl ServiceEntity {
         let parent_value = match ctx.parent_value.as_value() {
             Some(value) => value,
             None => {
+                debug!("Parent Value is None, creating empty IndexMap");
                 let index_map = IndexMap::new();
                 return Ok(Some(Value::from(index_map)));
             }
