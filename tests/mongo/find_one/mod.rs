@@ -180,6 +180,10 @@ async fn find_one_by_nested_object() {
         {
             get_beer(get_beer_input: { brand: { name: "Community" } }) {
                 _id
+                ratings
+                brand {
+                    name
+                }
             }
         }
         "#,

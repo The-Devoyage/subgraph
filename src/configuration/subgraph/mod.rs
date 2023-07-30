@@ -6,6 +6,7 @@ use crate::{cli_args::CliArgs, utils::logger::LogLevelEnum};
 
 use self::guard::Guard;
 
+pub mod auth;
 pub mod cors;
 pub mod data_sources;
 pub mod entities;
@@ -16,6 +17,7 @@ pub struct ServiceConfig {
     pub name: String,
     pub port: Option<u16>,
     pub log_level: Option<LogLevelEnum>,
+    pub auth: Option<auth::ServiceAuth>,
     pub guards: Option<Vec<Guard>>,
     pub entities: Vec<entities::ServiceEntityConfig>,
     pub data_sources: Vec<data_sources::ServiceDataSourceConfig>,

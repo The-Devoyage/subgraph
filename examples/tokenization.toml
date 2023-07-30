@@ -7,23 +7,21 @@ name = "users_data_source"
 uri = "mongodb://subgraph_mongo:subgraph_mongo@127.0.0.1:27017/subgraph_mongo"
 db = "subgraph_mongo"
 
-[[service.entities]]
-name = "account"
-[[service.entities.fields]]
-name = "_id"
-scalar = "ObjectID"
-required = true
-exclude_from_input = ["CreateOne", "UpdateOne", "UpdateMany"]
-[[service.entities.fields]]
-name = "auth_token"
-scalar = "Object"
-exclude_from_input = ["All"]
-fields = [
-  { name = "user", scalar = "String", required = true, as_type = "user" },
-]
+[service.auth]
+identifier = "email"
+# [[service.auth.token.values]]
+# name = "user"
+# attributes = [
+#   "_id", 
+#   "email", 
+# ]
+# join_on = "email"
 
 [[service.entities]]
 name = "user"
+guards = [
+  { name = "user", if_expr = "context(\"token.user._id\") != entity(\"_id\")", then_msg = "Not allowed." }
+]
 fields = [
   { name = "_id", scalar = "ObjectID", required = true, exclude_from_input = ["CreateOne", "UpdateOne", "UpdateMany"]},
   { name = "email", scalar = "String", required = true, exclude_from_input = ["UpdateMany"]},

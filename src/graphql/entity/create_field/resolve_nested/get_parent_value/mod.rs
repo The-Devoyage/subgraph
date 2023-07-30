@@ -8,7 +8,10 @@ impl ServiceEntity {
         parent_value: &Value,
         field_name: &str,
     ) -> Result<serde_json::Value, async_graphql::Error> {
-        debug!("Getting Parent Value: {:?}", field_name);
+        debug!(
+            "Getting Value, {:?}, from parent, {:?}",
+            field_name, parent_value
+        );
 
         let parent_value = match parent_value.clone().into_json() {
             Ok(value) => value,
