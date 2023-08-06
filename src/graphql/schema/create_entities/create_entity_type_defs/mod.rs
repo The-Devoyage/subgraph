@@ -24,6 +24,7 @@ impl ServiceSchemaBuilder {
             entity.name.clone(),
             entity.fields.clone(),
             self.subgraph_config.clone(),
+            None,
         )
         .build();
 
