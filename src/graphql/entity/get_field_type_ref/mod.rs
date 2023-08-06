@@ -13,7 +13,6 @@ mod create_required_type_refs;
 pub struct TypeRefsAndDefs {
     pub type_ref: TypeRef,
     pub type_defs: Vec<Object>,
-    pub is_root_object: bool,
 }
 
 impl ServiceEntity {

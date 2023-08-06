@@ -9,6 +9,7 @@
 ### Fixed
 
 - Including all options as `exclude_from_input` caused playground to not introspect. Now excludes inputs that are empty.
+- Resolving Root Objects fixed and added better tests.
 
 ### Changed
 

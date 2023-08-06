@@ -158,6 +158,50 @@ async fn returns_correct_scalars() {
 }
 
 #[tokio::test]
+async fn resolve_nested_object() {
+    let request = async_graphql::Request::new(
+        r#"
+        mutation {
+            create_beer(create_beer_input: { 
+                name: "Nested Mosiac", 
+                ratings: [5, 4],
+                brand: { 
+                    name: "Community" 
+                } 
+            }) {
+                _id
+            }
+        }
+        "#,
+    );
+    execute(request, None).await;
+    let request = async_graphql::Request::new(
+        r#"
+        {
+            get_beer(get_beer_input: { name: "Nested Mosiac" }) {
+                _id
+                name
+                ratings
+                brand {
+                    name
+                }
+            }
+        }
+        "#,
+    );
+    let response = execute(request, None).await;
+    let json = response.data.into_json().unwrap();
+    let name = json["get_beer"]["name"].as_str().unwrap();
+    let brand_name = json["get_beer"]["brand"]["name"].as_str().unwrap();
+    let ratings = json["get_beer"]["ratings"].as_array().unwrap();
+    assert_eq!(name, "Nested Mosiac");
+    assert_eq!(brand_name, "Community");
+    assert_eq!(ratings.len(), 2);
+    assert_eq!(ratings[0].as_i64().unwrap(), 5);
+    assert_eq!(ratings[1].as_i64().unwrap(), 4);
+}
+
+#[tokio::test]
 async fn find_one_by_nested_object() {
     let request = async_graphql::Request::new(
         r#"

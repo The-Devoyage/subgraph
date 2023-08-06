@@ -34,7 +34,6 @@ impl ServiceEntity {
         TypeRefsAndDefs {
             type_ref,
             type_defs: Vec::new(),
-            is_root_object: true,
         }
     }
 }
