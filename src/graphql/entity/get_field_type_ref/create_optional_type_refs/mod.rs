@@ -21,8 +21,6 @@ impl ServiceEntity {
         debug!("Creating Optional Type Refs");
         let mut type_defs = Vec::new();
 
-        let mut is_root_object = true;
-
         let type_ref = match entity_field.scalar.clone() {
             ScalarOptions::String => {
                 if entity_field.list.unwrap_or(false) {
@@ -59,14 +57,13 @@ impl ServiceEntity {
                     entity_field.name.clone(),
                     entity_field.fields.clone().unwrap_or(vec![]),
                     self.subgraph_config.clone(),
+                    Some(false),
                 )
                 .build();
 
                 for object in object_type_defs {
                     type_defs.push(object)
                 }
-
-                is_root_object = false;
 
                 if entity_field.list.unwrap_or(false) {
                     TypeRef::named_list_nn(entity_field.name.clone())
@@ -79,7 +76,6 @@ impl ServiceEntity {
         TypeRefsAndDefs {
             type_ref,
             type_defs,
-            is_root_object,
         }
     }
 }
