@@ -19,6 +19,7 @@ pub struct ServiceEntity {
     type_name: String,
     fields: Vec<ServiceEntityFieldConfig>,
     subgraph_config: SubGraphConfig,
+    is_root: bool,
 }
 
 impl ServiceEntity {
@@ -28,6 +29,7 @@ impl ServiceEntity {
         type_name: String,
         fields: Vec<ServiceEntityFieldConfig>,
         subgraph_config: SubGraphConfig,
+        is_root: Option<bool>,
     ) -> Self {
         Self {
             data_sources,
@@ -35,6 +37,7 @@ impl ServiceEntity {
             type_name,
             fields,
             subgraph_config,
+            is_root: is_root.unwrap_or(true),
         }
     }
 
@@ -69,7 +72,7 @@ impl ServiceEntity {
                     entity_field.clone(),
                     type_defs_and_refs.type_ref,
                     data_source.clone(),
-                    type_defs_and_refs.is_root_object,
+                    self.is_root,
                 );
                 type_def = type_def.field(field);
             }
