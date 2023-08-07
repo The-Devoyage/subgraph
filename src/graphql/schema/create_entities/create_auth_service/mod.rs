@@ -2,16 +2,12 @@ use async_graphql::{
     dynamic::{Field, FieldFuture, FieldValue, InputValue, Object, TypeRef},
     Value,
 };
-use json::object;
 use log::debug;
 use reqwest::Url;
-use webauthn_rs::prelude::{CreationChallengeResponse, WebauthnBuilder};
+use webauthn_rs::prelude::*;
 
-use crate::{
-    configuration::subgraph::entities::{
-        service_entity_field::ServiceEntityFieldConfig, ScalarOptions, ServiceEntityConfig,
-    },
-    graphql::entity::ServiceEntity,
+use crate::configuration::subgraph::entities::{
+    service_entity_field::ServiceEntityFieldConfig, ScalarOptions, ServiceEntityConfig,
 };
 
 use super::ServiceSchemaBuilder;
@@ -23,7 +19,7 @@ impl ServiceSchemaBuilder {
     }
 
     pub fn create_register_start(mut self) -> Self {
-        let resolver = Field::new("register_start", TypeRef::named_nn("ccr"), move |ctx| {
+        let resolver = Field::new("register_start", TypeRef::named_nn("ccr"), move |_ctx| {
             FieldFuture::new(async move {
                 //Create webauthn object.
                 let rp_id = "localhost";
@@ -49,13 +45,13 @@ impl ServiceSchemaBuilder {
                 debug!("Challenge created: {:?}", ccr);
                 debug!("Registration state created: {:?}", reg_state);
 
-                let string = serde_json::to_string(&ccr).expect("Failed to serialize ccr");
+                // let string = serde_json::to_string(&ccr).expect("Failed to serialize ccr");
 
-                let json = json::parse(&string).expect("Failed to parse ccr");
+                // let json = json::parse(&string).expect("Failed to parse ccr");
 
-                debug!("Converted ccr to json: {:?}", json);
+                // debug!("Converted ccr to json: {:?}", json);
 
-                Ok(Some(FieldValue::owned_any(json)))
+                Ok(Some(FieldValue::owned_any(ccr)))
             })
         })
         .argument(InputValue::new(
@@ -65,61 +61,40 @@ impl ServiceSchemaBuilder {
 
         self.query = self.query.field(resolver);
 
-        let ccr_entity = self.create_ccr_entity();
+        let public_key_field = Field::new(
+            "public_key",
+            TypeRef::named_nn(TypeRef::STRING),
+            move |ctx| {
+                FieldFuture::new(async move {
+                    let ccr = match ctx
+                        .parent_value
+                        .try_downcast_ref::<CreationChallengeResponse>()
+                    {
+                        Ok(ccr) => serde_json::to_value(ccr),
+                        Err(_) => {
+                            return Err(async_graphql::Error::new("Failed to downcast challenge."))
+                        }
+                    };
 
-        let ccr_typedefs = ServiceEntity::new(
-            self.data_sources.clone(),
-            ccr_entity.clone(),
-            "ccr".to_string(),
-            ccr_entity.fields,
-            self.subgraph_config.clone(),
-        )
-        .build();
+                    let ccr = match ccr {
+                        Ok(ccr) => ccr,
+                        Err(_) => {
+                            return Err(async_graphql::Error::new("Failed to resolve challenge."))
+                        }
+                    };
 
-        // let resolver_fields = Object::new(entity_response).field(Field::new(
-        //     "ccr",
-        //     TypeRef::named_nn("ccr"),
-        //     move |ctx| {
-        //         FieldFuture::new(async move {
-        //             // let ccr = match ctx
-        //             //     .parent_value
-        //             //     .try_downcast_ref::<CreationChallengeResponse>()
-        //             // {
-        //             //     Ok(ccr) => serde_json::to_string(ccr),
-        //             //     Err(_) => {
-        //             //         return Err(async_graphql::Error::new("Failed to resolve challenge."))
-        //             //     }
-        //             // };
-        //             //
-        //             let ccr = ctx.parent_value.as_value();
+                    let value = Value::from_json(ccr.clone());
+                    match value {
+                        Ok(value) => Ok(Some(value)),
+                        Err(_) => Err(async_graphql::Error::new("Failed to resolve challenge.")),
+                    }
+                })
+            },
+        );
 
-        //             if ccr.is_some() {
-        //                 let ccr = ccr.unwrap();
-        //                 // debug!("Ccr: {:?}", ccr);
-        //                 return Ok(Some(FieldValue::owned_any(ccr.clone())));
-        //             } else {
-        //                 return Err(async_graphql::Error::new("Failed to resolve challenge."));
-        //             }
+        let resolver_fields = Object::new("ccr").field(public_key_field);
 
-        //             // let ccr = match ccr {
-        //             //     Ok(ccr) => json::parse(&ccr),
-        //             //     Err(_) => {
-        //             //         return Err(async_graphql::Error::new("Failed to resolve challenge."))
-        //             //     }
-        //             // };
-
-        //             // let string = serde_json::to_string(&ccr).expect("Failed to serialize ccr");
-
-        //             // let json = json::parse(&string).expect("Failed to parse ccr");
-
-        //             // debug!("Converted ccr to json: {:?}", json);
-
-        //             // Ok(Some(Value::into_json(ccr)))
-        //         })
-        //     },
-        // ));
-
-        self = self.register_types(ccr_typedefs);
+        self = self.register_types(vec![resolver_fields]);
 
         self
     }
