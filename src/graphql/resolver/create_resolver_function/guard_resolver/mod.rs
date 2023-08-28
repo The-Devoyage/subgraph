@@ -50,7 +50,9 @@ impl ServiceResolver {
             .collect::<Vec<SelectionField>>();
 
         for selection_field in selection_fields {
-            ServiceResolver::guard_field(selection_field, &entity, guard_context.clone())?;
+            if selection_field.name() != "__typename" {
+                ServiceResolver::guard_field(selection_field, &entity, guard_context.clone())?;
+            }
         }
 
         Ok(())
