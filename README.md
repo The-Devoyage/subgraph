@@ -100,6 +100,10 @@ Protecting the API is simple and can be done by adding `Guards` in the configura
 - Custom error message support.
 - Guard at different points in the request lifecycle (before, during, after request).
 
+### Auth - Webauthn
+
+Built in authorization (registration) is available by enabling it in the service config.
+
 ### Sandbox
 
 Once started, view the sandbox in the browser hosted at the specified port. For example `http://localhost:5011`.

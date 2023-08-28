@@ -4,6 +4,7 @@ use async_graphql::dynamic::Schema;
 use http::HeaderMap;
 use subgraph::configuration::{environment::Environment, subgraph::SubGraphConfig};
 
+mod auth;
 mod http_ds;
 mod mongo;
 mod mysql;

@@ -31,7 +31,7 @@ json = "0.12.4"
 serde_json = "1.0.95"
 sqlx = { version = "0.7.0-alpha.2", features = [ "runtime-tokio", "postgres", "mysql", "sqlite" ] }
 evalexpr = "10.0.0"
-webauthn-rs = "0.4.8"
+webauthn-rs = { version = "0.4.8", features = ["danger-allow-state-serialisation"] }
 
 [dependencies.mongodb]
 version = "2.3.1"
@@ -45,3 +45,14 @@ features = [
     "fast-rng",
     "macro-diagnostics",
 ]
+
+# [dev-dependencies]
+# web-sys = {version = "0.3.64", features = [
+#   "CredentialCreationOptions", 
+#   "Window", 
+#   "Navigator",
+#   "CredentialsContainer"
+# ] }
+# serde-wasm-bindgen = "0.4"
+# wasm-bindgen-futures = { version = "0.4" }
+
