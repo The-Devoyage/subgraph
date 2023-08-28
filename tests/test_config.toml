@@ -3,6 +3,13 @@ name = "subgraph_tests"
 port = 0
 log_level = "debug"
 
+[service.auth]
+requesting_party = "localhost"
+requesting_party_name = "subgraph_demo"
+requesting_party_origin = "http://localhost:8000"
+identifier = "email"
+data_source = "users_data_source"
+
 # Data Sources
 [[service.data_sources]]
 [service.data_sources.Mongo]

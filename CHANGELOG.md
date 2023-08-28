@@ -5,6 +5,7 @@
 ### Added
 
 - New option to exclude field from "All" inputs.
+- Builtin Auth with WebAuthn.
 
 ### Fixed
 

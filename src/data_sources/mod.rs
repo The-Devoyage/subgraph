@@ -76,6 +76,20 @@ impl DataSources {
         }
     }
 
+    pub fn get_data_source_by_name(data_soruces: &DataSources, name: &str) -> DataSource {
+        debug!("Getting Data Source by Name");
+        let data_source = data_soruces
+            .sources
+            .iter()
+            .find(|data_source| match data_source {
+                DataSource::Mongo(ds) => &ds.config.name == name,
+                DataSource::HTTP(ds) => &ds.config.name == name,
+                DataSource::SQL(ds) => &ds.config.name == name,
+            })
+            .unwrap();
+        data_source.clone()
+    }
+
     /// Execute a data source operation.
     pub async fn execute<'a>(
         data_sources: &DataSources,
