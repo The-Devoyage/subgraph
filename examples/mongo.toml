@@ -4,8 +4,8 @@ name = "bikes"
 [[service.data_sources]]
 [service.data_sources.Mongo]
 name = "bikes_db"
-uri = "mongodb://user:password@127.0.0.1:27017/db_name"
-db = "db_name"
+uri = "mongodb://subgraph_mongo:subgraph_mongo@127.0.0.1:27017/subgraph_mongo"
+db = "subgraph_mongo"
 
 [[service.entities]]
 name = "Bike"
