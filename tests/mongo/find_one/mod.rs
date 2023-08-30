@@ -456,3 +456,22 @@ async fn find_with_nested_object() {
 
     assert!(response.is_ok());
 }
+
+#[tokio::test]
+async fn resolve_typename() {
+    let request = async_graphql::Request::new(
+        r#"
+        mutation {
+            create_user(create_user_input: { name: "BongoWithTypeName", age: 10, married: false, email: "nickisyourfan@gmail.com" }) {
+                _id
+                __typename
+            }
+        }
+        "#,
+    );
+    let response = execute(request, None).await;
+
+    let json = response.data.into_json().unwrap();
+    let typename = json["create_user"]["__typename"].as_str().unwrap();
+    assert_eq!(typename, "user");
+}

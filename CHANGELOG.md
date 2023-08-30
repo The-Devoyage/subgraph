@@ -6,6 +6,7 @@
 
 - New option to exclude field from "All" inputs.
 - Builtin Auth with WebAuthn.
+- Resolve `__typename` support.
 
 ### Fixed
 
