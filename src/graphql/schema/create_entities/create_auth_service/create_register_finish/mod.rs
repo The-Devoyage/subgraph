@@ -3,6 +3,7 @@ use async_graphql::{
     Value,
 };
 use bson::doc;
+use log::error;
 
 use crate::{
     data_sources::{DataSource, DataSources},
@@ -39,7 +40,7 @@ impl ServiceSchemaBuilder {
                         }
                     };
 
-                    let pub_key = match ctx.args.try_get("pub_key") {
+                    let pub_key = match ctx.args.try_get("public_key") {
                         Ok(input) => input
                             .deserialize::<String>()
                             .expect("Failed to deserialize."),
@@ -80,6 +81,16 @@ impl ServiceSchemaBuilder {
                         }
                         _ => panic!("Data source not supported."),
                     };
+                    let user_exists =
+                        ServiceSchemaBuilder::get_user(&data_source, &identifier).await;
+
+                    if !user_exists {
+                        error!("User Not Found: {:?}", &identifier);
+                        return Err(async_graphql::Error::new(format!(
+                            "User Not Found: {:?}",
+                            &identifier
+                        )));
+                    }
 
                     let webauthn = ServiceSchemaBuilder::build_webauthn(&auth_config)?;
                     let pub_key = serde_json::from_str(&pub_key).unwrap();
@@ -123,7 +134,7 @@ impl ServiceSchemaBuilder {
             TypeRef::named_nn(TypeRef::STRING),
         ))
         .argument(InputValue::new(
-            "pub_key",
+            "public_key",
             TypeRef::named_nn(TypeRef::STRING),
         ));
 
