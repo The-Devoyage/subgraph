@@ -6,6 +6,7 @@ mod create_register_finish;
 mod create_register_start;
 
 pub mod build_webauthn;
+pub mod get_user;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ServiceUser {

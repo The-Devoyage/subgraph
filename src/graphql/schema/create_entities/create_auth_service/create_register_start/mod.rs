@@ -6,8 +6,9 @@ use bson::doc;
 use log::{debug, error};
 
 use crate::{
-    data_sources::{DataSource, DataSources},
-    graphql::schema::{create_entities::create_auth_service::ServiceUser, ServiceSchemaBuilder},
+    configuration::subgraph::data_sources::sql::DialectEnum,
+    data_sources::{sql::PoolEnum, DataSource, DataSources},
+    graphql::schema::ServiceSchemaBuilder,
 };
 
 impl ServiceSchemaBuilder {
@@ -46,42 +47,15 @@ impl ServiceSchemaBuilder {
                     );
 
                     // Check if user exists. If exists then reject.
-                    match &data_source {
-                        DataSource::Mongo(mongo_ds) => {
-                            debug!("Mongo data source");
-                            let filter = doc! {
-                                "identifier": &identifier
-                            };
+                    let user_exists = ServiceSchemaBuilder::get_user(&data_source, &identifier).await; 
 
-                            let user = mongo_ds
-                                .db
-                                .collection::<ServiceUser>("subgraph_user")
-                                .find_one(filter, None)
-                                .await;
-
-                            match user {
-                                Ok(user) => {
-                                    debug!("User: {:?}", user);
-
-                                    if user.is_some() {
-                                        error!("User already exists: {:?}", user);
-                                        return Err(async_graphql::Error::new(format!(
-                                            "User already exists: {:?}",
-                                            user
-                                        )));
-                                    }
-                                }
-                                Err(e) => {
-                                    error!("Failed to find user: {:?}", e);
-                                    return Err(async_graphql::Error::new(format!(
-                                        "Failed to find user: {:?}",
-                                        e
-                                    )));
-                                }
-                            };
-                        }
-                        _ => panic!("Data Source not supported."),
-                    };
+                    if user_exists {
+                        error!("User already exists: {:?}", &identifier);
+                        return Err(async_graphql::Error::new(format!(
+                            "User already exists: {:?}",
+                            &identifier
+                        )));
+                    }
 
                     debug!("Creating webauthn service");
 
@@ -117,6 +91,43 @@ impl ServiceSchemaBuilder {
                                 .collection("subgraph_user")
                                 .insert_one(user, None)
                                 .await?;
+                        }
+                        DataSource::SQL(sql_ds) => {
+                            match sql_ds.config.dialect {
+                                DialectEnum::MYSQL => {
+                                    let query = sqlx::query("INSERT INTO subgraph_user (identifier, registration_state) VALUES (?, ?);")
+                                        .bind(&identifier)
+                                        .bind(&reg_state);
+                                    match sql_ds.pool.clone() {
+                                        PoolEnum::MySql(pool) => {
+                                            query.execute(&pool).await?;
+                                        }
+                                        _ => unreachable!(),
+                                    };
+                                }
+                                DialectEnum::SQLITE => {
+                                    let query = sqlx::query("INSERT INTO subgraph_user (identifier, registration_state) VALUES (?, ?);")
+                                        .bind(&identifier)
+                                        .bind(&reg_state);
+                                    match sql_ds.pool.clone() {
+                                        PoolEnum::SqLite(pool) => {
+                                            query.execute(&pool).await?;
+                                        }
+                                        _ => unreachable!(),
+                                    };
+                                }
+                                DialectEnum::POSTGRES => {
+                                    let query = sqlx::query("INSERT INTO subgraph_user (identifier, registration_state) VALUES ($1, $2);")
+                                        .bind(&identifier)
+                                        .bind(&reg_state);
+                                    match sql_ds.pool.clone() {
+                                        PoolEnum::Postgres(pool) => {
+                                            query.execute(&pool).await?;
+                                        }
+                                        _ => unreachable!(),
+                                    };
+                                }
+                            };
                         }
                         _ => panic!("Data Source not supported."),
                     };
