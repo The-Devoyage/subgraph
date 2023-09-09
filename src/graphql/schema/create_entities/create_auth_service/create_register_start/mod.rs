@@ -47,9 +47,8 @@ impl ServiceSchemaBuilder {
                     );
 
                     // Check if user exists. If exists then reject.
-                    let user_exists = ServiceSchemaBuilder::get_user(&data_source, &identifier).await; 
-
-                    if user_exists {
+                    let user = ServiceSchemaBuilder::get_user(&data_source, &identifier).await; 
+                    if !user.is_err() && user.unwrap().is_some() {
                         error!("User already exists: {:?}", &identifier);
                         return Err(async_graphql::Error::new(format!(
                             "User already exists: {:?}",
@@ -79,10 +78,10 @@ impl ServiceSchemaBuilder {
                     };
 
                     // Save registration state to database
-                    match data_source {
+                    match &data_source {
                         DataSource::Mongo(mongo_ds) => {
                             let user = doc! {
-                                "identifier": identifier,
+                                "identifier": identifier.clone(),
                                 "registration_state": &reg_state
                             };
 
@@ -138,6 +137,8 @@ impl ServiceSchemaBuilder {
                     let json = match serde_json::to_value(&ccr) {
                         Ok(json) => json,
                         Err(e) => {
+                            //Delete user
+                            ServiceSchemaBuilder::delete_user(&data_source.clone(), &identifier).await?;
                             return Err(async_graphql::Error::new(format!(
                                 "Failed to serialize challenge: {}",
                                 e
@@ -160,7 +161,6 @@ impl ServiceSchemaBuilder {
         ));
 
         self.mutation = self.mutation.field(resolver);
-
         self
     }
 }

@@ -3,7 +3,8 @@ use async_graphql::{
     Value,
 };
 use bson::doc;
-use log::error;
+use log::{debug, error};
+use webauthn_rs::prelude::RegisterPublicKeyCredential;
 
 use crate::{
     data_sources::{DataSource, DataSources},
@@ -59,32 +60,19 @@ impl ServiceSchemaBuilder {
                         &auth_config.data_source,
                     );
 
-                    let user = match data_source.clone() {
-                        DataSource::Mongo(mongo_ds) => {
-                            let filter = doc! {
-                                "identifier": identifier.clone()
-                            };
-                            let user = mongo_ds
-                                .db
-                                .collection::<ServiceUser>("subgraph_user")
-                                .find_one(filter, None)
-                                .await?;
+                    let user = ServiceSchemaBuilder::get_user(&data_source, &identifier).await;
 
-                            match user {
-                                Some(user) => user,
-                                None => {
-                                    return Err(async_graphql::Error::new(format!(
-                                        "User not found."
-                                    )))
-                                }
-                            }
+                    let user = match user {
+                        Ok(user) => user,
+                        Err(e) => {
+                            return Err(async_graphql::Error::new(format!(
+                                "Failed to get user: {:?}",
+                                e
+                            )))
                         }
-                        _ => panic!("Data source not supported."),
                     };
-                    let user_exists =
-                        ServiceSchemaBuilder::get_user(&data_source, &identifier).await;
 
-                    if !user_exists {
+                    if user.is_none() {
                         error!("User Not Found: {:?}", &identifier);
                         return Err(async_graphql::Error::new(format!(
                             "User Not Found: {:?}",
@@ -93,16 +81,34 @@ impl ServiceSchemaBuilder {
                     }
 
                     let webauthn = ServiceSchemaBuilder::build_webauthn(&auth_config)?;
-                    let pub_key = serde_json::from_str(&pub_key).unwrap();
+                    let pub_key: Result<RegisterPublicKeyCredential, async_graphql::Error> =
+                        serde_json::from_str(&pub_key).map_err(|e| {
+                            async_graphql::Error::new(format!("Failed to deserialize: {:?}", e))
+                        });
+
+                    let pub_key = match pub_key {
+                        Ok(pk) => pk,
+                        Err(error) => {
+                            ServiceSchemaBuilder::delete_user(&data_source, &identifier).await?;
+                            return Err(error);
+                        }
+                    };
 
                     let sk = webauthn
-                        .finish_passkey_registration(&pub_key, &user.registration_state)
+                        .finish_passkey_registration(&pub_key, &user.unwrap().registration_state)
                         .map_err(|e| {
                             async_graphql::Error::new(format!(
                                 "Failed to finish registration: {:?}",
                                 e
                             ))
-                        })?;
+                        });
+                    let sk = match sk {
+                        Ok(sk) => sk,
+                        Err(error) => {
+                            ServiceSchemaBuilder::delete_user(&data_source, &identifier).await?;
+                            return Err(error);
+                        }
+                    };
 
                     // Update user with sk
                     let filter = doc! {
@@ -138,8 +144,11 @@ impl ServiceSchemaBuilder {
             TypeRef::named_nn(TypeRef::STRING),
         ));
 
-        self.mutation = self.mutation.field(resolver);
+        // let register_public_key_credential_type =
+        //     Object::new("RegisterPublicKeyCredential").field(Field::new(""));
 
+        // self = self.register_types(vec![register_public_key_credential_type]);
+        self.mutation = self.mutation.field(resolver);
         self
     }
 }

@@ -6,14 +6,16 @@ mod create_register_finish;
 mod create_register_start;
 
 pub mod build_webauthn;
+pub mod delete_user;
 pub mod get_user;
+// pub mod update_user;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ServiceUser {
     identifier: String,
     #[serde(deserialize_with = "deserialize_registration_state")]
     registration_state: PasskeyRegistration,
-    pub_key: Passkey,
+    pub_key: Option<Passkey>,
 }
 
 fn deserialize_registration_state<'de, D>(deserializer: D) -> Result<PasskeyRegistration, D::Error>
