@@ -2,14 +2,10 @@ use async_graphql::{
     dynamic::{Field, FieldFuture, InputValue, TypeRef},
     Value,
 };
-use bson::doc;
-use log::{debug, error};
+use log::error;
 use webauthn_rs::prelude::RegisterPublicKeyCredential;
 
-use crate::{
-    data_sources::{DataSource, DataSources},
-    graphql::schema::ServiceSchemaBuilder,
-};
+use crate::{data_sources::DataSources, graphql::schema::ServiceSchemaBuilder};
 
 use super::ServiceUser;
 
@@ -29,6 +25,13 @@ impl ServiceSchemaBuilder {
                 let auth_config = auth_config.clone();
 
                 FieldFuture::new(async move {
+                    let data_sources = ctx.data_unchecked::<DataSources>().clone();
+
+                    let data_source = DataSources::get_data_source_by_name(
+                        &data_sources,
+                        &auth_config.data_source,
+                    );
+
                     let identifier = match ctx.args.try_get("identifier") {
                         Ok(input) => input
                             .deserialize::<String>()
@@ -37,7 +40,7 @@ impl ServiceSchemaBuilder {
                             return Err(async_graphql::Error::new(format!(
                                 "Failed to get input: {:?}",
                                 e
-                            )))
+                            )));
                         }
                     };
 
@@ -46,19 +49,13 @@ impl ServiceSchemaBuilder {
                             .deserialize::<String>()
                             .expect("Failed to deserialize."),
                         Err(e) => {
+                            ServiceSchemaBuilder::delete_user(&data_source, &identifier).await?;
                             return Err(async_graphql::Error::new(format!(
                                 "Failed to get input: {:?}",
                                 e
-                            )))
+                            )));
                         }
                     };
-
-                    let data_sources = ctx.data_unchecked::<DataSources>().clone();
-
-                    let data_source = DataSources::get_data_source_by_name(
-                        &data_sources,
-                        &auth_config.data_source,
-                    );
 
                     let user = ServiceSchemaBuilder::get_user(&data_source, &identifier).await;
 
@@ -80,7 +77,17 @@ impl ServiceSchemaBuilder {
                         )));
                     }
 
-                    let webauthn = ServiceSchemaBuilder::build_webauthn(&auth_config)?;
+                    let webauthn = match ServiceSchemaBuilder::build_webauthn(&auth_config) {
+                        Ok(w) => Ok(w),
+                        Err(e) => {
+                            ServiceSchemaBuilder::delete_user(&data_source, &identifier).await?;
+                            Err(async_graphql::Error::new(format!(
+                                "something went wrong when building webauthn: {:?}",
+                                e
+                            )))
+                        }
+                    }?;
+
                     let pub_key: Result<RegisterPublicKeyCredential, async_graphql::Error> =
                         serde_json::from_str(&pub_key).map_err(|e| {
                             async_graphql::Error::new(format!("Failed to deserialize: {:?}", e))
@@ -94,16 +101,19 @@ impl ServiceSchemaBuilder {
                         }
                     };
 
-                    let sk = webauthn
-                        .finish_passkey_registration(&pub_key, &user.unwrap().registration_state)
+                    let passkey = webauthn
+                        .finish_passkey_registration(
+                            &pub_key,
+                            &user.clone().unwrap().registration_state,
+                        )
                         .map_err(|e| {
                             async_graphql::Error::new(format!(
                                 "Failed to finish registration: {:?}",
                                 e
                             ))
                         });
-                    let sk = match sk {
-                        Ok(sk) => sk,
+                    let passkey = match passkey {
+                        Ok(pk) => pk,
                         Err(error) => {
                             ServiceSchemaBuilder::delete_user(&data_source, &identifier).await?;
                             return Err(error);
@@ -111,24 +121,21 @@ impl ServiceSchemaBuilder {
                     };
 
                     // Update user with sk
-                    let filter = doc! {
-                        "identifier": identifier
-                    };
-                    let update = doc! {
-                        "$set": {
-                            "sk": serde_json::to_string(&sk).unwrap()
-                        }
+                    let service_user = ServiceUser {
+                        identifier: identifier.clone(),
+                        registration_state: user.unwrap().registration_state,
+                        passkey: Some(passkey),
+                        authentication_state: None,
                     };
 
-                    match data_source.clone() {
-                        DataSource::Mongo(mongo_ds) => {
-                            mongo_ds
-                                .db
-                                .collection::<ServiceUser>("subgraph_user")
-                                .update_one(filter, update, None)
-                                .await?;
+                    let updated =
+                        ServiceSchemaBuilder::update_user(&data_source, service_user).await;
+                    match updated {
+                        Ok(_) => (),
+                        Err(e) => {
+                            ServiceSchemaBuilder::delete_user(&data_source, &identifier).await?;
+                            return Err(e);
                         }
-                        _ => panic!("Data source not supported."),
                     };
 
                     Ok(Some(Value::from(true)))
@@ -144,10 +151,6 @@ impl ServiceSchemaBuilder {
             TypeRef::named_nn(TypeRef::STRING),
         ));
 
-        // let register_public_key_credential_type =
-        //     Object::new("RegisterPublicKeyCredential").field(Field::new(""));
-
-        // self = self.register_types(vec![register_public_key_credential_type]);
         self.mutation = self.mutation.field(resolver);
         self
     }

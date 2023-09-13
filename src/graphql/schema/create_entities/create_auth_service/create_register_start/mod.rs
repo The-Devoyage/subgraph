@@ -46,14 +46,19 @@ impl ServiceSchemaBuilder {
                         &auth_config.data_source,
                     );
 
-                    // Check if user exists. If exists then reject.
+                    // Check if user exists. If previous register, reject, else delete the user.
                     let user = ServiceSchemaBuilder::get_user(&data_source, &identifier).await; 
-                    if !user.is_err() && user.unwrap().is_some() {
-                        error!("User already exists: {:?}", &identifier);
-                        return Err(async_graphql::Error::new(format!(
-                            "User already exists: {:?}",
-                            &identifier
-                        )));
+
+                    if !user.is_err() && user.clone().unwrap().clone().is_some() {
+                        if user.clone().unwrap().unwrap().passkey.is_some() {
+                            error!("User already exists: {:?}", &identifier);
+                            return Err(async_graphql::Error::new(format!(
+                                "User already exists: {:?}",
+                                &identifier
+                            )));
+                        }else {
+                            ServiceSchemaBuilder::delete_user(&data_source, &identifier).await?;
+                        }
                     }
 
                     debug!("Creating webauthn service");
@@ -137,8 +142,6 @@ impl ServiceSchemaBuilder {
                     let json = match serde_json::to_value(&ccr) {
                         Ok(json) => json,
                         Err(e) => {
-                            //Delete user
-                            ServiceSchemaBuilder::delete_user(&data_source.clone(), &identifier).await?;
                             return Err(async_graphql::Error::new(format!(
                                 "Failed to serialize challenge: {}",
                                 e

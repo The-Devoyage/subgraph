@@ -49,14 +49,18 @@ impl ServiceSchemaBuilder {
                                 mysql_row.try_get("identifier").unwrap_or("").to_string();
                             let registration_state =
                                 mysql_row.try_get("registration_state").unwrap_or("");
-                            let pub_key = mysql_row.try_get("pub_key").unwrap_or("");
+                            let passkey = mysql_row.try_get("passkey").unwrap_or("");
+                            let authentication_state =
+                                mysql_row.try_get("authentication_state").unwrap_or("");
 
                             let user = ServiceUser {
                                 identifier,
                                 registration_state: serde_json::from_str(&registration_state)
                                     .expect("Failed to deserialize registration state"),
-                                pub_key: serde_json::from_str(&pub_key)
-                                    .expect("Failed to deserialize pub key"),
+                                passkey: serde_json::from_str(&passkey)
+                                    .expect("Failed to deserialize passkey"),
+                                authentication_state: serde_json::from_str(&authentication_state)
+                                    .expect("Failed to deserialize authentication state"),
                             };
                             Some(user)
                         });
@@ -81,12 +85,16 @@ impl ServiceSchemaBuilder {
                                 sqlite_row.try_get("identifier").unwrap_or("").to_string();
                             let registration_state =
                                 sqlite_row.try_get("registration_state").unwrap_or("");
-                            let pub_key = sqlite_row.try_get("pub_key").unwrap_or("");
+                            let passkey = sqlite_row.try_get("passkey").unwrap_or("");
+                            let authentication_state =
+                                sqlite_row.try_get("authentication_state").unwrap_or("");
                             let user = ServiceUser {
                                 identifier,
                                 registration_state: serde_json::from_str(&registration_state)
                                     .expect("Failed to deserialize registration state"),
-                                pub_key: serde_json::from_str(&pub_key).unwrap_or(None),
+                                passkey: serde_json::from_str(&passkey).unwrap_or(None),
+                                authentication_state: serde_json::from_str(&authentication_state)
+                                    .unwrap_or(None),
                             };
                             Some(user)
                         })
@@ -112,13 +120,17 @@ impl ServiceSchemaBuilder {
                             let identifier = pg_row.try_get("identifier").unwrap_or("").to_string();
                             let registration_state =
                                 pg_row.try_get("registration_state").unwrap_or("");
-                            let pub_key = pg_row.try_get("pub_key").unwrap_or("");
+                            let passkey = pg_row.try_get("passkey").unwrap_or("");
+                            let authentication_state =
+                                pg_row.try_get("authentication_state").unwrap_or("");
                             let user = ServiceUser {
                                 identifier,
                                 registration_state: serde_json::from_str(&registration_state)
                                     .expect("Failed to deserialize registration state"),
-                                pub_key: serde_json::from_str(&pub_key)
+                                passkey: serde_json::from_str(&passkey)
                                     .expect("Failed to deserialize pub key"),
+                                authentication_state: serde_json::from_str(&authentication_state)
+                                    .expect("Failed to deserialize authentication state"),
                             };
                             Some(user)
                         })
