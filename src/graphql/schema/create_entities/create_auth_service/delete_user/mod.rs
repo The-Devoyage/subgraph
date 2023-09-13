@@ -12,7 +12,7 @@ impl ServiceSchemaBuilder {
         data_source: &DataSource,
         identifier: &str,
     ) -> Result<(), async_graphql::Error> {
-        debug!("Deleting user");
+        debug!("Deleting user: {:?}", identifier);
         match &data_source {
             DataSource::Mongo(mongo_ds) => {
                 let filter = doc! {
@@ -37,7 +37,7 @@ impl ServiceSchemaBuilder {
                     let query = sqlx::query("DELETE FROM subgraph_user WHERE identifier = ?;")
                         .bind(&identifier);
                     match sql_ds.pool.clone() {
-                        PoolEnum::MySql(pool) => query.fetch_one(&pool).await,
+                        PoolEnum::MySql(pool) => query.execute(&pool).await,
                         _ => unreachable!(),
                     }
                     .map(|_| ())
@@ -53,7 +53,7 @@ impl ServiceSchemaBuilder {
                         .bind(&identifier);
 
                     match sql_ds.pool.clone() {
-                        PoolEnum::SqLite(pool) => query.fetch_one(&pool).await,
+                        PoolEnum::SqLite(pool) => query.execute(&pool).await,
                         _ => panic!("Pool not supported."),
                     }
                     .map(|_| ())
@@ -68,7 +68,7 @@ impl ServiceSchemaBuilder {
                     let query = sqlx::query("DELETE FROM subgraph_user WHERE identifier = $1;")
                         .bind(&identifier);
                     match sql_ds.pool.clone() {
-                        PoolEnum::Postgres(pool) => query.fetch_one(&pool).await,
+                        PoolEnum::Postgres(pool) => query.execute(&pool).await,
                         _ => unreachable!(),
                     }
                     .map(|_| ())
