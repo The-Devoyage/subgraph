@@ -1,4 +1,5 @@
 use async_graphql::dynamic::{Object, Scalar, Schema, SchemaBuilder};
+use biscuit_auth::KeyPair;
 use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 
@@ -39,10 +40,19 @@ pub struct ServiceSchemaBuilder {
 impl ServiceSchemaBuilder {
     pub fn new(subgraph_config: SubGraphConfig, data_sources: DataSources) -> Self {
         info!("Creating Service Schema");
+
+        let key_pair;
+        if subgraph_config.service.auth.is_some() {
+            key_pair = Some(KeyPair::new());
+        } else {
+            key_pair = None;
+        }
+
         ServiceSchemaBuilder {
             subgraph_config,
             schema_builder: Schema::build("Query", Some("Mutation"), None)
                 .data(data_sources.clone())
+                .data(key_pair)
                 .enable_federation(),
             query: Object::new("Query").extends(),
             mutation: Object::new("Mutation"),

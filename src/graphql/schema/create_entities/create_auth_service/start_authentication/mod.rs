@@ -2,7 +2,6 @@ use async_graphql::{
     dynamic::{Field, FieldFuture, InputValue, TypeRef},
     Value,
 };
-use log::debug;
 
 use crate::{data_sources::DataSources, graphql::schema::ServiceSchemaBuilder};
 
@@ -82,6 +81,7 @@ impl ServiceSchemaBuilder {
                         registration_state: user.registration_state,
                         passkey: user.passkey,
                         authentication_state: Some(auth_state),
+                        id: user.id,
                     };
 
                     let updated =

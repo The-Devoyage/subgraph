@@ -1,10 +1,21 @@
 use async_graphql::{
-    dynamic::{Field, FieldFuture, InputValue, TypeRef},
+    dynamic::{Field, FieldFuture, FieldValue, InputValue, Object, TypeRef},
     Value,
 };
+use biscuit_auth::{macros::biscuit, KeyPair};
+use log::error;
+use serde::{Deserialize, Serialize};
 use webauthn_rs::prelude::PublicKeyCredential;
 
 use crate::{data_sources::DataSources, graphql::schema::ServiceSchemaBuilder};
+
+use super::ID;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AuthenticateSuccess {
+    pub token: String,
+    pub user_id: String,
+}
 
 impl ServiceSchemaBuilder {
     pub fn create_authenticate_finish(mut self) -> Self {
@@ -17,7 +28,7 @@ impl ServiceSchemaBuilder {
 
         let resolver = Field::new(
             "authenticate_finish",
-            TypeRef::named_nn(TypeRef::STRING),
+            TypeRef::named_nn("authenticate_success"),
             move |ctx| {
                 let auth_config = auth_config.clone();
 
@@ -27,6 +38,14 @@ impl ServiceSchemaBuilder {
                         &data_sources,
                         &auth_config.data_source,
                     );
+                    let key_pair = match ctx.data_unchecked::<Option<KeyPair>>() {
+                        Some(key_pair) => key_pair,
+                        None => {
+                            return Err(async_graphql::Error::new(format!(
+                                "Failed to get key pair."
+                            )));
+                        }
+                    };
 
                     let identifier = match ctx.args.try_get("identifier") {
                         Ok(input) => input
@@ -63,20 +82,24 @@ impl ServiceSchemaBuilder {
 
                     let user = ServiceSchemaBuilder::get_user(&data_source, &identifier).await?;
 
-                    if user.is_none() {
-                        return Err(async_graphql::Error::new(format!("User not found.")));
-                    };
+                    let user = match user {
+                        Some(user) => {
+                            if user.passkey.is_none() {
+                                return Err(async_graphql::Error::new(format!(
+                                    "User does not have a passkey."
+                                )));
+                            };
 
-                    if user.clone().unwrap().passkey.is_none() {
-                        return Err(async_graphql::Error::new(format!(
-                            "User does not have a passkey."
-                        )));
-                    };
-
-                    if user.clone().unwrap().authentication_state.is_none() {
-                        return Err(async_graphql::Error::new(format!(
-                            "User does not have an authentication state."
-                        )));
+                            if user.authentication_state.is_none() {
+                                return Err(async_graphql::Error::new(format!(
+                                    "User does not have an authentication state."
+                                )));
+                            };
+                            user
+                        }
+                        None => {
+                            return Err(async_graphql::Error::new(format!("User not found.")));
+                        }
                     };
 
                     let webauthn = ServiceSchemaBuilder::build_webauthn(&auth_config)?;
@@ -84,7 +107,7 @@ impl ServiceSchemaBuilder {
                     webauthn
                         .finish_passkey_authentication(
                             &pub_key,
-                            &user.unwrap().authentication_state.unwrap(),
+                            &user.authentication_state.unwrap(),
                         )
                         .map_err(|e| {
                             async_graphql::Error::new(format!(
@@ -93,7 +116,33 @@ impl ServiceSchemaBuilder {
                             ))
                         })?;
 
-                    Ok(Some(Value::from("Auth success")))
+                    let user_id = match user.id.clone() {
+                        ID::Int(id) => id.to_string(),
+                        ID::String(id) => id,
+                    };
+
+                    let biscuit = biscuit!(
+                        r#"
+                        user({user_id})
+                    "#
+                    )
+                    .build(key_pair)
+                    .map_err(|e| {
+                        async_graphql::Error::new(format!("Failed to build biscuit: {:?}", e))
+                    })?;
+                    let base64 = biscuit.to_base64().map_err(|e| {
+                        async_graphql::Error::new(format!("Failed to convert to base64: {:?}", e))
+                    })?;
+
+                    let response_value = serde_json::to_value(AuthenticateSuccess {
+                        token: base64.clone(),
+                        user_id: user.id.clone().to_string(),
+                    })
+                    .map_err(|e| {
+                        async_graphql::Error::new(format!("Failed to serialize: {:?}", e))
+                    })?;
+
+                    Ok(Some(FieldValue::owned_any(response_value)))
                 })
             },
         )
@@ -106,6 +155,51 @@ impl ServiceSchemaBuilder {
             TypeRef::named_nn(TypeRef::STRING),
         ));
 
+        let authentication_success = Object::new("authenticate_success")
+            .field(Field::new(
+                "token",
+                TypeRef::named_nn(TypeRef::STRING),
+                move |ctx| {
+                    FieldFuture::new(async move {
+                        let parent_value = ctx
+                            .parent_value
+                            .try_downcast_ref::<serde_json::Value>()
+                            .map_err(|e| {
+                                error!("Failed to downcast: {:?}", e);
+                                async_graphql::Error::new(format!("Failed to downcast: {:?}", e))
+                            })?;
+                        let token = parent_value["token"].as_str().ok_or_else(|| {
+                            error!("Failed to get token.");
+                            async_graphql::Error::new(format!("Failed to get token."))
+                        })?;
+
+                        Ok(Some(Value::from(token.clone())))
+                    })
+                },
+            ))
+            .field(Field::new(
+                "user_id",
+                TypeRef::named_nn(TypeRef::STRING),
+                move |ctx| {
+                    FieldFuture::new(async move {
+                        let parent_value = ctx
+                            .parent_value
+                            .try_downcast_ref::<serde_json::Value>()
+                            .map_err(|e| {
+                                error!("Failed to downcast: {:?}", e);
+                                async_graphql::Error::new(format!("Failed to downcast: {:?}", e))
+                            })?;
+                        let user_id = parent_value["user_id"].as_str().ok_or_else(|| {
+                            error!("Failed to get user_id.");
+                            async_graphql::Error::new(format!("Failed to get user_id."))
+                        })?;
+
+                        Ok(Some(Value::from(user_id.clone())))
+                    })
+                },
+            ));
+
+        self = self.register_types(vec![authentication_success]);
         self.mutation = self.mutation.field(resolver);
         self
     }
