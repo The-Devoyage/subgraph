@@ -123,9 +123,10 @@ impl ServiceSchemaBuilder {
                     // Update user with sk
                     let service_user = ServiceUser {
                         identifier: identifier.clone(),
-                        registration_state: user.unwrap().registration_state,
+                        registration_state: user.clone().unwrap().registration_state,
                         passkey: Some(passkey),
                         authentication_state: None,
+                        id: user.unwrap().id,
                     };
 
                     let updated =

@@ -1,5 +1,6 @@
 use super::ServiceSchemaBuilder;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use webauthn_rs::prelude::{Passkey, PasskeyAuthentication, PasskeyRegistration};
 
 pub mod build_webauthn;
@@ -12,7 +13,23 @@ mod start_authentication;
 pub mod update_user;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum ID {
+    String(String),
+    Int(i64),
+}
+
+impl fmt::Display for ID {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ID::String(s) => write!(f, "{}", s),
+            ID::Int(i) => write!(f, "{}", i),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ServiceUser {
+    id: ID,
     identifier: String,
     #[serde(deserialize_with = "deserialize_registration_state")]
     registration_state: PasskeyRegistration,
