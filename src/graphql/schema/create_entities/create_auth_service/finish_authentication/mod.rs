@@ -2,8 +2,8 @@ use async_graphql::{
     dynamic::{Field, FieldFuture, FieldValue, InputValue, Object, TypeRef},
     Value,
 };
-use biscuit_auth::{macros::biscuit, KeyPair};
-use log::error;
+use biscuit_auth::{Biscuit, KeyPair};
+use log::{debug, error};
 use serde::{Deserialize, Serialize};
 use webauthn_rs::prelude::PublicKeyCredential;
 
@@ -121,13 +121,21 @@ impl ServiceSchemaBuilder {
                         ID::String(id) => id,
                     };
 
-                    let biscuit = biscuit!(
-                        r#"
-                        user({user_id})
-                    "#
-                    )
-                    .build(key_pair)
-                    .map_err(|e| {
+                    debug!("User id: {}", user_id);
+
+                    // Expires in one hour.
+                    let expires_at = chrono::Utc::now()
+                        .checked_add_signed(chrono::Duration::seconds(3600 as i64))
+                        .expect("Failed to add duration.")
+                        .to_string();
+
+                    let mut biscuit = Biscuit::builder();
+                    biscuit
+                        .add_fact(format!("user(\"{}\", {})", identifier, user_id).as_str())
+                        .map_err(|e| {
+                            async_graphql::Error::new(format!("Failed to add fact: {:?}", e))
+                        })?;
+                    let biscuit = biscuit.build(key_pair).map_err(|e| {
                         async_graphql::Error::new(format!("Failed to build biscuit: {:?}", e))
                     })?;
                     let base64 = biscuit.to_base64().map_err(|e| {

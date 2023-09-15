@@ -37,6 +37,12 @@ pub struct ServiceUser {
     authentication_state: Option<PasskeyAuthentication>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TokenData {
+    pub user_id: i64,
+    pub identifier: String,
+}
+
 fn deserialize_registration_state<'de, D>(deserializer: D) -> Result<PasskeyRegistration, D::Error>
 where
     D: serde::Deserializer<'de>,

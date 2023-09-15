@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{configuration::subgraph::SubGraphConfig, data_sources::DataSources};
 
-mod create_entities;
+pub mod create_entities;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 pub enum ResolverType {
