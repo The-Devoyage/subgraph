@@ -12,7 +12,7 @@ use crate::{
     graphql::schema::ResolverType,
 };
 
-use super::ServiceResolver;
+use super::{ServiceResolver, TokenData};
 
 impl ServiceResolver {
     pub fn guard_resolver(
@@ -21,10 +21,17 @@ impl ServiceResolver {
         entity: &ServiceEntityConfig,
         service_guards: Option<Vec<Guard>>,
         resolver_type: &ResolverType,
+        token_data: Option<TokenData>,
     ) -> Result<(), async_graphql::Error> {
+        debug!("Guard Resolver");
+
         let headers = ctx.data_unchecked::<HeaderMap>().clone();
-        let guard_context =
-            Guard::create_guard_context(headers, input_document.clone(), entity.clone())?;
+        let guard_context = Guard::create_guard_context(
+            headers,
+            input_document.clone(),
+            entity.clone(),
+            token_data,
+        )?;
         let resolver_guards =
             match ServiceEntityConfig::get_resolver(&entity, resolver_type.clone()) {
                 Some(resolver) => resolver.guards,
