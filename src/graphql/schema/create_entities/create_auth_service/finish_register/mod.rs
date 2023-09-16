@@ -126,7 +126,7 @@ impl ServiceSchemaBuilder {
                         registration_state: user.clone().unwrap().registration_state,
                         passkey: Some(passkey),
                         authentication_state: None,
-                        id: user.unwrap().id,
+                        uuid: user.unwrap().uuid,
                     };
 
                     let updated =

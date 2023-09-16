@@ -5,10 +5,7 @@ use sqlx::Row;
 use crate::{
     configuration::subgraph::data_sources::sql::DialectEnum,
     data_sources::{sql::PoolEnum, DataSource},
-    graphql::schema::{
-        create_entities::create_auth_service::{ServiceUser, ID},
-        ServiceSchemaBuilder,
-    },
+    graphql::schema::{create_entities::create_auth_service::ServiceUser, ServiceSchemaBuilder},
 };
 
 impl ServiceSchemaBuilder {
@@ -55,10 +52,10 @@ impl ServiceSchemaBuilder {
                             let passkey = mysql_row.try_get("passkey").unwrap_or("");
                             let authentication_state =
                                 mysql_row.try_get("authentication_state").unwrap_or("");
-                            let id = mysql_row.try_get("id").unwrap_or(0) as i64;
+                            let uuid = mysql_row.try_get("uuid").unwrap_or("").to_string();
 
                             let user = ServiceUser {
-                                id: ID::Int(id),
+                                uuid: uuid::Uuid::parse_str(&uuid).unwrap_or(uuid::Uuid::new_v4()),
                                 identifier,
                                 registration_state: serde_json::from_str(&registration_state)
                                     .expect("Failed to deserialize registration state"),
@@ -93,9 +90,9 @@ impl ServiceSchemaBuilder {
                             let passkey = sqlite_row.try_get("passkey").unwrap_or("");
                             let authentication_state =
                                 sqlite_row.try_get("authentication_state").unwrap_or("");
-                            let id = sqlite_row.try_get("id").unwrap_or(0) as i64;
+                            let uuid = sqlite_row.try_get("uuid").unwrap_or("").to_string();
                             let user = ServiceUser {
-                                id: ID::Int(id),
+                                uuid: uuid::Uuid::parse_str(&uuid).unwrap_or(uuid::Uuid::new_v4()),
                                 identifier,
                                 registration_state: serde_json::from_str(&registration_state)
                                     .expect("Failed to deserialize registration state"),
@@ -130,9 +127,9 @@ impl ServiceSchemaBuilder {
                             let passkey = pg_row.try_get("passkey").unwrap_or("");
                             let authentication_state =
                                 pg_row.try_get("authentication_state").unwrap_or("");
-                            let id = pg_row.try_get("id").unwrap_or(0) as i64;
+                            let uuid = pg_row.try_get("uuid").unwrap_or("").to_string();
                             let user = ServiceUser {
-                                id: ID::Int(id),
+                                uuid: uuid::Uuid::parse_str(&uuid).unwrap_or(uuid::Uuid::new_v4()),
                                 identifier,
                                 registration_state: serde_json::from_str(&registration_state)
                                     .expect("Failed to deserialize registration state"),

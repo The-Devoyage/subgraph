@@ -65,8 +65,10 @@ impl ServiceSchemaBuilder {
 
                     let webauthn = ServiceSchemaBuilder::build_webauthn(&auth_config)?;
 
+                    let user_uuid = uuid::Uuid::new_v4();
+
                     let (ccr, reg_state) = webauthn.start_passkey_registration(
-                        uuid::Uuid::new_v4(),
+                        user_uuid.clone(),
                         &identifier,
                         &identifier,
                         None,
@@ -82,10 +84,13 @@ impl ServiceSchemaBuilder {
                         }
                     };
 
+                    let user_uuid = user_uuid.to_string();
+
                     // Save registration state to database
                     match &data_source {
                         DataSource::Mongo(mongo_ds) => {
                             let user = doc! {
+                                "uuid": user_uuid.to_string(),
                                 "identifier": identifier.clone(),
                                 "registration_state": &reg_state
                             };
@@ -99,7 +104,8 @@ impl ServiceSchemaBuilder {
                         DataSource::SQL(sql_ds) => {
                             match sql_ds.config.dialect {
                                 DialectEnum::MYSQL => {
-                                    let query = sqlx::query("INSERT INTO subgraph_user (identifier, registration_state) VALUES (?, ?);")
+                                    let query = sqlx::query("INSERT INTO subgraph_user (uuid, identifier, registration_state) VALUES (?, ?, ?);")
+                                        .bind(&user_uuid)
                                         .bind(&identifier)
                                         .bind(&reg_state);
                                     match sql_ds.pool.clone() {
@@ -110,7 +116,8 @@ impl ServiceSchemaBuilder {
                                     };
                                 }
                                 DialectEnum::SQLITE => {
-                                    let query = sqlx::query("INSERT INTO subgraph_user (identifier, registration_state) VALUES (?, ?);")
+                                    let query = sqlx::query("INSERT INTO subgraph_user (uuid, identifier, registration_state) VALUES (?, ?, ?);")
+                                        .bind(&user_uuid)
                                         .bind(&identifier)
                                         .bind(&reg_state);
                                     match sql_ds.pool.clone() {
@@ -121,7 +128,8 @@ impl ServiceSchemaBuilder {
                                     };
                                 }
                                 DialectEnum::POSTGRES => {
-                                    let query = sqlx::query("INSERT INTO subgraph_user (identifier, registration_state) VALUES ($1, $2);")
+                                    let query = sqlx::query("INSERT INTO subgraph_user (uuid, identifier, registration_state) VALUES ($1, $2, $3);")
+                                        .bind(&user_uuid)
                                         .bind(&identifier)
                                         .bind(&reg_state);
                                     match sql_ds.pool.clone() {
