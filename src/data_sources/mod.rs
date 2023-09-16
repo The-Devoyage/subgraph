@@ -3,6 +3,7 @@ use bson::Document;
 use log::debug;
 
 use crate::{
+    cli_args::CliArgs,
     configuration::subgraph::{
         data_sources::ServiceDataSourceConfig, entities::ServiceEntityConfig,
     },
@@ -27,7 +28,10 @@ pub struct DataSources {
 
 impl DataSources {
     /// Initialize Data Sources
-    pub async fn init(service_data_source_configs: Vec<ServiceDataSourceConfig>) -> DataSources {
+    pub async fn init(
+        service_data_source_configs: Vec<ServiceDataSourceConfig>,
+        args: &CliArgs,
+    ) -> DataSources {
         debug!("Initializing Data Sources");
         let mut data_sources = vec![];
         for service_data_source_config in service_data_source_configs {
@@ -39,7 +43,7 @@ impl DataSources {
                     data_sources.push(http::HttpDataSource::init(&conf).await);
                 }
                 ServiceDataSourceConfig::SQL(conf) => {
-                    data_sources.push(sql::SqlDataSource::init(&conf).await);
+                    data_sources.push(sql::SqlDataSource::init(&conf, args).await);
                 }
             };
         }

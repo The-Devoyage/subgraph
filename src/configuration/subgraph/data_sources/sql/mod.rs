@@ -12,4 +12,6 @@ pub struct SqlDataSourceConfig {
     pub name: String,
     pub uri: String,
     pub dialect: DialectEnum,
+    pub sqlite_extensions: Option<Vec<String>>,
+    pub migrations_path: Option<String>,
 }

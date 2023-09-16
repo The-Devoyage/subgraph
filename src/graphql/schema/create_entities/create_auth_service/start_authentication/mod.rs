@@ -81,7 +81,7 @@ impl ServiceSchemaBuilder {
                         registration_state: user.registration_state,
                         passkey: user.passkey,
                         authentication_state: Some(auth_state),
-                        id: user.id,
+                        uuid: user.uuid,
                     };
 
                     let updated =

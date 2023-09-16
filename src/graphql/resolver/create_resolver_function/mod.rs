@@ -67,8 +67,8 @@ impl ServiceResolver {
                         async_graphql::Error::new(format!("Failed to get authorizer: {:?}", e))
                     })?;
 
-                    let token_data: Vec<(String, i64)> = authorizier
-                        .query("data($identifier, $user_id) <- user($identifier, $user_id)")
+                    let token_data: Vec<(String, String)> = authorizier
+                        .query("data($identifier, $user_uuid) <- user($identifier, $user_uuid)")
                         .map_err(|e| {
                             async_graphql::Error::new(format!("Failed to query biscuit: {:?}", e))
                         })?;
@@ -81,7 +81,7 @@ impl ServiceResolver {
 
                     let token_data = TokenData {
                         identifier: token_data[0].0.clone(),
-                        user_id: token_data[0].1.clone(),
+                        user_uuid: token_data[0].1.clone(),
                     };
 
                     Some(token_data)

@@ -3,18 +3,16 @@ use async_graphql::{
     Value,
 };
 use biscuit_auth::{Biscuit, KeyPair};
-use log::{debug, error};
+use log::error;
 use serde::{Deserialize, Serialize};
 use webauthn_rs::prelude::PublicKeyCredential;
 
 use crate::{data_sources::DataSources, graphql::schema::ServiceSchemaBuilder};
 
-use super::ID;
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AuthenticateSuccess {
     pub token: String,
-    pub user_id: String,
+    pub user_uuid: String,
 }
 
 impl ServiceSchemaBuilder {
@@ -116,12 +114,7 @@ impl ServiceSchemaBuilder {
                             ))
                         })?;
 
-                    let user_id = match user.id.clone() {
-                        ID::Int(id) => id.to_string(),
-                        ID::String(id) => id,
-                    };
-
-                    debug!("User id: {}", user_id);
+                    let user_uuid = user.uuid.clone().to_string();
 
                     // Expires in one hour.
                     let expires_at = chrono::Utc::now()
@@ -131,7 +124,7 @@ impl ServiceSchemaBuilder {
 
                     let mut biscuit = Biscuit::builder();
                     biscuit
-                        .add_fact(format!("user(\"{}\", {})", identifier, user_id).as_str())
+                        .add_fact(format!("user(\"{}\", \"{}\")", identifier, user_uuid).as_str())
                         .map_err(|e| {
                             async_graphql::Error::new(format!("Failed to add fact: {:?}", e))
                         })?;
@@ -144,7 +137,7 @@ impl ServiceSchemaBuilder {
 
                     let response_value = serde_json::to_value(AuthenticateSuccess {
                         token: base64.clone(),
-                        user_id: user.id.clone().to_string(),
+                        user_uuid: user.uuid.clone().to_string(),
                     })
                     .map_err(|e| {
                         async_graphql::Error::new(format!("Failed to serialize: {:?}", e))
@@ -186,7 +179,7 @@ impl ServiceSchemaBuilder {
                 },
             ))
             .field(Field::new(
-                "user_id",
+                "user_uuid",
                 TypeRef::named_nn(TypeRef::STRING),
                 move |ctx| {
                     FieldFuture::new(async move {
@@ -197,12 +190,12 @@ impl ServiceSchemaBuilder {
                                 error!("Failed to downcast: {:?}", e);
                                 async_graphql::Error::new(format!("Failed to downcast: {:?}", e))
                             })?;
-                        let user_id = parent_value["user_id"].as_str().ok_or_else(|| {
-                            error!("Failed to get user_id.");
-                            async_graphql::Error::new(format!("Failed to get user_id."))
+                        let user_uuid = parent_value["user_uuid"].as_str().ok_or_else(|| {
+                            error!("Failed to get user_uuid.");
+                            async_graphql::Error::new(format!("Failed to get user_uuid."))
                         })?;
 
-                        Ok(Some(Value::from(user_id.clone())))
+                        Ok(Some(Value::from(user_uuid.clone())))
                     })
                 },
             ));

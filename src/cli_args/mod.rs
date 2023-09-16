@@ -18,4 +18,8 @@ pub struct CliArgs {
     // The port this service runs on.
     #[arg(short, long)]
     pub port: Option<u16>,
+
+    // Run migrations
+    #[arg(short, long, value_parser = PossibleValuesParser::new(["run", "revert"]))]
+    pub migrate: Option<String>,
 }

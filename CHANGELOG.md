@@ -7,11 +7,14 @@
 - New option to exclude field from "All" inputs.
 - Builtin Auth with WebAuthn.
 - Resolve `__typename` support.
+- Config to load SQLITE Plugins.
+- Run migrations before starting.
 
 ### Fixed
 
 - Including all options as `exclude_from_input` caused playground to not introspect. Now excludes inputs that are empty.
 - Resolving Root Objects fixed and added better tests.
+- Update Many SQL - Remove escape characters for string types in where clause.
 
 ### Changed
 
