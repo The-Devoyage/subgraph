@@ -15,6 +15,7 @@
 - Including all options as `exclude_from_input` caused playground to not introspect. Now excludes inputs that are empty.
 - Resolving Root Objects fixed and added better tests.
 - Update Many SQL - Remove escape characters for string types in where clause.
+- Replace ENV Vars Function is now more accurate and retains multiple replacements at once.
 
 ### Changed
 
