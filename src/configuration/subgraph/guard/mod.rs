@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     configuration::subgraph::entities::{ScalarOptions, ServiceEntityConfig},
-    graphql::schema::create_entities::create_auth_service::TokenData,
     utils::{self, document::get_from_document::GetDocumentResultType},
 };
 
@@ -174,8 +173,6 @@ impl Guard {
     pub fn create_guard_context<'a>(
         headers: HeaderMap,
         input_document: Document,
-        entity: ServiceEntityConfig,
-        token_data: Option<TokenData>,
     ) -> Result<HashMapContext, async_graphql::Error> {
         debug!("Creating Guard Context");
 
@@ -183,18 +180,25 @@ impl Guard {
             "input" => Function::new(move |argument| {
                 debug!("Input Argument: {:?}", argument);
                 let key = argument.as_string()?;
-                let fields = ServiceEntityConfig::get_fields_recursive(&entity.clone(), &key);
-                if fields.is_err() {
-                    return Err(EvalexprError::CustomMessage(
-                        "Fields not found.".to_string(),
-                    ));
-                }
-                let input_value = Guard::get_input_value(input_document.clone(), fields.unwrap());
-                if input_value.is_err() {
-                    return Err(EvalexprError::CustomMessage(
-                        input_value.unwrap_err().to_string(),
-                    ));
-                }
+
+                let json = serde_json::to_value(input_document.clone()).unwrap();
+
+                let input_value = if key.contains(".") {
+                    let keys: Vec<&str> = key.split(".").collect();
+                    let mut value = &json[keys[0]];
+                    for key in keys.iter().skip(1) {
+                        value = &value[key];
+                    }
+                    debug!("Input Value: {:?}", value);
+                    Ok(Value::String(value.as_str().unwrap().to_string()))
+                } else {
+                    let value = json.get(key);
+                    debug!("Input Value: {:?}", value);
+                    match value {
+                        Some(value) => Ok(Value::String(value.as_str().unwrap().to_string())),
+                        None => Err(EvalexprError::expected_string(argument.clone()))
+                    }
+                };
                 input_value
             }),
             "headers" => Function::new(move |argument| {
@@ -206,33 +210,12 @@ impl Guard {
                 } else {
                     let value = value.unwrap().to_str();
                     if let Ok(value) = value {
+                        debug!("Header Value: {:?}", value);
                         Ok(Value::String(value.to_string()))
                     }else {
                         Err(EvalexprError::expected_string(argument.clone()))
                     }
                 }
-            }),
-            "token_data" => Function::new(move |argument| {
-                debug!("Extracting Token Data: {:?}", token_data);
-                let key = argument.as_string()?;
-                let cleaned_key = key.replace("\"", "");
-                if token_data.is_none() {
-                    Err(EvalexprError::expected_string(argument.clone()))
-                } else {
-                    let token_data = token_data.clone().unwrap();
-                    let json = serde_json::to_value(&token_data);
-                    if let Ok(json) = json {
-                        let value = json.get(&cleaned_key);
-                        if value.is_none() {
-                            Err(EvalexprError::expected_string(argument.clone()))
-                        } else {
-                            Ok(Value::String(value.unwrap().to_string()))
-                        }
-                    }else {
-                        Err(EvalexprError::expected_string(argument.clone()))
-                    }
-                }
-
             })
         };
         debug!("Guard Context: {:?}", context);
