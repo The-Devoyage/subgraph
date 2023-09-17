@@ -42,7 +42,7 @@ impl ServiceResolver {
                         )));
                     }
                 };
-                let headers = ctx.data_unchecked::<HeaderMap>().clone();
+                let mut headers = ctx.data_unchecked::<HeaderMap>().clone();
 
                 let token_data = if is_auth.clone() {
                     let public_key = key_pair.public();
@@ -84,6 +84,9 @@ impl ServiceResolver {
                         user_uuid: token_data[0].1.clone(),
                     };
 
+                    headers.insert("user_uuid", token_data.user_uuid.parse().unwrap());
+                    headers.insert("identifier", token_data.identifier.parse().unwrap());
+
                     Some(token_data)
                 } else {
                     None
@@ -98,7 +101,7 @@ impl ServiceResolver {
                     &entity,
                     service_guards.clone(),
                     &resolver_type,
-                    token_data,
+                    headers,
                 )?;
 
                 let operation_type = ServiceResolver::get_operation_type(&resolver_type, &as_field);

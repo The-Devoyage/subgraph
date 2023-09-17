@@ -3,7 +3,7 @@ use std::{path::Path, str::FromStr};
 use async_graphql::dynamic::FieldValue;
 use bson::Document;
 use log::{debug, error, info};
-use sqlx::{sqlite::SqliteConnectOptions, MySql, Pool, Postgres, Row, Sqlite};
+use sqlx::{sqlite::SqliteConnectOptions, MySql, Pool, Postgres, Sqlite};
 
 use crate::{
     cli_args::CliArgs,
