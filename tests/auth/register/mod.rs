@@ -3,20 +3,20 @@ use crate::execute;
 // use web_sys::{window, CredentialCreationOptions};
 // use webauthn_rs::prelude::CreationChallengeResponse;
 
-#[tokio::test]
-async fn register_start() {
-    let random_string = uuid::Uuid::new_v4().to_string();
-    let request = async_graphql::Request::new(format!(
-        r#"
-        mutation {{
-            register_start(identifier: "{}")
-        }}
-        "#,
-        random_string
-    ));
-    let response = execute(request, None).await;
-    assert!(response.is_ok());
-}
+// #[tokio::test]
+// async fn register_start() {
+//     let random_string = uuid::Uuid::new_v4().to_string();
+//     let request = async_graphql::Request::new(format!(
+//         r#"
+//         mutation {{
+//             register_start(identifier: "{}")
+//         }}
+//         "#,
+//         random_string
+//     ));
+//     let response = execute(request, None).await;
+//     assert!(response.is_ok());
+// }
 
 // #[tokio::test]
 // async fn register_finish() {

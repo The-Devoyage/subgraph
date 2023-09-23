@@ -286,6 +286,7 @@ async fn find_joined_to_mongo_ds() {
         "#,
     );
     let user_response = execute(owner, None).await;
+    assert!(user_response.is_ok());
     let user_json = user_response.data.into_json().unwrap();
     let user_id = user_json["create_user"]["_id"].as_str().unwrap();
 
@@ -299,19 +300,23 @@ async fn find_joined_to_mongo_ds() {
         "#,
     );
     let car_response = execute(fav_car, None).await;
+    assert!(car_response.is_ok());
     let car_json = car_response.data.into_json().unwrap();
     let car_id = car_json["create_car"]["id"].as_i64().unwrap();
-
-    let fav_coffee = async_graphql::Request::new(
+    let create_coffee_mutation = format!(
         r#"
-        mutation {
-            create_coffee(create_coffee_input: { name: "Ascension", price: 14, available: false }) {
+        mutation {{
+            create_coffee(create_coffee_input: {{ name: "Ascension", price: 14, available: false, created_by: "{}" }}) {{
                 id
-            }
-        }
+            }}
+        }}
         "#,
+        user_id
     );
+
+    let fav_coffee = async_graphql::Request::new(create_coffee_mutation);
     let coffee_response = execute(fav_coffee, None).await;
+    assert!(coffee_response.is_ok());
     let coffee_json = coffee_response.data.into_json().unwrap();
     let coffee_id = coffee_json["create_coffee"]["id"].as_i64().unwrap();
 
@@ -325,6 +330,7 @@ async fn find_joined_to_mongo_ds() {
         "#,
     );
     let comment_one_response = execute(comment_one, None).await;
+    assert!(comment_one_response.is_ok());
     let comment_one_json = comment_one_response.data.into_json().unwrap();
     let comment_one_id = comment_one_json["create_comment"]["id"].as_i64().unwrap();
 
@@ -338,6 +344,7 @@ async fn find_joined_to_mongo_ds() {
         "#,
     );
     let comment_two_response = execute(comment_two, None).await;
+    assert!(comment_two_response.is_ok());
     let comment_two_json = comment_two_response.data.into_json().unwrap();
     let comment_two_id = comment_two_json["create_comment"]["id"].as_i64().unwrap();
 
@@ -366,6 +373,7 @@ async fn find_joined_to_mongo_ds() {
     ));
 
     let response = execute(request, None).await;
+    assert!(response.is_ok());
 
     let dog_json = response.data.into_json().unwrap();
     let dog_id = dog_json["create_dog"]["_id"].as_str().unwrap();
@@ -410,7 +418,7 @@ async fn find_joined_to_mongo_ds() {
             }}
         }}
         "#,
-        dog_id
+        dog_id.to_string()
     ));
 
     let response = execute(request, None).await;

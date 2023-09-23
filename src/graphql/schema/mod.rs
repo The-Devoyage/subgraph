@@ -1,5 +1,10 @@
 use async_graphql::dynamic::{Object, Scalar, Schema, SchemaBuilder};
-use biscuit_auth::KeyPair;
+use base64::{
+    alphabet,
+    engine::{self, general_purpose},
+    Engine as _,
+};
+use biscuit_auth::{KeyPair, PrivateKey, PublicKey};
 use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 
@@ -43,7 +48,21 @@ impl ServiceSchemaBuilder {
 
         let key_pair;
         if subgraph_config.service.auth.is_some() {
-            key_pair = Some(KeyPair::new());
+            let auth = subgraph_config.service.auth.clone().unwrap();
+            let b64_private_key = auth.private_key;
+
+            if b64_private_key.is_some() {
+                debug!("Using provided key pair");
+                let bytes_private_key = &general_purpose::URL_SAFE_NO_PAD
+                    .decode(b64_private_key.unwrap())
+                    .unwrap();
+
+                let private_key = PrivateKey::from_bytes(bytes_private_key);
+
+                key_pair = Some(KeyPair::from(&private_key.unwrap()));
+            } else {
+                key_pair = Some(KeyPair::new());
+            }
         } else {
             key_pair = None;
         }

@@ -16,6 +16,7 @@
 - Resolving Root Objects fixed and added better tests.
 - Update Many SQL - Remove escape characters for string types in where clause.
 - Replace ENV Vars Function is now more accurate and retains multiple replacements at once.
+- Join only works when joining from a mongo source. Now supports sql sources.
 
 ### Changed
 

@@ -13,6 +13,7 @@ impl ServiceResolver {
         join_on: &str,
     ) -> Result<Document, async_graphql::Error> {
         debug!("Combining Primitive Value With Input");
+        debug!("Parent Value: {:?}", parent_value);
         match scalar {
             ScalarOptions::Int => {
                 let join_on_value = parent_value.get_i32(field_name.clone());

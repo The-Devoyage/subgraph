@@ -123,7 +123,7 @@ impl SqlDataSource {
                                         info!("Migration Complete");
                                     }
                                     Err(e) => {
-                                        error!("Error: {:?}", e);
+                                        error!("MySQL Migration Error: {:?}", e);
                                     }
                                 }
                             }
@@ -134,7 +134,7 @@ impl SqlDataSource {
                                         info!("Migration Complete");
                                     }
                                     Err(e) => {
-                                        error!("Error: {:?}", e);
+                                        error!("Postgres Migration Error: {:?}", e);
                                     }
                                 }
                             }
@@ -145,7 +145,7 @@ impl SqlDataSource {
                                         info!("Migration Complete");
                                     }
                                     Err(e) => {
-                                        error!("Error: {:?}", e);
+                                        error!("SQLITE Migration Error: {:?}", e);
                                     }
                                 }
                             }

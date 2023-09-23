@@ -17,10 +17,7 @@ impl Environment {
         let replaced_json = Environment::replace_env_vars_in_json(config_json, env);
 
         match serde_json::from_value(replaced_json) {
-            Ok(config) => {
-                println!("Success Replaced Env Vars: {:#?}", config);
-                config
-            }
+            Ok(config) => config,
             Err(e) => panic!("Error parsing config: {}", e),
         }
     }
@@ -28,7 +25,6 @@ impl Environment {
     fn replace_env_vars_in_json(json: Value, env: HashMap<String, String>) -> Value {
         let mut string = json.to_string();
         for (key, value) in env {
-            println!("Replacing ${} with {}", key, value);
             string = string.replace(&format!("\"${}\"", key), &format!("\"{}\"", &value));
         }
         match serde_json::from_str(&string) {

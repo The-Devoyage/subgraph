@@ -6,7 +6,8 @@ use log::{debug, error};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    configuration::subgraph::entities::{ScalarOptions, ServiceEntityConfig},
+    configuration::subgraph::entities::ScalarOptions,
+    graphql::schema::create_entities::create_auth_service::TokenData,
     utils::{self, document::get_from_document::GetDocumentResultType},
 };
 
@@ -172,6 +173,7 @@ impl Guard {
 
     pub fn create_guard_context<'a>(
         headers: HeaderMap,
+        token_data: Option<TokenData>,
         input_document: Document,
     ) -> Result<HashMapContext, async_graphql::Error> {
         debug!("Creating Guard Context");
@@ -216,6 +218,21 @@ impl Guard {
                         Err(EvalexprError::expected_string(argument.clone()))
                     }
                 }
+            }),
+            "token_data" => Function::new(move |argument| {
+                let token_data = match &token_data {
+                    Some(token_data) => token_data,
+                    None => return Err(EvalexprError::expected_string(argument.clone()))
+                };
+                let key = argument.as_string()?;
+                let cleaned_key = key.replace("\"", "");
+                let json = serde_json::to_value(token_data).unwrap();
+                let value = json.get(cleaned_key);
+                    debug!("Token Data Value: {:?}", value);
+                    match value {
+                        Some(value) => Ok(Value::String(value.as_str().unwrap().to_string())),
+                        None => Err(EvalexprError::expected_string(argument.clone()))
+                    }
             })
         };
         debug!("Guard Context: {:?}", context);

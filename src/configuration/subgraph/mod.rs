@@ -32,7 +32,8 @@ pub struct SubGraphConfig {
 impl SubGraphConfig {
     pub fn new(args: &CliArgs) -> SubGraphConfig {
         debug!("Initializing Subgraph Config");
-        let read_file = File::open(&args.config);
+
+        let read_file = File::open(&args.config.as_ref().unwrap());
 
         let mut file_config = String::new();
 
