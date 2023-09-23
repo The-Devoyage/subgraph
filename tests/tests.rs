@@ -29,9 +29,11 @@ async fn execute(
     args: Option<subgraph::cli_args::CliArgs>,
 ) -> async_graphql::Response {
     let args = args.unwrap_or(subgraph::cli_args::CliArgs {
-        config: PathBuf::from("./tests/test_config.toml"),
+        config: Some(PathBuf::from("./tests/test_config.toml")),
         port: None,
         log_level: None,
+        generate_keypair: false,
+        migrate: None,
     });
     let schema = spawn_app(args).await;
     let headers = HeaderMap::new();

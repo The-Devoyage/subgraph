@@ -23,7 +23,7 @@ impl Services {
 
         let mut filter = to_document(input.get("query").unwrap())?;
 
-        filter = MongoDataSource::convert_object_id_string_to_object_id_from_doc(filter);
+        filter = MongoDataSource::convert_object_id_string_to_object_id_from_doc(filter)?;
 
         debug!("Filter: {:?}", filter);
 

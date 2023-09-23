@@ -1,16 +1,14 @@
 use async_graphql::dynamic::{FieldFuture, ResolverContext};
-use biscuit_auth::{Biscuit, KeyPair};
 use http::HeaderMap;
 use log::debug;
 
-use crate::{
-    data_sources::DataSources, graphql::schema::create_entities::create_auth_service::TokenData,
-};
+use crate::data_sources::DataSources;
 
 use super::ServiceResolver;
 
 mod get_operation_type;
 mod get_resolver_input;
+mod get_token_data;
 mod guard_resolver;
 
 impl ServiceResolver {
@@ -33,64 +31,14 @@ impl ServiceResolver {
             let is_auth = is_auth.clone();
 
             FieldFuture::new(async move {
+                debug!("Start Resolving");
                 let data_sources = ctx.data_unchecked::<DataSources>().clone();
-                let key_pair = match ctx.data_unchecked::<Option<KeyPair>>() {
-                    Some(key_pair) => key_pair,
-                    None => {
-                        return Err(async_graphql::Error::new(format!(
-                            "Failed to get key pair."
-                        )));
-                    }
-                };
-                let mut headers = ctx.data_unchecked::<HeaderMap>().clone();
+                let headers = ctx.data_unchecked::<HeaderMap>().clone();
+                let mut token_data = None;
 
-                let token_data = if is_auth.clone() {
-                    let public_key = key_pair.public();
-                    let biscuit_base64 = headers.get("Authorization");
-                    let biscuit_base64 = match biscuit_base64 {
-                        Some(biscuit_base64) => biscuit_base64,
-                        None => {
-                            return Err(async_graphql::Error::new(format!(
-                                "Failed to get biscuit from headers."
-                            )));
-                        }
-                    };
-                    //TODO: Provide a typed error that frontend can react to.
-                    let biscuit =
-                        Biscuit::from_base64(biscuit_base64, public_key).map_err(|e| {
-                            async_graphql::Error::new(format!("Failed to parse biscuit: {:?}", e))
-                        })?;
-
-                    debug!("Biscuit: {:?}", biscuit);
-
-                    let mut authorizier = biscuit.authorizer().map_err(|e| {
-                        async_graphql::Error::new(format!("Failed to get authorizer: {:?}", e))
-                    })?;
-
-                    let token_data: Vec<(String, String)> = authorizier
-                        .query("data($identifier, $user_uuid) <- user($identifier, $user_uuid)")
-                        .map_err(|e| {
-                            async_graphql::Error::new(format!("Failed to query biscuit: {:?}", e))
-                        })?;
-
-                    debug!("TokenData: {:?}", token_data);
-
-                    // biscuit.authorize(&authorizier).map_err(|e| {
-                    //     async_graphql::Error::new(format!("Failed to authorize: {:?}", e))
-                    // })?;
-
-                    let token_data = TokenData {
-                        identifier: token_data[0].0.clone(),
-                        user_uuid: token_data[0].1.clone(),
-                    };
-
-                    headers.insert("user_uuid", token_data.user_uuid.parse().unwrap());
-                    headers.insert("identifier", token_data.identifier.parse().unwrap());
-
-                    Some(token_data)
-                } else {
-                    None
-                };
+                if is_auth {
+                    token_data = ServiceResolver::get_token_data(&ctx, headers.clone())?;
+                }
 
                 let input_document =
                     ServiceResolver::get_resolver_input(&ctx, &as_field, &resolver_type)?;
@@ -102,6 +50,7 @@ impl ServiceResolver {
                     service_guards.clone(),
                     &resolver_type,
                     headers,
+                    token_data,
                 )?;
 
                 let operation_type = ServiceResolver::get_operation_type(&resolver_type, &as_field);

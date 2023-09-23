@@ -9,7 +9,7 @@ use crate::{
         entities::{service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig},
         guard::Guard,
     },
-    graphql::schema::ResolverType,
+    graphql::schema::{create_entities::create_auth_service::TokenData, ResolverType},
 };
 
 use super::ServiceResolver;
@@ -22,10 +22,12 @@ impl ServiceResolver {
         service_guards: Option<Vec<Guard>>,
         resolver_type: &ResolverType,
         headers: HeaderMap,
+        token_data: Option<TokenData>,
     ) -> Result<(), async_graphql::Error> {
         debug!("Guard Resolver");
 
-        let guard_context = Guard::create_guard_context(headers, input_document.clone())?;
+        let guard_context =
+            Guard::create_guard_context(headers, token_data, input_document.clone())?;
         let resolver_guards =
             match ServiceEntityConfig::get_resolver(&entity, resolver_type.clone()) {
                 Some(resolver) => resolver.guards,

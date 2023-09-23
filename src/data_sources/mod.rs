@@ -53,6 +53,7 @@ impl DataSources {
         }
     }
 
+    /// Provide entity and all data sources to get the data source for the entity.
     pub fn get_entity_data_soruce<'a>(
         data_sources: &'a DataSources,
         entity: &ServiceEntityConfig,
