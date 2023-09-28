@@ -7,8 +7,12 @@
 - New option to exclude field from "All" inputs.
 - Builtin Auth with WebAuthn.
 - Resolve `__typename` support.
+- Option to allow nullable root entity.
 - Config to load SQLITE Plugins.
+- `join_from` on Entity Field Config allows to reuse existing values to extend entity.
 - Run migrations before starting.
+- `token_data` built in functions for guards to access user_id and identifier in guard context.
+- Imports functionality allows to import entities from a pathpuf in service config to distribute config file length.
 
 ### Fixed
 
@@ -17,6 +21,8 @@
 - Update Many SQL - Remove escape characters for string types in where clause.
 - Replace ENV Vars Function is now more accurate and retains multiple replacements at once.
 - Join only works when joining from a mongo source. Now supports sql sources.
+- SQL Find One queries no longer return error if not found.
+- Input guard function now accepts optional properties by default.
 
 ### Changed
 

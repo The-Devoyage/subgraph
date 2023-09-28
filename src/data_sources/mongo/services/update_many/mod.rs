@@ -11,7 +11,7 @@ impl Services {
         db: Database,
         mut input: Document,
         collection: String,
-    ) -> Result<Vec<Document>, async_graphql::Error> {
+    ) -> Result<Vec<Option<Document>>, async_graphql::Error> {
         debug!("Executing Update Many");
 
         let coll = db.collection::<Document>(&collection);

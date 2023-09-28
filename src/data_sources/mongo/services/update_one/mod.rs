@@ -14,7 +14,7 @@ impl Services {
         db: Database,
         mut input: Document,
         collection: String,
-    ) -> Result<Document, async_graphql::Error> {
+    ) -> Result<Option<Document>, async_graphql::Error> {
         debug!("Executing Update One");
 
         let coll = db.collection::<Document>(&collection);
@@ -48,7 +48,7 @@ impl Services {
         debug!("Update One Result: {:?}", document);
 
         match document {
-            Some(document) => Ok(document),
+            Some(document) => Ok(Some(document)),
             None => Err(async_graphql::Error::new("No Document Found")),
         }
     }

@@ -44,7 +44,7 @@ pub struct ServiceSchemaBuilder {
 
 impl ServiceSchemaBuilder {
     pub fn new(subgraph_config: SubGraphConfig, data_sources: DataSources) -> Self {
-        info!("Creating Service Schema");
+        debug!("Creating Service Schema");
 
         let key_pair;
         if subgraph_config.service.auth.is_some() {
@@ -80,7 +80,7 @@ impl ServiceSchemaBuilder {
     }
 
     pub fn build(mut self) -> Schema {
-        info!("Building Schema");
+        debug!("Building Schema");
 
         let object_id = Scalar::new("ObjectID");
 
