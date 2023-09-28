@@ -1,4 +1,3 @@
-use async_graphql::{Error, ErrorExtensions};
 use log::debug;
 use mongodb::{bson::Document, Database};
 
@@ -9,7 +8,7 @@ impl Services {
         db: Database,
         filter: Document,
         collection: String,
-    ) -> Result<Document, async_graphql::Error> {
+    ) -> Result<Option<Document>, async_graphql::Error> {
         debug!("Executing Find One - Mongo Data Source: {:?}", collection);
 
         let collection = db.collection(&collection);
@@ -23,8 +22,7 @@ impl Services {
         if let Some(user_document) = document {
             Ok(user_document)
         } else {
-            Err(Error::new("Document not found")
-                .extend_with(|err, e| e.set("details", err.message.as_str())))
+            Ok(None)
         }
     }
 }

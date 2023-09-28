@@ -73,6 +73,7 @@ impl ServiceEntity {
                     type_defs_and_refs.type_ref,
                     data_source.clone(),
                     self.is_root,
+                    self.entity.required.unwrap_or(false),
                 );
                 type_def = type_def.field(field);
             }

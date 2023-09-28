@@ -19,22 +19,6 @@ async fn find_one() {
 }
 
 #[tokio::test]
-async fn find_one_fails() {
-    let request = async_graphql::Request::new(
-        r#"
-        query {
-            get_coffee(get_coffee_input: { name: "coffee_failure", price: 15, available: false }) {
-                id
-            }
-        }
-        "#,
-    );
-
-    let response = execute(request, None).await;
-    assert!(response.is_err());
-}
-
-#[tokio::test]
 async fn find_one_by_string() {
     let request = async_graphql::Request::new(
         r#"
@@ -107,7 +91,7 @@ async fn returns_correct_scalars() {
 }
 
 #[tokio::test]
-async fn join_to_mongo() {
+async fn join_sqlite_to_mongo() {
     //Find any user to get a valid uuid
     let request = async_graphql::Request::new(
         r#"

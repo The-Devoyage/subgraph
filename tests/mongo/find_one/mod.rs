@@ -27,21 +27,6 @@ async fn find_one() {
 }
 
 #[tokio::test]
-async fn find_one_fails() {
-    let request = async_graphql::Request::new(
-        r#"
-        {
-            get_user(get_user_input: { name: "Foo", age: 100, married: true }) {
-                _id
-            }
-        }
-        "#,
-    );
-    let response = execute(request, None).await;
-    assert!(response.is_err());
-}
-
-#[tokio::test]
 async fn find_one_by_string() {
     let request = async_graphql::Request::new(
         r#"
@@ -289,6 +274,7 @@ async fn find_joined_to_mongo_ds() {
     assert!(user_response.is_ok());
     let user_json = user_response.data.into_json().unwrap();
     let user_id = user_json["create_user"]["_id"].as_str().unwrap();
+    println!("user_id: {}", user_id);
 
     let fav_car = async_graphql::Request::new(
         r#"
@@ -303,6 +289,7 @@ async fn find_joined_to_mongo_ds() {
     assert!(car_response.is_ok());
     let car_json = car_response.data.into_json().unwrap();
     let car_id = car_json["create_car"]["id"].as_i64().unwrap();
+
     let create_coffee_mutation = format!(
         r#"
         mutation {{
@@ -313,7 +300,6 @@ async fn find_joined_to_mongo_ds() {
         "#,
         user_id
     );
-
     let fav_coffee = async_graphql::Request::new(create_coffee_mutation);
     let coffee_response = execute(fav_coffee, None).await;
     assert!(coffee_response.is_ok());

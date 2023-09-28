@@ -5,7 +5,7 @@ use async_graphql::{
 };
 use async_graphql_warp::{GraphQLBadRequest, GraphQLResponse};
 use http::{HeaderMap, StatusCode};
-use log::info;
+use log::{debug, info};
 use std::convert::Infallible;
 use warp::{http::Response as HttpResponse, Filter, Future, Rejection};
 
@@ -20,7 +20,7 @@ pub async fn run(
     subgraph_config: SubGraphConfig,
 ) -> Result<(impl Future<Output = ()>, Schema), std::io::Error> {
     info!("⛵ Starting Subgraph Service ⛵");
-    info!("Using Args: {:?}", args);
+    debug!("Using Args: {:?}", args);
 
     let data_sources =
         data_sources::DataSources::init(subgraph_config.service.data_sources.clone(), &args).await;

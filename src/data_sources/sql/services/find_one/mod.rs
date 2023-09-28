@@ -8,7 +8,7 @@ impl Services {
     pub async fn find_one(
         pool_enum: &PoolEnum,
         sql_query: &SqlQuery,
-    ) -> Result<ResponseRow, async_graphql::Error> {
+    ) -> Result<Option<ResponseRow>, async_graphql::Error> {
         debug!("Executing Find One Query: {:?}", sql_query);
         match pool_enum {
             PoolEnum::MySql(pool) => {
@@ -49,10 +49,10 @@ impl Services {
                 debug!("DB Row: {:?}", row);
 
                 if row.is_none() {
-                    return Err(async_graphql::Error::from("Not Found"));
+                    return Ok(None);
                 }
 
-                Ok(ResponseRow::MySql(row.unwrap()))
+                Ok(Some(ResponseRow::MySql(row.unwrap())))
             }
             PoolEnum::Postgres(pool) => {
                 debug!("Executing POSTGRES Query");
@@ -90,10 +90,10 @@ impl Services {
                 let row = query.fetch_optional(pool).await?;
 
                 if row.is_none() {
-                    return Err(async_graphql::Error::from("Not Found"));
+                    return Ok(None);
                 }
 
-                Ok(ResponseRow::Postgres(row.unwrap()))
+                Ok(Some(ResponseRow::Postgres(row.unwrap())))
             }
             PoolEnum::SqLite(pool) => {
                 debug!("Executing SQLITE Query");
@@ -131,10 +131,10 @@ impl Services {
                 let row = query.fetch_optional(pool).await?;
 
                 if row.is_none() {
-                    return Err(async_graphql::Error::from("Not Found"));
+                    return Ok(None);
                 }
 
-                Ok(ResponseRow::SqLite(row.unwrap()))
+                Ok(Some(ResponseRow::SqLite(row.unwrap())))
             }
         }
     }

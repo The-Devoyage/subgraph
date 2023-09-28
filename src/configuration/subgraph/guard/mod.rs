@@ -21,14 +21,14 @@ pub struct Guard {
 }
 
 impl Guard {
-    pub fn check(guards: &Vec<Guard>, guard_context: &HashMapContext) -> Result<(), Error> {
+    pub fn check(guards: &Vec<Guard>, guard_context: &mut HashMapContext) -> Result<(), Error> {
         debug!("Checking Guards");
 
         let mut errors = Vec::new();
 
         for guard in guards {
             debug!("Checking Item Guard: {:?}", guard);
-            let should_guard = eval_boolean_with_context(guard.if_expr.as_str(), guard_context);
+            let should_guard = eval_boolean_with_context_mut(guard.if_expr.as_str(), guard_context);
             debug!("Should Guard: {:?}", should_guard);
             if should_guard.is_err() {
                 error!("Guard Creation Error, {:?}", should_guard);
@@ -171,7 +171,7 @@ impl Guard {
         }
     }
 
-    pub fn create_guard_context<'a>(
+    pub fn create_guard_context(
         headers: HeaderMap,
         token_data: Option<TokenData>,
         input_document: Document,
@@ -192,13 +192,18 @@ impl Guard {
                         value = &value[key];
                     }
                     debug!("Input Value: {:?}", value);
+
+                    if value.is_null() {
+                        return Ok(Value::Empty);
+                    }
+
                     Ok(Value::String(value.as_str().unwrap().to_string()))
                 } else {
                     let value = json.get(key);
                     debug!("Input Value: {:?}", value);
                     match value {
                         Some(value) => Ok(Value::String(value.as_str().unwrap().to_string())),
-                        None => Err(EvalexprError::expected_string(argument.clone()))
+                        None => Ok(Value::Empty)
                     }
                 };
                 input_value
@@ -233,7 +238,7 @@ impl Guard {
                         Some(value) => Ok(Value::String(value.as_str().unwrap().to_string())),
                         None => Err(EvalexprError::expected_string(argument.clone()))
                     }
-            })
+            }),
         };
         debug!("Guard Context: {:?}", context);
         match context {

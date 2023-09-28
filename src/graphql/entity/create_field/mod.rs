@@ -18,6 +18,7 @@ impl ServiceEntity {
         type_ref: TypeRef,
         data_source: DataSource,
         is_root_object: bool,
+        entity_required: bool,
     ) -> Field {
         debug!("Creating Field, {:?}", entity_field.name);
 
@@ -28,7 +29,12 @@ impl ServiceEntity {
             FieldFuture::new(async move {
                 match is_root_object {
                     false => ServiceEntity::resolve_nested(&ctx, &cloned_entity_field),
-                    true => ServiceEntity::resolve_root(&ctx, &data_source, &cloned_entity_field),
+                    true => ServiceEntity::resolve_root(
+                        &ctx,
+                        &data_source,
+                        &cloned_entity_field,
+                        entity_required,
+                    ),
                 }
             })
         });
