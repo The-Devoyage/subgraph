@@ -18,7 +18,7 @@ db = "sun"
 [[service.data_sources]]
 [service.data_sources.Mongo]
 name = "mongo_2"
-uri = "mongodb+srv://dogs:dogs@cluster0.dog1234.mongodb.net/?retryWrites=true&w=majority"
+uri = "mongodb+srv://$MONGO_USER:$MONGO_PASS@cluster0.dog1234.mongodb.net/?retryWrites=true&w=majority"
 db = "dogs"
 
 # This is an HTTP data source connecting to an external API

@@ -4,6 +4,7 @@ use async_graphql::dynamic::Schema;
 use http::HeaderMap;
 use subgraph::configuration::{environment::Environment, subgraph::SubGraphConfig};
 
+mod auth;
 mod http_ds;
 mod mongo;
 mod mysql;
@@ -11,8 +12,8 @@ mod postgres;
 mod sqlite;
 
 async fn spawn_app(args: subgraph::cli_args::CliArgs) -> Schema {
-    let environment = Environment::init();
-    let mut subgraph_config = SubGraphConfig::init(&args);
+    let environment = Environment::new();
+    let mut subgraph_config = SubGraphConfig::new(&args);
     subgraph_config = Environment::replace_env_vars_in_config(subgraph_config, environment);
 
     let server = subgraph::run(args, subgraph_config)
@@ -28,9 +29,11 @@ async fn execute(
     args: Option<subgraph::cli_args::CliArgs>,
 ) -> async_graphql::Response {
     let args = args.unwrap_or(subgraph::cli_args::CliArgs {
-        config: PathBuf::from("./tests/test_config.toml"),
+        config: Some(PathBuf::from("./tests/test_config.toml")),
         port: None,
         log_level: None,
+        generate_keypair: false,
+        migrate: None,
     });
     let schema = spawn_app(args).await;
     let headers = HeaderMap::new();

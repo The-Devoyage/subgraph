@@ -3,14 +3,14 @@ use log::{debug, info};
 use reqwest::Url;
 
 use crate::{
-    configuration::subgraph::entities::ServiceEntity, data_sources::http::HttpDataSource,
+    configuration::subgraph::entities::ServiceEntityConfig, data_sources::http::HttpDataSource,
     graphql::schema::ResolverType,
 };
 
 impl HttpDataSource {
     pub async fn create_parameratized_search_query(
         mut url: Url,
-        entity: &ServiceEntity,
+        entity: &ServiceEntityConfig,
         resolver_type: ResolverType,
     ) -> Result<Url, async_graphql::Error> {
         info!("Creating Parameterized Search Query");
@@ -33,7 +33,7 @@ impl HttpDataSource {
             }
         }
 
-        let entity_resolvers = ServiceEntity::get_resolvers(entity.clone());
+        let entity_resolvers = ServiceEntityConfig::get_resolvers(entity.clone());
 
         if entity_resolvers.is_none() {
             return Ok(url);

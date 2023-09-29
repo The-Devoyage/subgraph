@@ -3,6 +3,13 @@ name = "subgraph_tests"
 port = 0
 log_level = "debug"
 
+# [service.auth]
+# requesting_party = "localhost"
+# requesting_party_name = "subgraph_demo"
+# requesting_party_origin = "http://localhost:8000"
+# identifier = "email"
+# data_source = "users_data_source"
+
 # Data Sources
 [[service.data_sources]]
 [service.data_sources.Mongo]
@@ -40,7 +47,15 @@ fields = [
   { name = "_id", scalar = "ObjectID", required = true, exclude_from_input = ["CreateOne", "UpdateOne", "UpdateMany"]},
   { name = "name", scalar = "String", required = true },
   { name = "age", scalar = "Int", required = false },
-  { name = "married", scalar = "Boolean", required = true }
+  { name = "married", scalar = "Boolean", required = true },
+  { name = "email", scalar = "String", required = true, exclude_from_input = ["UpdateMany"]},
+  { name = "address", scalar = "Object", fields = [
+    { name = "line_one", scalar = "String", required = true },
+    { name = "line_two", scalar = "String" },
+    { name = "city", scalar = "String", required = true },
+    { name = "state", scalar = "String", required = true },
+    { name = "zip", scalar = "String", required = true },
+  ] },
 ]
 
 [[service.entities]]
@@ -50,7 +65,8 @@ fields = [
   { name = "id", scalar = "Int", required = true, exclude_from_input = ["CreateOne", "UpdateOne", "UpdateMany"] },
   { name = "name", scalar = "String", required = true },
   { name = "price", scalar = "Int", required = true },
-  { name = "available", scalar = "Boolean", required = true }
+  { name = "available", scalar = "Boolean", required = true },
+  { name = "created_by", scalar = "String", as_type = "user", join_on = "_id" }
 ]
 
 [[service.entities]]
@@ -113,4 +129,3 @@ fields = [
   { name = "todo", scalar = "Int", as_type = "todo", join_on = "id" },
   { name = "comments", scalar = "Int", as_type = "Comment", join_on = "id", list = true },
 ]
-

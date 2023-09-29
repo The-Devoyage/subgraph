@@ -11,14 +11,14 @@ impl Services {
         db: Database,
         mut input: Document,
         collection: String,
-    ) -> Result<Vec<Document>, async_graphql::Error> {
+    ) -> Result<Vec<Option<Document>>, async_graphql::Error> {
         debug!("Executing Update Many");
 
         let coll = db.collection::<Document>(&collection);
 
         let mut filter = to_document(input.get("query").unwrap()).unwrap();
 
-        filter = MongoDataSource::convert_object_id_string_to_object_id_from_doc(filter);
+        filter = MongoDataSource::convert_object_id_string_to_object_id_from_doc(filter)?;
 
         debug!("Filter: {:?}", filter);
 

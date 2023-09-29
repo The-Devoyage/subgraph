@@ -1,12 +1,12 @@
 use async_graphql::dynamic::FieldValue;
 use bson::{oid::ObjectId, to_document, Document};
-use log::{debug, info};
+use log::{debug, error, info};
 use mongodb::{options::ClientOptions, Client, Database};
 use std::str::FromStr;
 
 use crate::{
     configuration::subgraph::{
-        data_sources::mongo::MongoDataSourceConfig, entities::ServiceEntity,
+        data_sources::mongo::MongoDataSourceConfig, entities::ServiceEntityConfig,
     },
     graphql::schema::ResolverType,
 };
@@ -43,42 +43,71 @@ impl MongoDataSource {
         })
     }
 
-    pub fn convert_object_id_string_to_object_id_from_doc(mut filter: Document) -> Document {
+    /// If filter contains a string `_id`, convert it to an object id.
+    /// Returns the filter with the converted `_id`, if it exists.
+    pub fn convert_object_id_string_to_object_id_from_doc(
+        mut filter: Document,
+    ) -> Result<Document, async_graphql::Error> {
         info!("Converting String, `_id`, In Filter to Object ID");
-        let object_id_string = filter.get_str("_id");
-        if object_id_string.is_err() {
-            return filter;
+
+        if filter.contains_key("_id") {
+            let object_id_string = match filter.get("_id") {
+                Some(object_id) => match object_id {
+                    bson::Bson::String(object_id_string) => object_id_string.clone(),
+                    bson::Bson::ObjectId(_) => {
+                        return Ok(filter);
+                    }
+                    _ => {
+                        error!("`_id` is not a string or object id");
+                        return Err(async_graphql::Error::new(
+                            "`_id` is not a string or object id",
+                        ));
+                    }
+                },
+                None => {
+                    error!("`_id` does not exist in filter");
+                    return Err(async_graphql::Error::new("`_id` does not exist in filter"));
+                }
+            };
+
+            let object_id = ObjectId::from_str(&object_id_string).map_err(|e| {
+                error!(
+                    "Failed to convert `_id` from string to object id. Error: {}",
+                    e
+                );
+                async_graphql::Error::new(format!(
+                    "Failed to convert `_id` from string to object id. Error: {}",
+                    e
+                ))
+            })?;
+
+            filter.insert("_id", object_id);
         }
-        let object_id = ObjectId::from_str(object_id_string.unwrap()).unwrap();
-        filter.insert("_id", object_id);
-        filter
+
+        Ok(filter)
     }
 
-    pub fn finalize_filter(filter: Document) -> Document {
+    pub fn finalize_filter(filter: Document) -> Result<Document, async_graphql::Error> {
         info!("Finalizing Filter");
 
         let mut filter = to_document(&filter).unwrap();
-
-        if filter.contains_key("_id") {
-            info!("Found `_id` In Filter");
-            filter = MongoDataSource::convert_object_id_string_to_object_id_from_doc(filter);
-        }
+        filter = MongoDataSource::convert_object_id_string_to_object_id_from_doc(filter)?;
 
         info!("Filter Finalized");
         debug!("{:?}", filter);
 
-        filter
+        Ok(filter)
     }
 
     pub async fn execute_operation<'a>(
         data_source: &DataSource,
         mut input: Document,
-        entity: ServiceEntity,
+        entity: ServiceEntityConfig,
         resolver_type: ResolverType,
     ) -> Result<FieldValue<'a>, async_graphql::Error> {
         debug!("Executing Operation - Mongo Data Source");
 
-        input = MongoDataSource::finalize_filter(input);
+        input = MongoDataSource::finalize_filter(input)?;
 
         let db = match data_source {
             DataSource::Mongo(ds) => ds.db.clone(),
@@ -87,7 +116,7 @@ impl MongoDataSource {
 
         debug!("Database Found");
 
-        let collection_name = ServiceEntity::get_mongo_collection_name(&entity);
+        let collection_name = ServiceEntityConfig::get_mongo_collection_name(&entity);
 
         info!("Found Collection Name");
         debug!("{:?}", collection_name);

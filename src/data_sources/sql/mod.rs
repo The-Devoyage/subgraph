@@ -1,12 +1,15 @@
+use std::{path::Path, str::FromStr};
+
 use async_graphql::dynamic::FieldValue;
 use bson::Document;
-use log::debug;
-use sqlx::{MySql, Pool, Postgres, Sqlite};
+use log::{debug, error, info};
+use sqlx::{sqlite::SqliteConnectOptions, MySql, Pool, Postgres, Sqlite};
 
 use crate::{
+    cli_args::CliArgs,
     configuration::subgraph::{
         data_sources::sql::{DialectEnum, SqlDataSourceConfig},
-        entities::ServiceEntity,
+        entities::ServiceEntityConfig,
     },
     graphql::schema::ResolverType,
 };
@@ -55,17 +58,32 @@ pub struct SqlQuery {
 }
 
 impl SqlDataSource {
-    pub async fn init(sql_data_source_config: &SqlDataSourceConfig) -> DataSource {
+    pub async fn init(sql_data_source_config: &SqlDataSourceConfig, args: &CliArgs) -> DataSource {
         debug!("Initializing SQL Data Source");
 
         let pool: PoolEnum = match sql_data_source_config.dialect {
             DialectEnum::SQLITE => {
                 debug!("Creating SQLite Pool: {:?}", &sql_data_source_config.uri);
+
+                let options = if let Some(extensions) = &sql_data_source_config.sqlite_extensions {
+                    debug!("Creating SQLite Pool with Extensions: {:?}", &extensions);
+                    let mut options = SqliteConnectOptions::from_str(&sql_data_source_config.uri)
+                        .expect("Failed to create SqliteConnectOptions with extensions");
+                    for extension in extensions {
+                        options = options.extension(extension.clone());
+                    }
+                    options
+                } else {
+                    SqliteConnectOptions::from_str(&sql_data_source_config.uri)
+                        .expect("Failed to create SqliteConnectOptions")
+                };
+
                 let pool = sqlx::sqlite::SqlitePoolOptions::new()
                     .max_connections(5)
-                    .connect(&sql_data_source_config.uri)
+                    .connect_with(options)
                     .await
                     .unwrap();
+
                 PoolEnum::SqLite(pool)
             }
             DialectEnum::POSTGRES => {
@@ -88,6 +106,59 @@ impl SqlDataSource {
             }
         };
 
+        if let Some(migrate) = &args.migrate {
+            if migrate == "run" {
+                let path = sql_data_source_config.migrations_path.clone();
+                if path.is_some() {
+                    let path = path.unwrap();
+                    debug!("Running Migrations: {:?}", &path);
+
+                    let migration = sqlx::migrate::Migrator::new(Path::new(&path)).await;
+                    match migration {
+                        Ok(migration) => match &pool {
+                            PoolEnum::MySql(pool) => {
+                                let migration_completed = migration.run(pool).await;
+                                match migration_completed {
+                                    Ok(_) => {
+                                        info!("Migration Complete");
+                                    }
+                                    Err(e) => {
+                                        error!("MySQL Migration Error: {:?}", e);
+                                    }
+                                }
+                            }
+                            PoolEnum::Postgres(pool) => {
+                                let completed = migration.run(pool).await;
+                                match completed {
+                                    Ok(_) => {
+                                        info!("Migration Complete");
+                                    }
+                                    Err(e) => {
+                                        error!("Postgres Migration Error: {:?}", e);
+                                    }
+                                }
+                            }
+                            PoolEnum::SqLite(pool) => {
+                                let completed = migration.run(pool).await;
+                                match completed {
+                                    Ok(_) => {
+                                        info!("Migration Complete");
+                                    }
+                                    Err(e) => {
+                                        error!("SQLITE Migration Error: {:?}", e);
+                                    }
+                                }
+                            }
+                        },
+                        Err(e) => {
+                            debug!("Error: {:?}", e);
+                        }
+                    }
+                }
+            } else if migrate == "revert" {
+            }
+        }
+
         DataSource::SQL(SqlDataSource {
             pool,
             config: sql_data_source_config.clone(),
@@ -97,7 +168,7 @@ impl SqlDataSource {
     pub async fn execute_operation<'a>(
         data_source: &DataSource,
         input: Document,
-        entity: ServiceEntity,
+        entity: ServiceEntityConfig,
         resolver_type: ResolverType,
     ) -> Result<FieldValue<'a>, async_graphql::Error> {
         debug!("Executing SQL Operation");
@@ -107,7 +178,7 @@ impl SqlDataSource {
             _ => unreachable!(),
         };
 
-        let entity_data_source = ServiceEntity::get_entity_data_source(&entity);
+        let entity_data_source = ServiceEntityConfig::get_entity_data_source(&entity);
 
         let table;
 

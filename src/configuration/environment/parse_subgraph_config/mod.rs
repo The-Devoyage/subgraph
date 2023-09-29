@@ -11,42 +11,25 @@ impl Environment {
         config: SubGraphConfig,
         env: HashMap<String, String>,
     ) -> SubGraphConfig {
+        println!("Replacing env vars in config");
         let config_json = json!(config);
 
         let replaced_json = Environment::replace_env_vars_in_json(config_json, env);
 
-        serde_json::from_value(replaced_json).unwrap()
+        match serde_json::from_value(replaced_json) {
+            Ok(config) => config,
+            Err(e) => panic!("Error parsing config: {}", e),
+        }
     }
 
     fn replace_env_vars_in_json(json: Value, env: HashMap<String, String>) -> Value {
-        match json {
-            Value::String(s) => {
-                let mut replaced = s;
-                for (key, value) in env {
-                    replaced = replaced.replace(&format!("${}", key), &value);
-                }
-                Value::String(replaced)
-            }
-            Value::Array(arr) => {
-                let replaced = arr
-                    .into_iter()
-                    .map(|elem| Environment::replace_env_vars_in_json(elem, env.clone()))
-                    .collect();
-                Value::Array(replaced)
-            }
-            Value::Object(obj) => {
-                let replaced = obj
-                    .into_iter()
-                    .map(|(key, value)| {
-                        (
-                            key,
-                            Environment::replace_env_vars_in_json(value, env.clone()),
-                        )
-                    })
-                    .collect();
-                Value::Object(replaced)
-            }
-            v => v,
+        let mut string = json.to_string();
+        for (key, value) in env {
+            string = string.replace(&format!("\"${}\"", key), &format!("\"{}\"", &value));
+        }
+        match serde_json::from_str(&string) {
+            Ok(json) => json,
+            Err(e) => panic!("Error parsing config: {}", e),
         }
     }
 }

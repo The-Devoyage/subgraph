@@ -10,7 +10,7 @@ impl Services {
         db: Database,
         new_struct: Document,
         collection: String,
-    ) -> Result<Document, async_graphql::Error> {
+    ) -> Result<Option<Document>, async_graphql::Error> {
         info!("Executing Create One");
 
         let coll = db.collection::<Document>(&collection);
@@ -40,7 +40,7 @@ impl Services {
 
         if let Ok(doc_exists) = document {
             if let Some(user_document) = doc_exists {
-                Ok(user_document)
+                Ok(Some(user_document))
             } else {
                 Err(Error::new("Document not found")
                     .extend_with(|err, e| e.set("details", err.message.as_str())))

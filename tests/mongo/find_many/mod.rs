@@ -5,7 +5,7 @@ async fn find_one() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_user(create_user_input: { name: "Oakley", age: 5, married: false }) {
+            create_user(create_user_input: { name: "Oakley", age: 5, married: false, email: "nickisyourfan@gmail.com" }) {
                 _id
             }
         }

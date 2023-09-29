@@ -2,7 +2,7 @@ use bson::spec::ElementType;
 use log::{debug, error};
 use serde::{Deserialize, Serialize};
 
-use service_entity_field::ServiceEntityField;
+use service_entity_field::ServiceEntityFieldConfig;
 
 use super::{cors::MethodOption, guard::Guard};
 use crate::graphql::schema::ResolverType;
@@ -10,12 +10,12 @@ use crate::graphql::schema::ResolverType;
 pub mod service_entity_field;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ServiceEntityResolverConfig {
-    pub find_one: Option<ServiceEntityResolver>,
-    pub find_many: Option<ServiceEntityResolver>,
-    pub create_one: Option<ServiceEntityResolver>,
-    pub update_one: Option<ServiceEntityResolver>,
-    pub update_many: Option<ServiceEntityResolver>,
+pub struct ServiceEntityResolversConfig {
+    pub find_one: Option<ServiceEntityResolverConfig>,
+    pub find_many: Option<ServiceEntityResolverConfig>,
+    pub create_one: Option<ServiceEntityResolverConfig>,
+    pub update_one: Option<ServiceEntityResolverConfig>,
+    pub update_many: Option<ServiceEntityResolverConfig>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -44,18 +44,18 @@ impl ScalarOptions {
 pub struct QueryPair(pub String, pub String);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ServiceEntityDataSource {
+pub struct ServiceEntityDataSourceConfig {
     pub from: Option<String>,
     pub collection: Option<String>,
     pub table: Option<String>,
     pub path: Option<String>,
     pub search_query: Option<Vec<QueryPair>>,
-    pub resolvers: Option<ServiceEntityResolverConfig>,
+    pub resolvers: Option<ServiceEntityResolversConfig>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ServiceEntityResolver {
-    pub fields: Option<Vec<ServiceEntityField>>,
+pub struct ServiceEntityResolverConfig {
+    pub fields: Option<Vec<ServiceEntityFieldConfig>>,
     pub path: Option<String>,
     pub search_query: Option<Vec<QueryPair>>,
     pub http_method: Option<MethodOption>,
@@ -63,15 +63,18 @@ pub struct ServiceEntityResolver {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ServiceEntity {
+pub struct ServiceEntityConfig {
     pub name: String,
-    pub fields: Vec<ServiceEntityField>,
-    pub data_source: Option<ServiceEntityDataSource>,
+    pub fields: Vec<ServiceEntityFieldConfig>,
+    pub data_source: Option<ServiceEntityDataSourceConfig>,
     pub guards: Option<Vec<Guard>>,
+    pub required: Option<bool>,
 }
 
-impl ServiceEntity {
-    pub fn get_resolvers(service_entity: ServiceEntity) -> Option<ServiceEntityResolverConfig> {
+impl ServiceEntityConfig {
+    pub fn get_resolvers(
+        service_entity: ServiceEntityConfig,
+    ) -> Option<ServiceEntityResolversConfig> {
         debug!("Get Resolvers From Service Entity: {:?}", service_entity);
         let data_source = service_entity.data_source;
         if data_source.is_some() {
@@ -87,11 +90,11 @@ impl ServiceEntity {
     }
 
     pub fn get_resolver(
-        service_entity: &ServiceEntity,
+        service_entity: &ServiceEntityConfig,
         resolver_type: ResolverType,
-    ) -> Option<ServiceEntityResolver> {
+    ) -> Option<ServiceEntityResolverConfig> {
         debug!("Get Resolver: {:?}", resolver_type);
-        let resolvers = ServiceEntity::get_resolvers(service_entity.clone());
+        let resolvers = ServiceEntityConfig::get_resolvers(service_entity.clone());
         if resolvers.is_none() {
             return None;
         }
@@ -133,8 +136,8 @@ impl ServiceEntity {
     }
 
     pub fn get_entity_data_source(
-        service_entity: &ServiceEntity,
-    ) -> Option<ServiceEntityDataSource> {
+        service_entity: &ServiceEntityConfig,
+    ) -> Option<ServiceEntityDataSourceConfig> {
         debug!("Get Data Source From Service Entity: {:?}", service_entity);
         let data_source = &service_entity.data_source;
         if data_source.is_some() {
@@ -145,9 +148,9 @@ impl ServiceEntity {
         None
     }
 
-    pub fn get_mongo_collection_name(entity: &ServiceEntity) -> String {
+    pub fn get_mongo_collection_name(entity: &ServiceEntityConfig) -> String {
         debug!("Found Entity Data Source: {:?}", entity.data_source);
-        let data_source = ServiceEntity::get_entity_data_source(entity);
+        let data_source = ServiceEntityConfig::get_entity_data_source(entity);
         if data_source.is_none() {
             return entity.name.clone();
         }
@@ -161,24 +164,24 @@ impl ServiceEntity {
     /// Returns vector of fields for a given entity.
     /// If field is nested, it returns all fields leading to the final field.
     pub fn get_fields_recursive(
-        entity: &ServiceEntity,
+        entity: &ServiceEntityConfig,
         field_name: &str,
-    ) -> Result<Vec<ServiceEntityField>, async_graphql::Error> {
+    ) -> Result<Vec<ServiceEntityFieldConfig>, async_graphql::Error> {
         debug!("Get Field: {:?}", field_name);
         let entity_fields = &entity.fields;
         if field_name.contains(".") {
             debug!("Field is Nested");
             let mut fields = vec![];
-            let mut field_names = ServiceEntityField::split_field_names(field_name)?;
+            let mut field_names = ServiceEntityFieldConfig::split_field_names(field_name)?;
             let first_field =
-                ServiceEntity::get_field(entity.clone(), field_names[0].to_string().clone())?;
+                ServiceEntityConfig::get_field(entity.clone(), field_names[0].to_string().clone())?;
             fields.push(first_field.clone());
             let nested_fields = first_field.fields;
             if nested_fields.is_none() {
                 return Ok(fields);
             }
             field_names.remove(0);
-            let rest_fields = ServiceEntityField::get_fields_recursive(
+            let rest_fields = ServiceEntityFieldConfig::get_fields_recursive(
                 nested_fields.unwrap(),
                 field_names.join("."),
             )?;
@@ -200,16 +203,16 @@ impl ServiceEntity {
     /// Gets a field from a given entity.
     /// If field is nested, only returns nested field.
     pub fn get_field(
-        entity: ServiceEntity,
+        entity: ServiceEntityConfig,
         field_name: String,
-    ) -> Result<ServiceEntityField, async_graphql::Error> {
+    ) -> Result<ServiceEntityFieldConfig, async_graphql::Error> {
         debug!("Get Field {:?} From {:?}", field_name, entity);
         let entity_fields = &entity.fields;
         if field_name.contains(".") {
             debug!("Field is Nested");
-            let mut field_names = ServiceEntityField::split_field_names(&field_name)?;
+            let mut field_names = ServiceEntityFieldConfig::split_field_names(&field_name)?;
             let first_field_name = field_names[0];
-            let first_field = ServiceEntity::get_field(entity, first_field_name.to_string())?;
+            let first_field = ServiceEntityConfig::get_field(entity, first_field_name.to_string())?;
             let nested_fields = first_field.fields;
             if nested_fields.is_none() {
                 return Err(async_graphql::Error::new(format!(
@@ -219,7 +222,7 @@ impl ServiceEntity {
             }
             field_names.remove(0);
             let field =
-                ServiceEntityField::get_field(nested_fields.unwrap(), field_names.join("."))?;
+                ServiceEntityFieldConfig::get_field(nested_fields.unwrap(), field_names.join("."))?;
             debug!("Found Field: {:?}", field);
             return Ok(field);
         } else {

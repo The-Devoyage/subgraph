@@ -1,0 +1,30 @@
+[service]
+name = "auth"
+
+[[service.data_sources]]
+[service.data_sources.Mongo]
+name = "users_data_source"
+uri = "mongodb://user:pass@127.0.0.1:27017/subgraph_mongo"
+db = "my_db"
+
+[service.auth]
+requesting_party = "localhost"
+requesting_party_name = "demo"
+requesting_party_origin = "http://localhost:8000"
+data_source = "users_data_source"
+
+[[service.entities]]
+name = "user"
+fields = [
+  { name = "_id", scalar = "ObjectID", required = true, exclude_from_input = ["CreateOne", "UpdateOne", "UpdateMany"]},
+  { name = "email", scalar = "String", required = true, exclude_from_input = ["UpdateMany"]},
+  { name = "name", scalar = "String", required = true },
+  { name = "age", scalar = "Int", required = false },
+  { name = "married", scalar = "Boolean", required = true }
+]
+
+[[service.entities.guards]]
+name = "Permissions Error"
+if_expr = "token_data(\"user_uuid\") != input(\"created_by\")"
+then_msg = "Permission Denied - You can only manage your own user."
+

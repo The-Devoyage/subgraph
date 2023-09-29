@@ -2,14 +2,14 @@ use bson::{to_document, Document};
 use log::{debug, info};
 use reqwest::Url;
 
-use crate::configuration::subgraph::entities::ServiceEntity;
+use crate::configuration::subgraph::entities::ServiceEntityConfig;
 use crate::data_sources::http::HttpDataSource;
 use crate::graphql::schema::ResolverType;
 
 impl HttpDataSource {
     pub async fn create_parameratized_path(
         mut url: Url,
-        entity: &ServiceEntity,
+        entity: &ServiceEntityConfig,
         resolver_type: ResolverType,
     ) -> Result<Url, async_graphql::Error> {
         info!("Creating Parameratized Path");
@@ -23,7 +23,7 @@ impl HttpDataSource {
 
         debug!("Set Path: {:?}", url);
 
-        let entity_resolvers = ServiceEntity::get_resolvers(entity.clone());
+        let entity_resolvers = ServiceEntityConfig::get_resolvers(entity.clone());
 
         if entity_resolvers.is_none() {
             return Ok(url);

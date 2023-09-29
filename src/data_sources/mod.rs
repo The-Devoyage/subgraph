@@ -3,7 +3,10 @@ use bson::Document;
 use log::debug;
 
 use crate::{
-    configuration::subgraph::{data_sources::ServiceDataSourceConfig, entities::ServiceEntity},
+    cli_args::CliArgs,
+    configuration::subgraph::{
+        data_sources::ServiceDataSourceConfig, entities::ServiceEntityConfig,
+    },
     graphql::schema::ResolverType,
 };
 
@@ -25,7 +28,10 @@ pub struct DataSources {
 
 impl DataSources {
     /// Initialize Data Sources
-    pub async fn init(service_data_source_configs: Vec<ServiceDataSourceConfig>) -> DataSources {
+    pub async fn init(
+        service_data_source_configs: Vec<ServiceDataSourceConfig>,
+        args: &CliArgs,
+    ) -> DataSources {
         debug!("Initializing Data Sources");
         let mut data_sources = vec![];
         for service_data_source_config in service_data_source_configs {
@@ -37,7 +43,7 @@ impl DataSources {
                     data_sources.push(http::HttpDataSource::init(&conf).await);
                 }
                 ServiceDataSourceConfig::SQL(conf) => {
-                    data_sources.push(sql::SqlDataSource::init(&conf).await);
+                    data_sources.push(sql::SqlDataSource::init(&conf, args).await);
                 }
             };
         }
@@ -47,9 +53,10 @@ impl DataSources {
         }
     }
 
-    pub fn get_data_source_for_entity<'a>(
+    /// Provide entity and all data sources to get the data source for the entity.
+    pub fn get_entity_data_soruce<'a>(
         data_sources: &'a DataSources,
-        entity: &ServiceEntity,
+        entity: &ServiceEntityConfig,
     ) -> &'a DataSource {
         debug!("Getting Data Source for Entity");
         if entity.data_source.is_some() {
@@ -74,18 +81,32 @@ impl DataSources {
         }
     }
 
+    pub fn get_data_source_by_name(data_soruces: &DataSources, name: &str) -> DataSource {
+        debug!("Getting Data Source by Name");
+        let data_source = data_soruces
+            .sources
+            .iter()
+            .find(|data_source| match data_source {
+                DataSource::Mongo(ds) => &ds.config.name == name,
+                DataSource::HTTP(ds) => &ds.config.name == name,
+                DataSource::SQL(ds) => &ds.config.name == name,
+            })
+            .unwrap();
+        data_source.clone()
+    }
+
     /// Execute a data source operation.
     pub async fn execute<'a>(
         data_sources: &DataSources,
         input: Document,
-        entity: ServiceEntity,
+        entity: ServiceEntityConfig,
         resolver_type: ResolverType,
     ) -> Result<FieldValue<'a>, async_graphql::Error> {
         debug!("Executing Datasource Operation");
 
         let cloned_entity = entity.clone();
 
-        let data_source = DataSources::get_data_source_for_entity(data_sources, &entity);
+        let data_source = DataSources::get_entity_data_soruce(data_sources, &entity);
 
         match data_source {
             DataSource::Mongo(_ds) => Ok(mongo::MongoDataSource::execute_operation(

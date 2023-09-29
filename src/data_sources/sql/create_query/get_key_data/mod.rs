@@ -3,7 +3,7 @@ use log::debug;
 
 use crate::{
     configuration::subgraph::entities::{
-        service_entity_field::ServiceEntityField, ScalarOptions, ServiceEntity,
+        service_entity_field::ServiceEntityFieldConfig, ScalarOptions, ServiceEntityConfig,
     },
     data_sources::sql::{SqlDataSource, SqlValueEnum},
     graphql::schema::ResolverType,
@@ -12,7 +12,7 @@ use crate::{
 impl SqlDataSource {
     pub fn get_key_data(
         input_object: &Document,
-        entity: &ServiceEntity,
+        entity: &ServiceEntityConfig,
         resolver_type: &ResolverType,
     ) -> (
         Vec<String>,
@@ -31,7 +31,7 @@ impl SqlDataSource {
                 debug!("Processing Key: {:?}", key);
                 debug!("Processing Value: {:?}", value.to_string());
 
-                let field = ServiceEntity::get_field(entity.clone(), key.to_string());
+                let field = ServiceEntityConfig::get_field(entity.clone(), key.to_string());
 
                 if field.is_err() {
                     panic!("Field not found: {:?}", key);
@@ -44,7 +44,7 @@ impl SqlDataSource {
                     | ResolverType::UpdateMany => false,
                     _ => panic!("Invalid resolver type"),
                 };
-                let ServiceEntityField { scalar, .. } = field.unwrap();
+                let ServiceEntityFieldConfig { scalar, .. } = field.unwrap();
                 let list = value.as_array().is_some();
 
                 match scalar {
