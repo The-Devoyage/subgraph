@@ -5,7 +5,7 @@ async fn update_many() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_user(create_user_input: { name: "Steve", age: 2, married: false}) {
+            create_user(create_user_input: { name: "Steve", age: 2, married: false, email: "steve@noemail.com" }) {
                 _id
             }
         }
@@ -15,7 +15,7 @@ async fn update_many() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_user(create_user_input: { name: "Steve", age: 1, married: false}) {
+            create_user(create_user_input: { name: "Steve", age: 1, married: false, email: "steve@noemail.com" }) {
                 _id
             }
         }
