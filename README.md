@@ -102,7 +102,8 @@ Protecting the API is simple and can be done by adding `Guards` in the configura
 
 ### Auth - Webauthn
 
-Built in authorization (registration) is available by enabling it in the service config.
+Authorization and Authentication are built into the service using WebAuthN and Biscuit Tokens. Enabling auth is done in a few lines in the configuration which
+creates register and login routes. Controllers can be guarded in combination with authennticatoin processes.
 
 ### Sandbox
 
@@ -263,6 +264,204 @@ as_type = "Coffee"
 join_on = "id"
 ```
 
+### Authorization and Authentication with WebAuthN (Passwordless)
+
+Authentication and Authorization can be enabled by following a few quick steps.
+
+1. Define the auth config. Environment variables are handy when managing multiple environments.
+
+```toml
+[service.auth]
+requesting_party = "$TRICERATASK_RP" # The requesting party - Mut contain origin name. "localhost"
+requesting_party_name = "$TRICERATASK_RPN" # Name of the requesting party. Can be almost anything. "triceratask.com"
+requesting_party_origin = "$TRICERATASK_RPO" # Origin of the client. "http://localhost:5173"
+data_source = "name_of_datasource_from_config" # To save user information
+private_key = "$BASE_64_PRIVATE_KEY" # Optional - `subgraph --generate-keypair` to generate a keypair
+```
+
+Private key is an optional value. If not provided, subgraph will generate new keys each time it is restarted, effectivly
+epxiring previous keys.
+
+2. If you are using SQL, ensure you create the `subgraph_user` table.
+
+```sql
+-- Create the subgraph_user table sqlite
+CREATE TABLE IF NOT EXISTS subgraph_user (
+  uuid uuid NOT NULL UNIQUE,
+  identifier TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  registration_state TEXT DEFAULT NULL,
+  passkey TEXT DEFAULT NULL,
+  authentication_state TEXT DEFAULT NULL
+);
+```
+
+3. Register and Authenticate
+
+Once the service is started you will have access to 4 resolvers to handle authentication and registration. Webauthn
+is a passworless method of authentication and uses the native 'navigate' api found in most browsers.
+
+Below is a clientside example using typescript.
+
+- Send a mutation to the `register_start` resolver. This will return a `CredentialCreationOptions` object.
+- Use the browsers `navigator` api to create a public key credential.
+
+```ts
+// Send mutation to api using a graphql client of choice.
+// Response includes the Credential Creation Options to build the credential.
+const cco: CredentialCreationOptions = await mutation(REGISTER_START, {
+  variables: {
+    identifier: "my_username",
+  },
+});
+
+// Use navigator api to create the `credential`
+const credential = await navigator.credentials.create({
+  publicKey: {
+    ...cco.publicKey,
+    //Ensure to pass a byte array.
+    challenge: Base64.toUint8Array(
+      (cco.publicKey?.challenge as unknown) as string
+    ),
+    user: {
+      ...cco.publicKey?.user,
+      id: Base64.toUint8Array((cco.publicKey?.user?.id as unknown) as string),
+    },
+  },
+});
+```
+
+- Finalize the registration process by sending a mutation to the `register_finish` resolver.
+
+```ts
+// Create a new credential onbject so that you can base64 encode the following properties.
+// Subgraph expects these to be base64 encoded.
+const credential = {
+  id: credential.id,
+  type: credential.type,
+  rawId: Base64.fromUint8Array(new Uint8Array(credential.rawId), true),
+  extensions: credential.getClientExtensionResults(),
+  response: {
+    clientDataJSON: Base64.fromUint8Array(
+      new Uint8Array(credential.response.clientDataJSON),
+      true
+    ),
+    attestationObject: Base64.fromUint8Array(
+      new Uint8Array(
+        ((credential.response as unknown) as Record<string, ArrayBuffer>)
+          .attestationObject as ArrayBuffer
+      ),
+      true
+    ),
+  },
+};
+// Send the credential to the resolver using a graphql client of your choosing.
+const register_success = await mutation(REGISTER_FINISH, {
+  variables: { credential },
+});
+```
+
+- Use the `authenticate_start` resolver to start the authenticaion process.
+- Use the browsers `navigator` api to get the matching public key.
+
+```ts
+// Call the authenticateStart resolver using a client of your choice.
+// The response contains CredentialRequestOpions, used to get the credential
+// from the browser.
+const credentialRequestOptions: CredentialRequestOptions = await mutation(
+  AUTHENTICATE_START,
+  { variables: { identifier: "my_username" } }
+);
+
+// Get the credential from the browser.
+// Make sure to convert the challenge to a byte array.
+const credential = await navigator.credentials.get({
+  publicKey: {
+    ...credentialRequestOptions.publicKey,
+    challenge: Base64.toUint8Array(
+      (credentialRequestOptions.publicKey?.challenge as unknown) as string
+    ),
+    allowCredentials: credentialRequestOptions.publicKey?.allowCredentials?.map(
+      (c) => ({
+        ...c,
+        id: Base64.toUint8Array((c.id as unknown) as string),
+      })
+    ),
+  },
+});
+```
+
+- Use the `authenticate_finish` to obtain the auth token, which can be used for persisted autoriation to the API.
+
+```ts
+// Ensure the response object exists and contains the data we need.
+const response = credential.response as AuthenticatorAssertionResponse;
+if (!response.userHandle) return;
+
+// Create a object with the proper base_64 encided values.
+const public_key = {
+  id: credential.id,
+  type: credential.type,
+  rawId: Base64.fromUint8Array(new Uint8Array(credential.rawId), true),
+  extensions: credential.getClientExtensionResults(),
+  response: {
+    authenticatorData: Base64.fromUint8Array(
+      new Uint8Array(response.authenticatorData),
+      true
+    ),
+    clientDataJSON: Base64.fromUint8Array(
+      new Uint8Array(response.clientDataJSON),
+      true
+    ),
+    signature: Base64.fromUint8Array(new Uint8Array(response.signature), true),
+    userHandle: Base64.fromUint8Array(
+      new Uint8Array(response.userHandle),
+      true
+    ),
+  },
+};
+
+// Receive the token by sending a request using a client of your choosing.
+// Save the token for furthor authorization.
+const token = await mutation(AUTHENTICATE_FINISH, {
+  variables: {
+    identifier: "my_username",
+    public_key,
+  },
+});
+```
+
+4. Authorizing the Request
+
+Receiving the token allows the client to persist authorization between requests. The token currently does not expire unless the service's private key changes.
+The service's private key will automatically change after each restart as long as the `private_key` field is not present in the auth config.
+
+Using the token to authorize requests can be done by utilizing the service's header and guard features.
+
+1. Ensure `authorization` header is allowed in the service config.
+
+```toml
+[service.cors]
+allow_headers = ["Authorization", "Content-Type"]
+```
+
+2. Attach the token to each request sent to the API.
+
+```
+# Headers
+Authorization = $TOKEN
+```
+
+3. Use guards to protect the API based on the data extracted from the provided token in the Authorization header.
+
+```toml
+[[service.guards]]
+name = "Permissions Error"
+if_expr = "token_data(\"user_uuid\") != input(\"created_by\")"
+then_msg = "Permission Denied - You can only manage your own entities."
+```
+
 ### CORS Options
 
 Allow specific HTTP Methods, Origins, and Headers if needed. By default this server allows all origins, POST HTTP Methods (since it is a GraphQL server), and `Content-Type` Headers.
@@ -317,6 +516,12 @@ then_msg = "Invalid Role - You may not request from this service."
 
 The configuration, `guards.toml`, in the examples folder demonstrates remaining use cases, Resolver, Entity, and Field Guards.
 
+### Imports
+
+Imports is an optional array of paths that can be provided to the service configuration. Each path should lead to a toml file containing a valid service resource.
+
+Currently this only supports importing an entity from each file defined.
+
 ## API
 
 ### CLI Options
@@ -328,12 +533,14 @@ The configuration, `guards.toml`, in the examples folder demonstrates remaining 
 
 ### Config File Options
 
-| Service\*    | Description                          | Type          |
-| ------------ | ------------------------------------ | ------------- |
-| name         | The name of this service.            | String        |
-| data_sources | Where the data is located.           | Data Source[] |
-| entities\*   | The data to be defined.              | Entity[]      |
-| cors         | Cors options for the GraphQL Server. | Cors Config   |
+| Service\*    | Description                                              | Type          |
+| ------------ | -------------------------------------------------------- | ------------- |
+| name         | The name of this service.                                | String        |
+| data_sources | Where the data is located.                               | Data Source[] |
+| entities\*   | The data to be defined.                                  | Entity[]      |
+| cors         | Cors options for the GraphQL Server.                     | Cors Config   |
+| guards       | Guards applied at the sservice level.                    | Guard[]       |
+| imports      | An array of paths to import entities from separate files | String[]      |
 
 #### Data Sources
 
@@ -360,11 +567,17 @@ The configuration, `guards.toml`, in the examples folder demonstrates remaining 
 | name           | The key of the key value header pair.   | String |
 | value          | The value of the key value header pair. | String |
 
-| SQL Config | Description                       | Type           |
-| ---------- | --------------------------------- | -------------- |
-| name       | The name of the SQL data source.  | String         |
-| uri        | SQLX Compatible URI (rust crate). | String         |
-| dialect    | The dialect of the SQL DB.        | Dialect Option |
+| SQL Config        | Description                                             | Type           |
+| ----------------- | ------------------------------------------------------- | -------------- |
+| name              | The name of the SQL data source.                        | String         |
+| uri               | SQLX Compatible URI (rust crate).                       | String         |
+| dialect           | The dialect of the SQL DB.                              | Dialect Option |
+| sqlite_extensions | Array to specify path to file for sqlite extension.\*\* | String         |
+| migrations_path   | Path to folder containing migrations to run.\*\*        | String         |
+
+**Note**
+Extensions are loaded automatically if provided.
+Migrations are only executed if subgraph is run with the flag `--migrate run`
 
 | Dialect Option |
 | -------------- |
@@ -400,11 +613,13 @@ The configuration, `guards.toml`, in the examples folder demonstrates remaining 
 
 #### Entity
 
-| Entity\*    | Description                      | Type                      |
-| ----------- | -------------------------------- | ------------------------- |
-| name\*      | The name of the entity.          | String                    |
-| fields\*    | The fields of the entity.        | Field[]                   |
-| data_source | The source of the entity's data. | Entity Data Source Config |
+| Entity\*    | Description                         | Type                      |
+| ----------- | ----------------------------------- | ------------------------- |
+| name\*      | The name of the entity.             | String                    |
+| fields\*    | The fields of the entity.           | Field[]                   |
+| data_source | The source of the entity's data.    | Entity Data Source Config |
+| guards      | Guards applied at the entity level. | Guard[]                   |
+| required    | Non nullable entity.                | bool                      |
 
 | Entity Data Source Config | Description                                                         | Type              |
 | ------------------------- | ------------------------------------------------------------------- | ----------------- |
@@ -425,6 +640,7 @@ The configuration, `guards.toml`, in the examples folder demonstrates remaining 
 | search_query           | A parameterized search query to append to the entity path.               | String       |
 | path                   | A parameterized url path (endpoint) to append to the (HTTP Data Source). | String       |
 | method                 | Override the default method for the resolver (HTTP Data Source)          | MethodOption |
+| guards                 | Guards applied at the resolverlevel.                                     | Guard[]      |
 
 #### Field
 
@@ -438,6 +654,7 @@ The configuration, `guards.toml`, in the examples folder demonstrates remaining 
 | list                | Defines the scalar as a list or a singular value.                   | Option<bool>       |
 | as_type             | Associates the field with another entity type for joining/extending | Option<String>     |
 | join_on             | The 'foreign key' of the type to be joined on.                      | Option<String>     |
+| join_from           | The source key to join from when perfoming associations.            | Option<String>     |
 
 | Scalar Options |
 | -------------- |
@@ -476,9 +693,8 @@ The configuration, `guards.toml`, in the examples folder demonstrates remaining 
 
 Additional guard functions that may be used within the `if_expr` syntax. Currently not supported nativly in EvalExpr.
 
-| Additional Guard Functions | Description                                                                   | Usage                                                                                           |
-| -------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| headers                    | Extracts a header value from request headers.                                 | "headers(\"authoriation\") == \"1234\""                                                         |
-| input                      | Extracts a value from the user input.                                         | "input(\"comments.user.id\") != \"23\""                                                         |
-| contains                   | Checks if arg 2 (value) exists in arg 1 (tuple/vec/array).                    | "contains((\"Dallas\", \"Houston\"), \"Houston\")"                                              |
-| contains_any               | Checks if arg 2 (tuple/vec/array of values) exists in arg 1 (tuple/vec/array) | "contains_any((\"Dallas\", \"Houston\", \"Denver\"), (\"Denver\", \"Fort Worth\", \"Austin\"))" |
+| Additional Guard Functions | Description                                             | Usage                                                |
+| -------------------------- | ------------------------------------------------------- | ---------------------------------------------------- |
+| headers                    | Extracts a header value from request headers.           | "headers(\"authoriation\") == \"1234\""              |
+| input                      | Extracts a value from the user input.                   | "input(\"comments.user.id\") != \"23\""              |
+| token_data                 | Extracts data from auth token, identifier and user_uuid | "token_data(\"user_uuid\") != input(\"created_by\")" |

@@ -4,28 +4,17 @@ name = "auth"
 [[service.data_sources]]
 [service.data_sources.Mongo]
 name = "users_data_source"
-uri = "mongodb://subgraph_mongo:subgraph_mongo@127.0.0.1:27017/subgraph_mongo"
-db = "subgraph_mongo"
+uri = "mongodb://user:pass@127.0.0.1:27017/subgraph_mongo"
+db = "my_db"
 
 [service.auth]
 requesting_party = "localhost"
-requesting_party_name = "subgraph_demo"
+requesting_party_name = "demo"
 requesting_party_origin = "http://localhost:8000"
-identifier = "email"
 data_source = "users_data_source"
-# [[service.auth.token.values]]
-# name = "user"
-# attributes = [
-#   "_id", 
-#   "email", 
-# ]
-# join_on = "email"
 
 [[service.entities]]
 name = "user"
-# guards = [
-#   { name = "user", if_expr = "context(\"token.user._id\") != entity(\"_id\")", then_msg = "Not allowed." }
-# ]
 fields = [
   { name = "_id", scalar = "ObjectID", required = true, exclude_from_input = ["CreateOne", "UpdateOne", "UpdateMany"]},
   { name = "email", scalar = "String", required = true, exclude_from_input = ["UpdateMany"]},
@@ -33,3 +22,9 @@ fields = [
   { name = "age", scalar = "Int", required = false },
   { name = "married", scalar = "Boolean", required = true }
 ]
+
+[[service.entities.guards]]
+name = "Permissions Error"
+if_expr = "token_data(\"user_uuid\") != input(\"created_by\")"
+then_msg = "Permission Denied - You can only manage your own user."
+
