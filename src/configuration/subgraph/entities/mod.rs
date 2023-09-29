@@ -68,6 +68,7 @@ pub struct ServiceEntityConfig {
     pub fields: Vec<ServiceEntityFieldConfig>,
     pub data_source: Option<ServiceEntityDataSourceConfig>,
     pub guards: Option<Vec<Guard>>,
+    pub required: Option<bool>,
 }
 
 impl ServiceEntityConfig {

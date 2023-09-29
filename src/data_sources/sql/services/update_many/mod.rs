@@ -3,6 +3,7 @@ use log::debug;
 use crate::{
     configuration::subgraph::data_sources::sql::DialectEnum,
     data_sources::sql::{PoolEnum, SqlDataSource, SqlQuery, SqlValueEnum},
+    utils::clean_string::clean_string,
 };
 
 use super::{ResponseRow, Services};
@@ -21,6 +22,7 @@ impl Services {
                 for value in &sql_query.values {
                     match value {
                         SqlValueEnum::String(v) => {
+                            let v = clean_string(v);
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -30,8 +32,9 @@ impl Services {
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::StringList(values) => {
-                            for string in values {
-                                update_query = update_query.bind(string)
+                            for v in values {
+                                let v = clean_string(v);
+                                update_query = update_query.bind(v)
                             }
                         }
                         SqlValueEnum::IntList(values) => {
@@ -49,6 +52,7 @@ impl Services {
                 for value in &sql_query.where_values {
                     match value {
                         SqlValueEnum::String(v) => {
+                            let v = clean_string(v);
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -58,8 +62,9 @@ impl Services {
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::StringList(values) => {
-                            for string in values {
-                                update_query = update_query.bind(string)
+                            for v in values {
+                                let v = clean_string(v);
+                                update_query = update_query.bind(v)
                             }
                         }
                         SqlValueEnum::IntList(values) => {
@@ -95,6 +100,7 @@ impl Services {
                 for value in &find_many_where_values {
                     match value {
                         SqlValueEnum::String(v) => {
+                            let v = clean_string(v);
                             find_many_query = find_many_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -104,8 +110,9 @@ impl Services {
                             find_many_query = find_many_query.bind(v);
                         }
                         SqlValueEnum::StringList(values) => {
-                            for string in values {
-                                find_many_query = find_many_query.bind(string)
+                            for v in values {
+                                let v = clean_string(v);
+                                find_many_query = find_many_query.bind(v)
                             }
                         }
                         SqlValueEnum::IntList(values) => {
@@ -134,6 +141,7 @@ impl Services {
                 for value in &sql_query.values {
                     match value {
                         SqlValueEnum::String(v) => {
+                            let v = clean_string(v);
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -143,8 +151,9 @@ impl Services {
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::StringList(values) => {
-                            for string in values {
-                                update_query = update_query.bind(string)
+                            for v in values {
+                                let v = clean_string(v);
+                                update_query = update_query.bind(v)
                             }
                         }
                         SqlValueEnum::IntList(values) => {
@@ -162,6 +171,7 @@ impl Services {
                 for value in &sql_query.where_values {
                     match value {
                         SqlValueEnum::String(v) => {
+                            let v = clean_string(v);
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -171,8 +181,9 @@ impl Services {
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::StringList(values) => {
-                            for string in values {
-                                update_query = update_query.bind(string)
+                            for v in values {
+                                let v = clean_string(v);
+                                update_query = update_query.bind(v)
                             }
                         }
                         SqlValueEnum::IntList(values) => {
@@ -200,6 +211,7 @@ impl Services {
                 for value in &sql_query.values {
                     match value {
                         SqlValueEnum::String(v) => {
+                            let v = clean_string(v);
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -209,8 +221,9 @@ impl Services {
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::StringList(values) => {
-                            for string in values {
-                                update_query = update_query.bind(string)
+                            for v in values {
+                                let v = clean_string(v);
+                                update_query = update_query.bind(v)
                             }
                         }
                         SqlValueEnum::IntList(values) => {
@@ -228,6 +241,7 @@ impl Services {
                 for value in &sql_query.where_values {
                     match value {
                         SqlValueEnum::String(v) => {
+                            let v = clean_string(v);
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -237,8 +251,8 @@ impl Services {
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::StringList(values) => {
-                            for string in values {
-                                update_query = update_query.bind(string)
+                            for v in values {
+                                update_query = update_query.bind(v)
                             }
                         }
                         SqlValueEnum::IntList(values) => {
@@ -276,6 +290,7 @@ impl Services {
                 for value in &find_many_where_values {
                     match value {
                         SqlValueEnum::String(v) => {
+                            let v = clean_string(v);
                             find_many_query = find_many_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -285,8 +300,8 @@ impl Services {
                             find_many_query = find_many_query.bind(v);
                         }
                         SqlValueEnum::StringList(values) => {
-                            for string in values {
-                                find_many_query = find_many_query.bind(string)
+                            for v in values {
+                                find_many_query = find_many_query.bind(v)
                             }
                         }
                         SqlValueEnum::IntList(values) => {

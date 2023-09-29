@@ -17,22 +17,6 @@ async fn find_one() {
 }
 
 #[tokio::test]
-async fn find_one_fails() {
-    let request = async_graphql::Request::new(
-        r#"
-        query {
-            get_comment(get_comment_input: { id: 1922929 }) {
-                id
-            }
-        }
-        "#,
-    );
-
-    let response = execute(request, None).await;
-    assert!(response.is_err());
-}
-
-#[tokio::test]
 async fn find_one_by_string() {
     let request = async_graphql::Request::new(
         r#"

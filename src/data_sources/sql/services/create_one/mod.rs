@@ -12,7 +12,7 @@ impl Services {
         pool_enum: &PoolEnum,
         sql_query: &SqlQuery,
         dialect: DialectEnum,
-    ) -> Result<ResponseRow, async_graphql::Error> {
+    ) -> Result<Option<ResponseRow>, async_graphql::Error> {
         debug!("Executing Create One Query: {:?}", sql_query);
 
         match pool_enum {
@@ -62,7 +62,7 @@ impl Services {
                     .fetch_one(pool)
                     .await?;
 
-                Ok(ResponseRow::MySql(result))
+                Ok(Some(ResponseRow::MySql(result)))
             }
             PoolEnum::Postgres(pool) => {
                 let mut query = sqlx::query(&sql_query.query);
@@ -98,7 +98,7 @@ impl Services {
 
                 let result = query.fetch_one(pool).await?;
 
-                Ok(ResponseRow::Postgres(result))
+                Ok(Some(ResponseRow::Postgres(result)))
             }
             PoolEnum::SqLite(pool) => {
                 let mut query = sqlx::query(&sql_query.query);
@@ -146,7 +146,7 @@ impl Services {
                     .fetch_one(pool)
                     .await?;
 
-                Ok(ResponseRow::SqLite(result))
+                Ok(Some(ResponseRow::SqLite(result)))
             }
         }
     }

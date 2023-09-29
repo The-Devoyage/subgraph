@@ -3,6 +3,7 @@ use bson::Document;
 use log::debug;
 
 use crate::{
+    cli_args::CliArgs,
     configuration::subgraph::{
         data_sources::ServiceDataSourceConfig, entities::ServiceEntityConfig,
     },
@@ -27,7 +28,10 @@ pub struct DataSources {
 
 impl DataSources {
     /// Initialize Data Sources
-    pub async fn init(service_data_source_configs: Vec<ServiceDataSourceConfig>) -> DataSources {
+    pub async fn init(
+        service_data_source_configs: Vec<ServiceDataSourceConfig>,
+        args: &CliArgs,
+    ) -> DataSources {
         debug!("Initializing Data Sources");
         let mut data_sources = vec![];
         for service_data_source_config in service_data_source_configs {
@@ -39,7 +43,7 @@ impl DataSources {
                     data_sources.push(http::HttpDataSource::init(&conf).await);
                 }
                 ServiceDataSourceConfig::SQL(conf) => {
-                    data_sources.push(sql::SqlDataSource::init(&conf).await);
+                    data_sources.push(sql::SqlDataSource::init(&conf, args).await);
                 }
             };
         }
@@ -49,6 +53,7 @@ impl DataSources {
         }
     }
 
+    /// Provide entity and all data sources to get the data source for the entity.
     pub fn get_entity_data_soruce<'a>(
         data_sources: &'a DataSources,
         entity: &ServiceEntityConfig,
@@ -74,6 +79,20 @@ impl DataSources {
         } else {
             data_sources.sources.first().unwrap()
         }
+    }
+
+    pub fn get_data_source_by_name(data_soruces: &DataSources, name: &str) -> DataSource {
+        debug!("Getting Data Source by Name");
+        let data_source = data_soruces
+            .sources
+            .iter()
+            .find(|data_source| match data_source {
+                DataSource::Mongo(ds) => &ds.config.name == name,
+                DataSource::HTTP(ds) => &ds.config.name == name,
+                DataSource::SQL(ds) => &ds.config.name == name,
+            })
+            .unwrap();
+        data_source.clone()
     }
 
     /// Execute a data source operation.

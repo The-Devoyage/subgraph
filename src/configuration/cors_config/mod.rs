@@ -1,5 +1,5 @@
 use http::{header::CONTENT_TYPE, Method};
-use log::{debug, info};
+use log::debug;
 use warp::cors::Cors;
 
 use crate::configuration::subgraph::{
@@ -11,7 +11,7 @@ pub struct CorsConfig;
 
 impl CorsConfig {
     pub fn create_cors(subgraph_config: SubGraphConfig) -> Cors {
-        info!("Creating CORS Config");
+        debug!("Creating CORS Config");
 
         let mut cors = warp::cors();
         let cors_config = match subgraph_config.service.cors {
