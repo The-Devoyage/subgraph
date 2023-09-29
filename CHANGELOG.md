@@ -8,7 +8,7 @@
 - Builtin Auth with WebAuthn.
 - Resolve `__typename` support.
 - Option to allow nullable root entity.
-- Config to load SQLITE Plugins.
+- Config to load SQLITE Plugins/Extensions.
 - `join_from` on Entity Field Config allows to reuse existing values to extend entity.
 - Run migrations before starting.
 - `token_data` built in functions for guards to access user_id and identifier in guard context.
@@ -17,7 +17,7 @@
 ### Fixed
 
 - Including all options as `exclude_from_input` caused playground to not introspect. Now excludes inputs that are empty.
-- Resolving Root Objects fixed and added better tests.
+- Resolving Root Objects fixed and added improved tests.
 - Update Many SQL - Remove escape characters for string types in where clause.
 - Replace ENV Vars Function is now more accurate and retains multiple replacements at once.
 - Join only works when joining from a mongo source. Now supports sql sources.
