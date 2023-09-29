@@ -1,4 +1,5 @@
 use async_graphql::dynamic::{FieldFuture, ResolverContext};
+use http::HeaderMap;
 use log::debug;
 
 use crate::data_sources::DataSources;
@@ -7,6 +8,7 @@ use super::ServiceResolver;
 
 mod get_operation_type;
 mod get_resolver_input;
+mod get_token_data;
 mod guard_resolver;
 
 impl ServiceResolver {
@@ -18,6 +20,7 @@ impl ServiceResolver {
         let as_field = self.as_field.clone();
         let resolver_type = self.resolver_type.clone();
         let service_guards = self.subgraph_config.service.guards.clone();
+        let is_auth = self.subgraph_config.service.auth.is_some();
 
         Box::new(move |ctx: ResolverContext| {
             debug!("Resolving Field: {}", ctx.field().name());
@@ -25,9 +28,18 @@ impl ServiceResolver {
             let as_field = as_field.clone();
             let resolver_type = resolver_type.clone();
             let service_guards = service_guards.clone();
+            let is_auth = is_auth.clone();
 
             FieldFuture::new(async move {
+                debug!("Start Resolving");
                 let data_sources = ctx.data_unchecked::<DataSources>().clone();
+                let headers = ctx.data_unchecked::<HeaderMap>().clone();
+                let mut token_data = None;
+
+                if is_auth {
+                    token_data = ServiceResolver::get_token_data(&ctx, headers.clone())?;
+                }
+
                 let input_document =
                     ServiceResolver::get_resolver_input(&ctx, &as_field, &resolver_type)?;
 
@@ -37,6 +49,8 @@ impl ServiceResolver {
                     &entity,
                     service_guards.clone(),
                     &resolver_type,
+                    headers,
+                    token_data,
                 )?;
 
                 let operation_type = ServiceResolver::get_operation_type(&resolver_type, &as_field);

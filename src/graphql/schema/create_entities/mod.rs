@@ -5,14 +5,15 @@ use crate::{
 };
 
 use super::ServiceSchemaBuilder;
-use log::{debug, info};
+use log::debug;
 
+pub mod create_auth_service;
 mod create_entity_type_defs;
 mod create_resolver;
 
 impl ServiceSchemaBuilder {
     pub fn create_entities(mut self) -> Self {
-        info!("Creating Entities Config");
+        debug!("Creating Entities Config");
         debug!("Entities: {:?}", self.subgraph_config.service.entities);
         let entities = self.subgraph_config.service.entities.clone();
 
@@ -50,6 +51,10 @@ impl ServiceSchemaBuilder {
                     self = self.create_resolver(entity, ResolverType::UpdateMany);
                 }
             }
+        }
+
+        if self.subgraph_config.service.auth.is_some() {
+            self = self.create_auth_service();
         }
 
         self

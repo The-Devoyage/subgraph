@@ -9,7 +9,7 @@ impl Services {
         db: Database,
         filter: Document,
         collection: String,
-    ) -> Result<Vec<Document>, async_graphql::Error> {
+    ) -> Result<Vec<Option<Document>>, async_graphql::Error> {
         let coll = db.collection::<Document>(&collection);
 
         let filter = Services::create_nested_find_filter(&filter);
@@ -20,7 +20,7 @@ impl Services {
 
         while let Some(result) = cursor.next().await {
             match result {
-                Ok(document) => documents.push(document),
+                Ok(document) => documents.push(Some(document)),
                 Err(_error) => Err(Error::new("Can't find results.")
                     .extend_with(|err, e| e.set("details", err.message.as_str())))?,
             }

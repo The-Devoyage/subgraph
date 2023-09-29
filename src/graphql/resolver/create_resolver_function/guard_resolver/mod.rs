@@ -2,14 +2,14 @@ use async_graphql::{dynamic::ResolverContext, SelectionField};
 use bson::Document;
 use evalexpr::HashMapContext;
 use http::HeaderMap;
-use log::debug;
+use log::{debug, warn};
 
 use crate::{
     configuration::subgraph::{
         entities::{service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig},
         guard::Guard,
     },
-    graphql::schema::ResolverType,
+    graphql::schema::{create_entities::create_auth_service::TokenData, ResolverType},
 };
 
 use super::ServiceResolver;
@@ -21,25 +21,40 @@ impl ServiceResolver {
         entity: &ServiceEntityConfig,
         service_guards: Option<Vec<Guard>>,
         resolver_type: &ResolverType,
+        headers: HeaderMap,
+        token_data: Option<TokenData>,
     ) -> Result<(), async_graphql::Error> {
-        let headers = ctx.data_unchecked::<HeaderMap>().clone();
+        debug!("Guard Resolver Function");
+
         let guard_context =
-            Guard::create_guard_context(headers, input_document.clone(), entity.clone())?;
+            Guard::create_guard_context(headers, token_data, input_document.clone())?;
         let resolver_guards =
             match ServiceEntityConfig::get_resolver(&entity, resolver_type.clone()) {
-                Some(resolver) => resolver.guards,
-                None => None,
+                Some(resolver) => {
+                    debug!(
+                        "Guarding resolver {:?} for entity {:?}",
+                        resolver_type, entity.name
+                    );
+                    resolver.guards
+                }
+                None => {
+                    warn!("No resolver guard found for entity: {}", entity.name);
+                    None
+                }
             };
-        let entity_guards = entity.guards.clone();
+        match entity.guards.clone() {
+            Some(guards) => Guard::check(&guards, &mut guard_context.clone())?,
+            None => {
+                warn!("No entity guard found for entity: {}", entity.name);
+                ()
+            }
+        };
 
         if service_guards.is_some() {
-            Guard::check(&service_guards.unwrap(), &guard_context)?;
+            Guard::check(&service_guards.unwrap(), &mut guard_context.clone())?;
         }
         if resolver_guards.is_some() {
-            Guard::check(&resolver_guards.unwrap(), &guard_context)?;
-        }
-        if entity_guards.is_some() {
-            Guard::check(&entity_guards.unwrap(), &guard_context)?;
+            Guard::check(&resolver_guards.unwrap(), &mut guard_context.clone())?;
         }
 
         let selection_fields = ctx
@@ -51,7 +66,7 @@ impl ServiceResolver {
 
         for selection_field in selection_fields {
             if selection_field.name() != "__typename" {
-                ServiceResolver::guard_field(selection_field, &entity, guard_context.clone())?;
+                ServiceResolver::guard_field(selection_field, &entity, &mut guard_context.clone())?;
             }
         }
 
@@ -61,7 +76,7 @@ impl ServiceResolver {
     pub fn guard_field(
         selection_field: SelectionField,
         entity: &ServiceEntityConfig,
-        guard_context: HashMapContext,
+        guard_context: &mut HashMapContext,
     ) -> Result<(), async_graphql::Error> {
         debug!("Guard Field");
         let field_name = selection_field.name();
@@ -77,7 +92,7 @@ impl ServiceResolver {
         selection_field: SelectionField,
         fields: Vec<ServiceEntityFieldConfig>,
         field_name: &str,
-        guard_context: HashMapContext,
+        guard_context: &mut HashMapContext,
     ) -> Result<(), async_graphql::Error> {
         debug!("Guard Nested");
         debug!("Fields: {:?}", fields);
@@ -89,7 +104,7 @@ impl ServiceResolver {
         let guards = ServiceEntityFieldConfig::get_guards(field.clone());
 
         if guards.is_some() {
-            Guard::check(&guards.unwrap(), &guard_context)?;
+            Guard::check(&guards.unwrap(), guard_context)?;
         }
 
         if field.as_type.is_some() {
@@ -103,7 +118,7 @@ impl ServiceResolver {
                     selection_field,
                     field.fields.clone().unwrap(),
                     selection_field.name(),
-                    guard_context.clone(),
+                    guard_context,
                 )?;
             }
         }
