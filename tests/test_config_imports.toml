@@ -1,0 +1,5 @@
+name = "import"
+fields = [
+  { name = "_id", scalar = "ObjectID", required = true, exclude_from_input = ["CreateOne", "UpdateOne", "UpdateMany"]},
+  { name = "import_works", scalar = "Boolean", required = true },
+]

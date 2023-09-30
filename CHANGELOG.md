@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.0.12]
+
+### Fixed
+
+- Service imports now import more than one additional file.
+
 ## [v0.0.11]
 
 ### Added
