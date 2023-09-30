@@ -9,6 +9,7 @@ mod http_ds;
 mod mongo;
 mod mysql;
 mod postgres;
+mod service;
 mod sqlite;
 
 async fn spawn_app(args: subgraph::cli_args::CliArgs) -> Schema {
