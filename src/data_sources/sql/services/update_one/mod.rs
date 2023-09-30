@@ -12,7 +12,7 @@ impl Services {
         pool_enum: &PoolEnum,
         sql_query: &SqlQuery,
         dialect: DialectEnum,
-    ) -> Result<ResponseRow, async_graphql::Error> {
+    ) -> Result<Option<ResponseRow>, async_graphql::Error> {
         debug!("Executing Update One Query: {:?}", sql_query);
 
         match pool_enum {
@@ -127,7 +127,7 @@ impl Services {
 
                 let find_one_result = find_one_query.fetch_one(pool).await?;
 
-                Ok(ResponseRow::MySql(find_one_result))
+                Ok(Some(ResponseRow::MySql(find_one_result)))
             }
             _ => Err(async_graphql::Error::from("Update One Not Supported")),
         }

@@ -16,6 +16,7 @@ pub enum GetDocumentResultType {
     BooleanArray(Vec<bool>),
     Document(bson::Document),
     DocumentArray(Vec<bson::Document>),
+    None,
 }
 
 impl DocumentUtils {
