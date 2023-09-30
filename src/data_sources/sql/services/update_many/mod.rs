@@ -13,7 +13,7 @@ impl Services {
         pool_enum: &PoolEnum,
         sql_query: &SqlQuery,
         dialect: DialectEnum,
-    ) -> Result<Vec<ResponseRow>, async_graphql::Error> {
+    ) -> Result<Vec<Option<ResponseRow>>, async_graphql::Error> {
         debug!("Update Many SQL Data Source");
 
         match pool_enum {
@@ -132,7 +132,7 @@ impl Services {
 
                 let mut response_rows = Vec::new();
                 for row in rows {
-                    response_rows.push(ResponseRow::MySql(row));
+                    response_rows.push(Some(ResponseRow::MySql(row)));
                 }
                 Ok(response_rows)
             }
@@ -202,7 +202,7 @@ impl Services {
                 let rows = update_query.fetch_all(pool).await?;
                 let mut response_rows = Vec::new();
                 for row in rows {
-                    response_rows.push(ResponseRow::Postgres(row));
+                    response_rows.push(Some(ResponseRow::Postgres(row)));
                 }
                 Ok(response_rows)
             }
@@ -322,7 +322,7 @@ impl Services {
                 let mut response_rows = Vec::new();
 
                 for row in rows {
-                    response_rows.push(ResponseRow::SqLite(row));
+                    response_rows.push(Some(ResponseRow::SqLite(row)));
                 }
 
                 Ok(response_rows)
