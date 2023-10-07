@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use log::debug;
 use serde_json::{json, Value};
 
 use crate::configuration::subgraph::SubGraphConfig;
@@ -11,7 +12,7 @@ impl Environment {
         config: SubGraphConfig,
         env: HashMap<String, String>,
     ) -> SubGraphConfig {
-        println!("Replacing env vars in config");
+        debug!("Replacing env vars in config");
         let config_json = json!(config);
 
         let replaced_json = Environment::replace_env_vars_in_json(config_json, env);

@@ -2,6 +2,10 @@
 
 ## [v0.0.12]
 
+### Added
+
+- Use `--watch` when starting to reload changes to config file directory.
+
 ### Fixed
 
 - Service imports now import more than one additional file.

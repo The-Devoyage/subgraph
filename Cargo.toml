@@ -14,8 +14,8 @@ path = "src/main.rs"
 tokio = { version = "1.23.0", features = ["full"] }
 warp = "0.3.3"
 http = "0.2.8"
-async-graphql = {version = "5.0.9", features= ["dynamic-schema"]}
-async-graphql-warp = "5.0.9"
+async-graphql = {version = "6.0.7", features= ["dynamic-schema"]}
+async-graphql-warp = "6.0.7"
 reqwest = {version = "0.11.14", features = ["json"]}
 serde = { version = "1.0", features = ["derive"] }
 bson = { version = "2", features = ["chrono-0_4"] }
@@ -34,6 +34,7 @@ evalexpr = "10.0.0"
 webauthn-rs = { version = "0.4.8", features = ["danger-allow-state-serialisation"] }
 biscuit-auth = "4"
 base64 = "0.21.4"
+notify = "6.1.1"
 
 [dependencies.mongodb]
 version = "2.3.1"
@@ -47,14 +48,4 @@ features = [
     "fast-rng",
     "macro-diagnostics",
 ]
-
-# [dev-dependencies]
-# web-sys = {version = "0.3.64", features = [
-#   "CredentialCreationOptions", 
-#   "Window", 
-#   "Navigator",
-#   "CredentialsContainer"
-# ] }
-# serde-wasm-bindgen = "0.4"
-# wasm-bindgen-futures = { version = "0.4" }
 
