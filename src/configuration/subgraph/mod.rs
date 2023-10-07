@@ -1,3 +1,4 @@
+use log::{debug, error};
 use serde::{Deserialize, Serialize};
 use std::{fs::File, io::Read, path::PathBuf};
 
@@ -44,7 +45,7 @@ impl SubGraphConfig {
                 f.read_to_string(&mut file_config)
                     .expect("Failed To Read Config File");
             }
-            Err(err) => println!("Error Reading Config File: {}", err),
+            Err(err) => error!("Error Reading Config File: {}", err),
         };
 
         let subgraph_config = toml::from_str::<SubGraphConfig>(&file_config);
@@ -52,8 +53,7 @@ impl SubGraphConfig {
         let mut subgraph_config = match subgraph_config {
             Ok(config) => config,
             Err(error) => {
-                println!("{}", error);
-                panic!("Provide Valid Subgraph Config");
+                panic!("Provide Valid Subgraph Config: {:?}", error);
             }
         };
 
@@ -72,13 +72,13 @@ impl SubGraphConfig {
                         f.read_to_string(&mut import_config)
                             .expect("Failed To Read Imported Config File");
                     }
-                    Err(err) => println!("Error Reading Config File: {}", err),
+                    Err(err) => error!("Error Reading Config File: {}", err),
                 };
 
                 let import_entities = toml::from_str::<ServiceEntityConfig>(&import_config);
 
                 if import_entities.is_ok() {
-                    println!("Importing Entity From: {:?}", path);
+                    debug!("Importing Entity From: {:?}", path);
                     subgraph_config
                         .service
                         .entities
@@ -86,7 +86,7 @@ impl SubGraphConfig {
                     let service = subgraph_config.service.clone();
                     subgraph_config.service = service;
                 } else {
-                    println!("Error Importing Entity From: {:?}", path);
+                    panic!("Error Importing Entity From: {:?}", path);
                 }
             }
         }
