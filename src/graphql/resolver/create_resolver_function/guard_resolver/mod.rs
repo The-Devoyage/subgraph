@@ -37,17 +37,11 @@ impl ServiceResolver {
                     );
                     resolver.guards
                 }
-                None => {
-                    warn!("No resolver guard found for entity: {}", entity.name);
-                    None
-                }
+                None => None,
             };
         match entity.guards.clone() {
             Some(guards) => Guard::check(&guards, &mut guard_context.clone())?,
-            None => {
-                warn!("No entity guard found for entity: {}", entity.name);
-                ()
-            }
+            None => (),
         };
 
         if service_guards.is_some() {

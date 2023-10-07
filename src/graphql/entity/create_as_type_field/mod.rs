@@ -25,7 +25,11 @@ impl ServiceEntity {
 
         let as_type_entity = match as_type_entity {
             Some(entity) => entity,
-            None => panic!("Could not find entity for as_type resolver"),
+            None => {
+                return Err(async_graphql::Error::new(
+                    "As Type Entity Not Found".to_string(),
+                ))
+            }
         };
 
         let as_type_resolver = ServiceResolver::new(
