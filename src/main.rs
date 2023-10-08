@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use clap::Parser;
 
-use log::{error, info};
+use log::{debug, error, info};
 use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
 use subgraph::{
     cli_args,
@@ -17,7 +17,13 @@ async fn main() -> Result<(), std::io::Error> {
     args.handle_flags();
 
     if args.config.is_some() {
-        let mut subgraph_config = SubGraphConfig::new(&args);
+        let mut subgraph_config = match SubGraphConfig::new(&args) {
+            Ok(config) => config,
+            Err(error) => {
+                panic!("Provide Valid Subgraph Config: {:?}", error);
+            }
+        };
+
         subgraph_config =
             Environment::replace_env_vars_in_config(subgraph_config, environment.clone());
         utils::logger::Logger::init(&args, &subgraph_config);
@@ -40,15 +46,26 @@ async fn main() -> Result<(), std::io::Error> {
 
                     let is_timeout = last_received.elapsed().as_secs() > 1;
 
+                    debug!("Timeout: {:?}", is_timeout);
+
                     if event.kind.is_modify() && is_timeout {
+                        debug!("File Changed: {:?}", event);
                         let subgraph_config = SubGraphConfig::new(&cloned_args);
-                        let subgraph_config = Environment::replace_env_vars_in_config(
-                            subgraph_config,
-                            cloned_environment,
-                        );
-                        *cloned_config.lock().unwrap() = subgraph_config;
-                        last_received = std::time::Instant::now();
-                        tx.send(true).unwrap();
+                        match subgraph_config {
+                            Ok(config) => {
+                                let subgraph_config = Environment::replace_env_vars_in_config(
+                                    config,
+                                    cloned_environment,
+                                );
+                                *cloned_config.lock().unwrap() = subgraph_config;
+                                last_received = std::time::Instant::now();
+                                tx.send(true).unwrap();
+                            }
+                            Err(error) => {
+                                debug!("Error: {:?}", error);
+                                error!("Something went wrong, waiting for changes...")
+                            }
+                        };
                     }
                 },
                 notify::Config::default(),
