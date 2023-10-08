@@ -531,7 +531,7 @@ Currently this only supports importing an entity from each file defined.
 - `--port <port>` - The port for the service to run.
 - `--log-level <level>` - Options include `info` or `debug`
 - `--watch` - Listens for changes for all files from the directory containing the config file.
-  Debounces 1 second to avoid duplicate restarts.
+  Debounces 1 second to avoid duplicate restarts. If initial config is incorrect, server will not start.
 
 ### Config File Options
 

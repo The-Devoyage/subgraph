@@ -35,7 +35,7 @@ pub struct SubGraphConfig {
 }
 
 impl SubGraphConfig {
-    pub fn new(args: &CliArgs) -> SubGraphConfig {
+    pub fn new(args: &CliArgs) -> Result<SubGraphConfig, async_graphql::Error> {
         let read_file = File::open(&args.config.as_ref().unwrap());
 
         let mut file_config = String::new();
@@ -86,12 +86,15 @@ impl SubGraphConfig {
                     let service = subgraph_config.service.clone();
                     subgraph_config.service = service;
                 } else {
-                    panic!("Error Importing Entity From: {:?}", path);
+                    return Err(async_graphql::Error::new(format!(
+                        "Error Importing Entity From: {:?}",
+                        path,
+                    )));
                 }
             }
         }
 
-        subgraph_config
+        Ok(subgraph_config)
     }
 
     pub fn get_entity(self, entity_name: &str) -> Option<entities::ServiceEntityConfig> {
