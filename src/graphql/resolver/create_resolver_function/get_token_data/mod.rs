@@ -3,9 +3,7 @@ use biscuit_auth::{Biscuit, KeyPair};
 use http::HeaderMap;
 use log::debug;
 
-use crate::graphql::{
-    resolver::ServiceResolver, schema::create_entities::create_auth_service::TokenData,
-};
+use crate::graphql::{resolver::ServiceResolver, schema::create_auth_service::TokenData};
 
 impl ServiceResolver {
     pub fn get_token_data(
