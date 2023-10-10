@@ -13,6 +13,7 @@ use crate::{data_sources::DataSources, graphql::schema::ServiceSchemaBuilder};
 pub struct AuthenticateSuccess {
     pub token: String,
     pub user_uuid: String,
+    pub user_identifier: String,
 }
 
 impl ServiceSchemaBuilder {
@@ -116,12 +117,6 @@ impl ServiceSchemaBuilder {
 
                     let user_uuid = user.uuid.clone().to_string();
 
-                    // Expires in one hour.
-                    let expires_at = chrono::Utc::now()
-                        .checked_add_signed(chrono::Duration::seconds(3600 as i64))
-                        .expect("Failed to add duration.")
-                        .to_string();
-
                     let mut biscuit = Biscuit::builder();
                     biscuit
                         .add_fact(format!("user(\"{}\", \"{}\")", identifier, user_uuid).as_str())
@@ -138,6 +133,7 @@ impl ServiceSchemaBuilder {
                     let response_value = serde_json::to_value(AuthenticateSuccess {
                         token: base64.clone(),
                         user_uuid: user.uuid.clone().to_string(),
+                        user_identifier: identifier.clone(),
                     })
                     .map_err(|e| {
                         async_graphql::Error::new(format!("Failed to serialize: {:?}", e))
@@ -191,11 +187,31 @@ impl ServiceSchemaBuilder {
                                 async_graphql::Error::new(format!("Failed to downcast: {:?}", e))
                             })?;
                         let user_uuid = parent_value["user_uuid"].as_str().ok_or_else(|| {
-                            error!("Failed to get user_uuid.");
                             async_graphql::Error::new(format!("Failed to get user_uuid."))
                         })?;
 
-                        Ok(Some(Value::from(user_uuid.clone())))
+                        Ok(Some(Value::from(user_uuid)))
+                    })
+                },
+            ))
+            .field(Field::new(
+                "user_identifier",
+                TypeRef::named_nn(TypeRef::STRING),
+                move |ctx| {
+                    FieldFuture::new(async move {
+                        let parent_value = ctx
+                            .parent_value
+                            .try_downcast_ref::<serde_json::Value>()
+                            .map_err(|e| {
+                                error!("Failed to downcast: {:?}", e);
+                                async_graphql::Error::new(format!("Failed to downcast: {:?}", e))
+                            })?;
+                        let user_identifier =
+                            parent_value["user_identifier"].as_str().ok_or_else(|| {
+                                async_graphql::Error::new(format!("Failed to get user_identifier."))
+                            })?;
+
+                        Ok(Some(Value::from(user_identifier)))
                     })
                 },
             ));

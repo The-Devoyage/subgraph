@@ -5,6 +5,7 @@
 ### Added
 
 - Use `--watch` when starting to reload changes to config file directory.
+- Return `user_identifier` on auth success.
 
 ### Fixed
 
