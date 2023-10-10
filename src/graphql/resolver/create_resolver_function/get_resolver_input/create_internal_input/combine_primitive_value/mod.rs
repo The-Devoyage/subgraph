@@ -28,7 +28,7 @@ impl ServiceResolver {
                         )));
                     }
                 };
-                field_input.insert(join_on.clone(), join_on_value);
+                field_input.insert(join_on, join_on_value);
             }
             ScalarOptions::String => {
                 let join_on_value = parent_value.get_str(&field_name);
@@ -42,7 +42,7 @@ impl ServiceResolver {
                         )));
                     }
                 };
-                field_input.insert(join_on.clone(), join_on_value);
+                field_input.insert(join_on, join_on_value);
             }
             ScalarOptions::Boolean => {
                 let join_on_value = parent_value.get_bool(&field_name);
@@ -56,7 +56,7 @@ impl ServiceResolver {
                         )));
                     }
                 };
-                field_input.insert(join_on.clone(), join_on_value);
+                field_input.insert(join_on, join_on_value);
             }
             ScalarOptions::ObjectID => {
                 let join_on_value = parent_value.get_object_id(&field_name);
@@ -68,7 +68,7 @@ impl ServiceResolver {
                         join_on_value
                     }
                 };
-                field_input.insert(join_on.clone(), join_on_value);
+                field_input.insert(join_on, join_on_value);
             }
             _ => return Err(async_graphql::Error::new("Invalid Scalar Type")),
         };

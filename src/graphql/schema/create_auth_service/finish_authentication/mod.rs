@@ -170,7 +170,7 @@ impl ServiceSchemaBuilder {
                             async_graphql::Error::new(format!("Failed to get token."))
                         })?;
 
-                        Ok(Some(Value::from(token.clone())))
+                        Ok(Some(Value::from(token)))
                     })
                 },
             ))

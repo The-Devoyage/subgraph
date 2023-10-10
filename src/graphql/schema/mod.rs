@@ -1,15 +1,12 @@
 use async_graphql::dynamic::{Object, Scalar, Schema, SchemaBuilder};
-use base64::{
-    alphabet,
-    engine::{self, general_purpose},
-    Engine as _,
-};
-use biscuit_auth::{KeyPair, PrivateKey, PublicKey};
-use log::{debug, error, info};
+use base64::{engine::general_purpose, Engine as _};
+use biscuit_auth::{KeyPair, PrivateKey};
+use log::{debug, error};
 use serde::{Deserialize, Serialize};
 
 use crate::{configuration::subgraph::SubGraphConfig, data_sources::DataSources};
 
+pub mod create_auth_service;
 pub mod create_entities;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
@@ -85,6 +82,10 @@ impl ServiceSchemaBuilder {
         let object_id = Scalar::new("ObjectID");
 
         self = self.create_entities();
+
+        if self.subgraph_config.service.auth.is_some() {
+            self = self.create_auth_service();
+        }
 
         let schema = self
             .schema_builder

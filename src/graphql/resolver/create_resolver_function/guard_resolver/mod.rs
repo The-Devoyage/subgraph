@@ -2,14 +2,14 @@ use async_graphql::{dynamic::ResolverContext, SelectionField};
 use bson::Document;
 use evalexpr::HashMapContext;
 use http::HeaderMap;
-use log::{debug, warn};
+use log::debug;
 
 use crate::{
     configuration::subgraph::{
         entities::{service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig},
         guard::Guard,
     },
-    graphql::schema::{create_entities::create_auth_service::TokenData, ResolverType},
+    graphql::schema::{create_auth_service::TokenData, ResolverType},
 };
 
 use super::ServiceResolver;

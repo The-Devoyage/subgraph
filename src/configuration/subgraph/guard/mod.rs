@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     configuration::subgraph::entities::ScalarOptions,
-    graphql::schema::create_entities::create_auth_service::TokenData,
+    graphql::schema::create_auth_service::TokenData,
     utils::{self, document::get_from_document::GetDocumentResultType},
 };
 
