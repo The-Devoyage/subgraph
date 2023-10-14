@@ -44,7 +44,7 @@ impl ServiceInput {
             resolver_type.clone(),
             None,
         )
-        .build();
+        .build(None);
 
         for input in object_inputs {
             inputs.push(input);

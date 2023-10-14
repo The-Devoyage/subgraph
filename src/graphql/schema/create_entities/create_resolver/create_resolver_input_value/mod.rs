@@ -20,7 +20,7 @@ impl ServiceSchemaBuilder {
     ) -> Self {
         debug!("Creating Resolver Input");
 
-        let resolver_input_name =
+        let input_name =
             ServiceSchemaBuilder::get_resolver_input_name(&entity.name, resolver_type, None);
 
         let exclude_from_input = match resolver_type {
@@ -33,12 +33,12 @@ impl ServiceSchemaBuilder {
         };
 
         let mut inputs = ServiceInput::new(
-            resolver_input_name.clone(),
+            input_name.clone(),
             entity.fields.clone(),
             resolver_type.clone(),
             exclude_from_input,
         )
-        .build();
+        .build(Some(true));
 
         let include_query_input =
             resolver_type == &ResolverType::UpdateOne || resolver_type == &ResolverType::UpdateMany;
@@ -46,7 +46,7 @@ impl ServiceSchemaBuilder {
         if include_query_input {
             let mut query_input = match inputs
                 .iter()
-                .position(|input| input.type_name() == resolver_input_name)
+                .position(|input| input.type_name() == input_name)
                 .map(|i| inputs.remove(i))
             {
                 Some(input) => input,
@@ -79,7 +79,7 @@ impl ServiceSchemaBuilder {
                 ResolverType::FindOne,
                 exclude_from_input,
             )
-            .build();
+            .build(Some(true));
 
             query_input = query_input.field(InputValue::new(
                 "query",
@@ -92,8 +92,8 @@ impl ServiceSchemaBuilder {
 
         if !inputs.is_empty() {
             resolver = resolver.argument(InputValue::new(
-                &resolver_input_name,
-                TypeRef::named_nn(resolver_input_name.clone()),
+                &input_name,
+                TypeRef::named_nn(input_name.clone()),
             ));
         }
 
