@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::{configuration::subgraph::SubGraphConfig, data_sources::DataSources};
 
 pub mod create_entities;
+pub mod create_field_filters;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 pub enum ResolverType {
@@ -84,6 +85,7 @@ impl ServiceSchemaBuilder {
 
         let object_id = Scalar::new("ObjectID");
 
+        self = self.create_field_filters();
         self = self.create_entities();
 
         let schema = self

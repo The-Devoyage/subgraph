@@ -22,6 +22,8 @@ mod get_entity_object_id_field_type;
 mod get_entity_string_field_type;
 
 impl ServiceInput {
+    /// Get the type ref for the entity field.
+    /// If field is an object, it will also create an input objects, recursivly, for the field.
     pub fn get_entity_field_type(
         entity_field: &ServiceEntityFieldConfig,
         resolver_type: &ResolverType,
