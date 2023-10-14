@@ -1,3 +1,4 @@
+use log::{debug, error};
 use serde::{Deserialize, Serialize};
 use std::{fs::File, io::Read, path::PathBuf};
 
@@ -21,6 +22,7 @@ pub struct ServiceConfig {
     pub log_level: Option<LogLevelEnum>,
     pub auth: Option<auth::ServiceAuth>,
     pub guards: Option<Vec<Guard>>,
+    #[serde(default)]
     pub entities: Vec<entities::ServiceEntityConfig>,
     pub data_sources: Vec<data_sources::ServiceDataSourceConfig>,
     pub cors: Option<cors::CorsConfigOptions>,
@@ -33,7 +35,7 @@ pub struct SubGraphConfig {
 }
 
 impl SubGraphConfig {
-    pub fn new(args: &CliArgs) -> SubGraphConfig {
+    pub fn new(args: &CliArgs) -> Result<SubGraphConfig, async_graphql::Error> {
         let read_file = File::open(&args.config.as_ref().unwrap());
 
         let mut file_config = String::new();
@@ -43,7 +45,7 @@ impl SubGraphConfig {
                 f.read_to_string(&mut file_config)
                     .expect("Failed To Read Config File");
             }
-            Err(err) => println!("Error Reading Config File: {}", err),
+            Err(err) => error!("Error Reading Config File: {}", err),
         };
 
         let subgraph_config = toml::from_str::<SubGraphConfig>(&file_config);
@@ -51,14 +53,16 @@ impl SubGraphConfig {
         let mut subgraph_config = match subgraph_config {
             Ok(config) => config,
             Err(error) => {
-                println!("{}", error);
-                panic!("Provide Valid Subgraph Config");
+                panic!("Provide Valid Subgraph Config: {:?}", error);
             }
         };
 
         if subgraph_config.service.imports.is_some() {
             let imports = subgraph_config.service.imports.clone().unwrap();
             for path in imports {
+                let config_path = PathBuf::from(&args.config.as_ref().unwrap());
+                let path = config_path.parent().unwrap().join(path);
+
                 let read_import_config = File::open(&path);
 
                 let mut import_config = String::new();
@@ -68,21 +72,29 @@ impl SubGraphConfig {
                         f.read_to_string(&mut import_config)
                             .expect("Failed To Read Imported Config File");
                     }
-                    Err(err) => println!("Error Reading Config File: {}", err),
+                    Err(err) => error!("Error Reading Config File: {}", err),
                 };
 
-                let import_config = toml::from_str::<ServiceEntityConfig>(&import_config);
+                let import_entities = toml::from_str::<ServiceEntityConfig>(&import_config);
 
-                if import_config.is_ok() {
-                    let mut service = subgraph_config.service.clone();
-                    service.entities.push(import_config.unwrap());
+                if import_entities.is_ok() {
+                    debug!("Importing Entity From: {:?}", path);
+                    subgraph_config
+                        .service
+                        .entities
+                        .push(import_entities.unwrap());
+                    let service = subgraph_config.service.clone();
                     subgraph_config.service = service;
-                    return subgraph_config;
+                } else {
+                    return Err(async_graphql::Error::new(format!(
+                        "Error Importing Entity From: {:?}",
+                        path,
+                    )));
                 }
             }
         }
 
-        subgraph_config
+        Ok(subgraph_config)
     }
 
     pub fn get_entity(self, entity_name: &str) -> Option<entities::ServiceEntityConfig> {
