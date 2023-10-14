@@ -2,6 +2,7 @@
 name = "subgraph_tests"
 port = 0
 log_level = "debug"
+imports = ["./test_config_imports.toml"]
 
 # [service.auth]
 # requesting_party = "localhost"

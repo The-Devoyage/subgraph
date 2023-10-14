@@ -5,7 +5,7 @@ use sqlx::Row;
 use crate::{
     configuration::subgraph::data_sources::sql::DialectEnum,
     data_sources::{sql::PoolEnum, DataSource},
-    graphql::schema::{create_entities::create_auth_service::ServiceUser, ServiceSchemaBuilder},
+    graphql::schema::{create_auth_service::ServiceUser, ServiceSchemaBuilder},
 };
 
 impl ServiceSchemaBuilder {

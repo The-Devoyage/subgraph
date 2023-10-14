@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.0.12]
+
+### Added
+
+- Use `--watch` when starting to reload changes to config file directory.
+- Return `user_identifier` on auth success.
+
+### Fixed
+
+- Service imports now import more than one additional file.
+
 ## [v0.0.11]
 
 ### Added

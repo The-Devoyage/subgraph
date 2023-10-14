@@ -19,7 +19,14 @@ pub mod utils;
 pub async fn run(
     args: cli_args::CliArgs,
     subgraph_config: SubGraphConfig,
-) -> Result<(impl Future<Output = ()>, Schema), std::io::Error> {
+) -> Result<
+    (
+        impl Future<Output = ()>,
+        Schema,
+        tokio::sync::oneshot::Sender<()>,
+    ),
+    std::io::Error,
+> {
     info!("⛵ Starting Subgraph Service ⛵");
     debug!("Using Args: {:?}", args);
 
@@ -40,9 +47,7 @@ pub async fn run(
         );
 
     let graphql_playground = warp::path::end().and(warp::get()).map(|| {
-        HttpResponse::builder()
-            .header("content-type", "text/html")
-            .body(playground_source(GraphQLPlaygroundConfig::new("/")))
+        HttpResponse::builder().body(playground_source(GraphQLPlaygroundConfig::new("/graphql")))
     });
 
     let cors = configuration::cors_config::CorsConfig::create_cors(subgraph_config.clone());
@@ -75,7 +80,12 @@ pub async fn run(
 
     info!("Playground: http://localhost:{:?}", port);
 
-    let server = warp::serve(routes).run(([0, 0, 0, 0], port));
+    let (tx, rx) = tokio::sync::oneshot::channel::<()>();
 
-    Ok((server, schema))
+    let (_addr, server) =
+        warp::serve(routes).bind_with_graceful_shutdown(([127, 0, 0, 1], port), async {
+            rx.await.ok();
+        });
+
+    Ok((server, schema, tx))
 }
