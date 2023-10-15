@@ -94,8 +94,8 @@ impl SqlDataSource {
 
             if i != filters.len() - 1 {
                 match filter_by_operator {
-                    FilterOperator::And => nested_query.push_str(" AND"),
-                    FilterOperator::Or => nested_query.push_str(" OR"),
+                    FilterOperator::And => nested_query.push_str(" AND "),
+                    FilterOperator::Or => nested_query.push_str(" OR "),
                 }
             }
         }

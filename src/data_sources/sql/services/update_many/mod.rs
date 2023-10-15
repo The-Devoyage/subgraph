@@ -1,7 +1,8 @@
+use bson::Document;
 use log::debug;
 
 use crate::{
-    configuration::subgraph::data_sources::sql::DialectEnum,
+    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
     data_sources::sql::{PoolEnum, SqlDataSource, SqlQuery, SqlValueEnum},
     utils::clean_string::clean_string,
 };
@@ -10,6 +11,7 @@ use super::{ResponseRow, Services};
 
 impl Services {
     pub async fn update_many(
+        entity: &ServiceEntityConfig,
         pool_enum: &PoolEnum,
         sql_query: &SqlQuery,
         dialect: DialectEnum,
@@ -89,12 +91,24 @@ impl Services {
                         &sql_query.value_keys,
                         &sql_query.values,
                     );
-                let find_many_query_string = SqlDataSource::create_find_many_query(
+                let mut input_document = Document::new();
+
+                for (index, key) in find_many_where_keys.iter().enumerate() {
+                    match &find_many_where_values[index] {
+                        SqlValueEnum::String(v) => input_document.insert(key, v),
+                        SqlValueEnum::Int(v) => input_document.insert(key, v),
+                        SqlValueEnum::Bool(v) => input_document.insert(key, v),
+                        _ => return Err(async_graphql::Error::from("Invalid Value Type")),
+                    };
+                }
+
+                let (find_many_query_string, ..) = SqlDataSource::create_find_many_query(
+                    entity,
                     &sql_query.table,
-                    &find_many_where_keys,
                     &dialect,
-                    &find_many_where_values,
-                );
+                    &input_document,
+                )?;
+
                 let mut find_many_query = sqlx::query(&find_many_query_string);
 
                 for value in &find_many_where_values {
@@ -278,12 +292,29 @@ impl Services {
                         &sql_query.values,
                     );
 
-                let find_many_query_string = SqlDataSource::create_find_many_query(
+                let mut input_document = Document::new();
+
+                for (index, key) in find_many_where_keys.iter().enumerate() {
+                    match &find_many_where_values[index] {
+                        SqlValueEnum::String(v) => {
+                            input_document.insert(key, v);
+                        }
+                        SqlValueEnum::Int(v) => {
+                            input_document.insert(key, v);
+                        }
+                        SqlValueEnum::Bool(v) => {
+                            input_document.insert(key, v);
+                        }
+                        _ => return Err(async_graphql::Error::new("Invalid value type")),
+                    }
+                }
+
+                let (find_many_query_string, ..) = SqlDataSource::create_find_many_query(
+                    entity,
                     &sql_query.table,
-                    &find_many_where_keys,
                     &dialect,
-                    &find_many_where_values,
-                );
+                    &input_document,
+                )?;
 
                 let mut find_many_query = sqlx::query(&find_many_query_string);
 
