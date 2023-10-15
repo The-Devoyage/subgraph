@@ -198,7 +198,7 @@ impl SqlDataSource {
             &table,
             data_source.config.dialect.clone(),
             &entity,
-        );
+        )?;
 
         match resolver_type {
             ResolverType::FindOne => {
@@ -213,6 +213,7 @@ impl SqlDataSource {
             }
             ResolverType::CreateOne => {
                 let result = services::Services::create_one(
+                    &entity,
                     &data_source.pool,
                     &query,
                     data_source.config.dialect.clone(),
@@ -222,6 +223,7 @@ impl SqlDataSource {
             }
             ResolverType::UpdateOne => {
                 let result = services::Services::update_one(
+                    &entity,
                     &data_source.pool,
                     &query,
                     data_source.config.dialect.clone(),

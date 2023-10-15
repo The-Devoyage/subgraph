@@ -1,7 +1,8 @@
+use bson::doc;
 use log::debug;
 
 use crate::{
-    configuration::subgraph::data_sources::sql::DialectEnum,
+    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
     data_sources::sql::{PoolEnum, SqlDataSource, SqlQuery, SqlValueEnum},
 };
 
@@ -9,6 +10,7 @@ use super::{ResponseRow, Services};
 
 impl Services {
     pub async fn create_one(
+        entity: &ServiceEntityConfig,
         pool_enum: &PoolEnum,
         sql_query: &SqlQuery,
         dialect: DialectEnum,
@@ -50,12 +52,16 @@ impl Services {
 
                 let last_inserted_id = query.execute(pool).await?.last_insert_id();
 
-                let find_one_query = SqlDataSource::create_find_one_query(
+                let input_document = doc! {
+                    "id": last_inserted_id as i32,
+                };
+
+                let (find_one_query, ..) = SqlDataSource::create_find_one_query(
+                    entity,
                     &sql_query.table,
-                    &vec!["id".to_string()],
                     &dialect,
-                    &vec![SqlValueEnum::Int(last_inserted_id as i32)],
-                );
+                    &input_document,
+                )?;
 
                 let result = sqlx::query(&find_one_query)
                     .bind(last_inserted_id)
@@ -134,12 +140,16 @@ impl Services {
 
                 let last_inserted_rowid = query.execute(pool).await?.last_insert_rowid();
 
-                let find_one_query = SqlDataSource::create_find_one_query(
+                let input_document = doc! {
+                    "id": last_inserted_rowid as i32,
+                };
+
+                let (find_one_query, ..) = SqlDataSource::create_find_one_query(
+                    entity,
                     &sql_query.table,
-                    &vec!["id".to_string()],
                     &dialect,
-                    &vec![SqlValueEnum::Int(last_inserted_rowid as i32)],
-                );
+                    &input_document,
+                )?;
 
                 let result = sqlx::query(&find_one_query)
                     .bind(last_inserted_rowid)

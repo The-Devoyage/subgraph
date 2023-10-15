@@ -14,7 +14,6 @@ impl SqlDataSource {
         debug!("Creating Where Clause");
         let parameterized_query = if !where_keys.is_empty() {
             let mut query = String::new();
-            query.push_str(" WHERE ");
 
             for i in 0..where_keys.len() {
                 query.push_str(&where_keys[i]);
