@@ -39,12 +39,12 @@ impl SqlDataSource {
                 where_values = combined_where_values;
                 q
             }
-            ResolverType::FindMany => SqlDataSource::create_find_many_query(
-                table_name,
-                &where_keys,
-                &dialect,
-                &where_values,
-            ),
+            ResolverType::FindMany => {
+                let (q, combined_where_values) =
+                    SqlDataSource::create_find_many_query(&entity, table_name, &dialect, &input)?;
+                where_values = combined_where_values;
+                q
+            }
             ResolverType::CreateOne => {
                 SqlDataSource::create_create_one_query(table_name, &value_keys, &dialect)
             }

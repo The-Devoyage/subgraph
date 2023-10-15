@@ -233,6 +233,7 @@ impl SqlDataSource {
             }
             ResolverType::UpdateMany => {
                 let results = services::Services::update_many(
+                    &entity,
                     &data_source.pool,
                     &query,
                     data_source.config.dialect.clone(),
