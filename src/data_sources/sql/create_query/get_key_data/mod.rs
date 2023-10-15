@@ -10,31 +10,41 @@ use crate::{
 };
 
 impl SqlDataSource {
+    /// Creates vectors of keys and values. They persist order.
+    /// Keys and values are assocciated with where clause and value clause.
     pub fn get_key_data(
         input_object: &Document,
         entity: &ServiceEntityConfig,
         resolver_type: &ResolverType,
-    ) -> (
-        Vec<String>,
-        Vec<SqlValueEnum>,
-        Vec<String>,
-        Vec<SqlValueEnum>,
-    ) {
+    ) -> Result<
+        (
+            Vec<String>,
+            Vec<SqlValueEnum>,
+            Vec<String>,
+            Vec<SqlValueEnum>,
+        ),
+        async_graphql::Error,
+    > {
         debug!("Getting Key Data");
         let mut where_keys = vec![];
         let mut where_values = vec![];
         let mut value_keys = vec![];
         let mut values = vec![];
 
+        let excluded_keys = vec!["query", "OR", "AND"];
+
         for (key, value) in input_object.iter() {
-            if key != "query" {
+            if !excluded_keys.contains(&key.as_str()) {
                 debug!("Processing Key: {:?}", key);
                 debug!("Processing Value: {:?}", value.to_string());
 
                 let field = ServiceEntityConfig::get_field(entity.clone(), key.to_string());
 
                 if field.is_err() {
-                    panic!("Field not found: {:?}", key);
+                    return Err(async_graphql::Error::new(format!(
+                        "Field {} does not exist on entity {}",
+                        key, entity.name
+                    )));
                 }
 
                 let is_where_clause = match resolver_type {
@@ -42,7 +52,12 @@ impl SqlDataSource {
                     ResolverType::CreateOne
                     | ResolverType::UpdateOne
                     | ResolverType::UpdateMany => false,
-                    _ => panic!("Invalid resolver type"),
+                    _ => {
+                        return Err(async_graphql::Error::new(format!(
+                            "Resolver type {:?} is not supported",
+                            resolver_type
+                        )))
+                    }
                 };
                 let ServiceEntityFieldConfig { scalar, .. } = field.unwrap();
                 let list = value.as_array().is_some();
@@ -131,7 +146,7 @@ impl SqlDataSource {
                         }
                     }
                     _ => {
-                        panic!("Unsupported Scalar Type");
+                        return Err(async_graphql::Error::new("Unsupported Scalar Type"));
                     }
                 }
             } else if key == "query" {
@@ -139,8 +154,7 @@ impl SqlDataSource {
                 let query_object = value.as_document();
 
                 if query_object.is_none() {
-                    //HACK: Should prob return result, to notify user of invalid query object.
-                    panic!("Invalid Query Object");
+                    return Err(async_graphql::Error::new("Invalid Query Object"));
                 }
 
                 for (key, value) in query_object.unwrap().iter() {
@@ -179,6 +193,6 @@ impl SqlDataSource {
         debug!("Value Keys: {:?}", value_keys);
         debug!("Values: {:?}", values);
 
-        (where_keys, where_values, value_keys, values)
+        Ok((where_keys, where_values, value_keys, values))
     }
 }

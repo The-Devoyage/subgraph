@@ -25,6 +25,8 @@ impl SqlDataSource {
             }
         }
 
+        query.push_str(" WHERE ");
+
         let parameterized_query =
             SqlDataSource::create_where_clause(where_keys, dialect, None, where_values);
         query.push_str(&parameterized_query);

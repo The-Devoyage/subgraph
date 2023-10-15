@@ -1,7 +1,8 @@
+use bson::Document;
 use log::debug;
 
 use crate::{
-    configuration::subgraph::data_sources::sql::DialectEnum,
+    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
     data_sources::sql::{PoolEnum, SqlDataSource, SqlQuery, SqlValueEnum},
 };
 
@@ -9,6 +10,7 @@ use super::{ResponseRow, Services};
 
 impl Services {
     pub async fn update_one(
+        entity: &ServiceEntityConfig,
         pool_enum: &PoolEnum,
         sql_query: &SqlQuery,
         dialect: DialectEnum,
@@ -87,12 +89,30 @@ impl Services {
                         &sql_query.values,
                     );
 
-                let find_one_query_string = SqlDataSource::create_find_one_query(
+                let mut input_document = Document::new();
+
+                //for each key in find_one_where_keys, add the key and value to the input_document
+                for (index, key) in find_one_where_keys.iter().enumerate() {
+                    match &find_one_where_values[index] {
+                        SqlValueEnum::String(v) => {
+                            input_document.insert(key, v);
+                        }
+                        SqlValueEnum::Int(v) => {
+                            input_document.insert(key, v);
+                        }
+                        SqlValueEnum::Bool(v) => {
+                            input_document.insert(key, v);
+                        }
+                        _ => return Err(async_graphql::Error::from("Invalid Value Type")),
+                    }
+                }
+
+                let (find_one_query_string, ..) = SqlDataSource::create_find_one_query(
+                    entity,
                     &sql_query.table,
-                    &find_one_where_keys,
                     &dialect,
-                    &find_one_where_values,
-                );
+                    &input_document,
+                )?;
 
                 let mut find_one_query = sqlx::query(&find_one_query_string);
 

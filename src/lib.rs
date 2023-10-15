@@ -13,7 +13,6 @@ pub mod cli_args;
 pub mod configuration;
 mod data_sources;
 mod graphql;
-pub mod request_filter_language;
 pub mod utils;
 
 pub async fn run(

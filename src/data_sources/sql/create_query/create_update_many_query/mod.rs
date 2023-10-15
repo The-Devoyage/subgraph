@@ -29,6 +29,8 @@ impl SqlDataSource {
 
         let offset = Some(value_keys.len() as i32);
 
+        query.push_str(" WHERE ");
+
         let parameterized_query =
             SqlDataSource::create_where_clause(where_keys, dialect, offset, where_values);
         query.push_str(&parameterized_query);

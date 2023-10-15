@@ -11,6 +11,7 @@ use super::{SqlDataSource, SqlQuery};
 pub mod create_create_one_query;
 pub mod create_find_many_query;
 pub mod create_find_one_query;
+pub mod create_nested_query_recursive;
 pub mod create_update_many_query;
 pub mod create_update_one_query;
 pub mod create_update_return_key_data;
@@ -25,19 +26,19 @@ impl SqlDataSource {
         table_name: &str,
         dialect: DialectEnum,
         entity: &ServiceEntityConfig,
-    ) -> SqlQuery {
+    ) -> Result<SqlQuery, async_graphql::Error> {
         debug!("Creating SQL Query");
 
-        let (where_keys, where_values, value_keys, values) =
-            SqlDataSource::get_key_data(&input, entity, &resolver_type);
+        let (where_keys, mut where_values, value_keys, values) =
+            SqlDataSource::get_key_data(&input, entity, &resolver_type)?;
 
         let query = match resolver_type {
-            ResolverType::FindOne => SqlDataSource::create_find_one_query(
-                table_name,
-                &where_keys,
-                &dialect,
-                &where_values,
-            ),
+            ResolverType::FindOne => {
+                let (q, combined_where_values) =
+                    SqlDataSource::create_find_one_query(&entity, table_name, &dialect, &input)?;
+                where_values = combined_where_values;
+                q
+            }
             ResolverType::FindMany => SqlDataSource::create_find_many_query(
                 table_name,
                 &where_keys,
@@ -75,6 +76,6 @@ impl SqlDataSource {
 
         debug!("Query: {:?}", sql_query);
 
-        sql_query
+        Ok(sql_query)
     }
 }

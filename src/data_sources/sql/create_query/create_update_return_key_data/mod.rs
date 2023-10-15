@@ -2,6 +2,9 @@ use crate::data_sources::sql::{SqlDataSource, SqlValueEnum};
 use log::debug;
 
 impl SqlDataSource {
+    /// Iterates over the original query's where k/v pairs and update value k/v pairs.
+    /// It then generates new where k/v pairs by using the update value k/v pairs.
+    /// In short, it swaps the new values with the old values for the new where object.
     pub fn create_update_return_key_data(
         sql_query_where_keys: &Vec<String>,
         sql_query_where_values: &Vec<SqlValueEnum>,
