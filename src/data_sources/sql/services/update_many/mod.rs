@@ -222,6 +222,8 @@ impl Services {
             }
             PoolEnum::SqLite(pool) => {
                 let mut update_query = sqlx::query(&sql_query.query);
+
+                //Bind the values first, example: SET title = ?
                 for value in &sql_query.values {
                     match value {
                         SqlValueEnum::String(v) => {
@@ -252,6 +254,8 @@ impl Services {
                         }
                     }
                 }
+
+                // Bind the where values, example: WHERE id = ?
                 for value in &sql_query.where_values {
                     match value {
                         SqlValueEnum::String(v) => {
