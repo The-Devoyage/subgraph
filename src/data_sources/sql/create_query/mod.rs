@@ -32,6 +32,7 @@ impl SqlDataSource {
         let (where_keys, mut where_values, value_keys, values) =
             SqlDataSource::get_key_data(&input, entity, &resolver_type)?;
 
+        // Generate the query string and get the where values.
         let query = match resolver_type {
             ResolverType::FindOne => {
                 let (query_string, combined_where_values) =
@@ -46,7 +47,7 @@ impl SqlDataSource {
                 query_string
             }
             ResolverType::CreateOne => {
-                SqlDataSource::create_create_one_query(table_name, &value_keys, &dialect)
+                SqlDataSource::create_create_one_query(table_name, &value_keys, &dialect)?
             }
             ResolverType::UpdateOne => {
                 let (query_string, combined_where_value) = SqlDataSource::create_update_one_query(

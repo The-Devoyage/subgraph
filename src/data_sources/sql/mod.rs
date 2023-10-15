@@ -61,6 +61,7 @@ impl SqlDataSource {
     pub async fn init(sql_data_source_config: &SqlDataSourceConfig, args: &CliArgs) -> DataSource {
         debug!("Initializing SQL Data Source");
 
+        // Create the pool
         let pool: PoolEnum = match sql_data_source_config.dialect {
             DialectEnum::SQLITE => {
                 debug!("Creating SQLite Pool: {:?}", &sql_data_source_config.uri);
