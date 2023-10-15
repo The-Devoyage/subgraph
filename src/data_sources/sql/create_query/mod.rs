@@ -34,34 +34,41 @@ impl SqlDataSource {
 
         let query = match resolver_type {
             ResolverType::FindOne => {
-                let (q, combined_where_values) =
+                let (query_string, combined_where_values) =
                     SqlDataSource::create_find_one_query(&entity, table_name, &dialect, &input)?;
                 where_values = combined_where_values;
-                q
+                query_string
             }
             ResolverType::FindMany => {
-                let (q, combined_where_values) =
+                let (query_string, combined_where_values) =
                     SqlDataSource::create_find_many_query(&entity, table_name, &dialect, &input)?;
                 where_values = combined_where_values;
-                q
+                query_string
             }
             ResolverType::CreateOne => {
                 SqlDataSource::create_create_one_query(table_name, &value_keys, &dialect)
             }
-            ResolverType::UpdateOne => SqlDataSource::create_update_one_query(
-                table_name,
-                &value_keys,
-                &dialect,
-                &where_keys,
-                &where_values,
-            ),
-            ResolverType::UpdateMany => SqlDataSource::create_update_many_query(
-                table_name,
-                &value_keys,
-                &dialect,
-                &where_keys,
-                &where_values,
-            ),
+            ResolverType::UpdateOne => {
+                let (query_string, combined_where_value) = SqlDataSource::create_update_one_query(
+                    &entity,
+                    table_name,
+                    &value_keys,
+                    &dialect,
+                    &input,
+                )?;
+                where_values = combined_where_value;
+                query_string
+            }
+            ResolverType::UpdateMany => {
+                let query_string = SqlDataSource::create_update_many_query(
+                    &entity,
+                    table_name,
+                    &value_keys,
+                    &dialect,
+                    &input,
+                )?;
+                query_string
+            }
             _ => panic!("Invalid resolver type"),
         };
 
