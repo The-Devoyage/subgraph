@@ -1,7 +1,7 @@
 use crate::{
     configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
     data_sources::sql::{
-        create_query::create_nested_query_recursive::FilterOperator, SqlDataSource,
+        create_query::create_nested_query_recursive::FilterOperator, SqlDataSource, SqlValueEnum,
     },
 };
 use bson::Document;
@@ -14,7 +14,7 @@ impl SqlDataSource {
         value_keys: &Vec<String>,
         dialect: &DialectEnum,
         input: &Document,
-    ) -> Result<String, async_graphql::Error> {
+    ) -> Result<(String, Vec<SqlValueEnum>), async_graphql::Error> {
         debug!("Creating Update Many Query");
 
         let mut query = String::new();
@@ -37,7 +37,7 @@ impl SqlDataSource {
         query.push_str(" WHERE ");
 
         let query_input = input.get("query").unwrap();
-        let (nested_query, ..) = SqlDataSource::create_nested_query_recursive(
+        let (nested_query, combined_where_values) = SqlDataSource::create_nested_query_recursive(
             true,
             &vec![query_input.clone()],
             entity,
@@ -63,6 +63,6 @@ impl SqlDataSource {
         }
 
         debug!("Update Many Query: {}", query);
-        Ok(query)
+        Ok((query, combined_where_values))
     }
 }

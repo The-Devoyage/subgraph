@@ -87,7 +87,7 @@ impl Services {
                         &sql_query.where_values,
                         &sql_query.value_keys,
                         &sql_query.values,
-                    );
+                    )?;
 
                 let mut input_document = Document::new();
 
