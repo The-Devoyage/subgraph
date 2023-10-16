@@ -61,13 +61,14 @@ impl SqlDataSource {
                 query_string
             }
             ResolverType::UpdateMany => {
-                let query_string = SqlDataSource::create_update_many_query(
+                let (query_string, combined_where_value) = SqlDataSource::create_update_many_query(
                     &entity,
                     table_name,
                     &value_keys,
                     &dialect,
                     &input,
                 )?;
+                where_values = combined_where_value;
                 query_string
             }
             _ => panic!("Invalid resolver type"),
