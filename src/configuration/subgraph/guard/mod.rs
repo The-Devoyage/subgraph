@@ -5,13 +5,7 @@ use http::HeaderMap;
 use log::{debug, error};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    configuration::subgraph::entities::ScalarOptions,
-    graphql::schema::create_auth_service::TokenData,
-    utils::{self, document::get_from_document::GetDocumentResultType},
-};
-
-use super::entities::service_entity_field::ServiceEntityFieldConfig;
+use crate::graphql::schema::create_auth_service::TokenData;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Guard {
@@ -54,121 +48,6 @@ impl Guard {
         }
 
         Ok(())
-    }
-
-    pub fn get_input_value(
-        input_document: Document,
-        mut fields: Vec<ServiceEntityFieldConfig>,
-    ) -> Result<Value, EvalexprError> {
-        debug!("Getting from Document");
-        let document_value =
-            utils::document::DocumentUtils::get_from_document(&input_document, &fields[0]);
-
-        if document_value.is_err() {
-            return Err(EvalexprError::CustomMessage(
-                "Input field not found.".to_string(),
-            ));
-        }
-
-        match fields[0].scalar {
-            ScalarOptions::String
-            | ScalarOptions::Int
-            | ScalarOptions::Boolean
-            | ScalarOptions::ObjectID => {
-                if fields.len() > 1 {
-                    return Err(EvalexprError::CustomMessage(
-                        "Can not access property from primitive.".to_string(),
-                    ));
-                } else {
-                    match document_value.unwrap() {
-                        GetDocumentResultType::String(value) => {
-                            debug!("Value: {:?}", value);
-                            return Ok(Value::String(value));
-                        }
-                        GetDocumentResultType::StringArray(value) => {
-                            debug!("Value: {:?}", value);
-                            if value.len() == 0 {
-                                return Err(EvalexprError::CustomMessage(
-                                    "Input Value Required".to_string(),
-                                ));
-                            }
-                            return Ok(Value::Tuple(
-                                value.into_iter().map(Value::String).collect(),
-                            ));
-                        }
-                        GetDocumentResultType::Int(value) => {
-                            debug!("Value: {:?}", value);
-                            return Ok(Value::Int(value as i64));
-                        }
-                        GetDocumentResultType::IntArray(value) => {
-                            debug!("Value: {:?}", value);
-                            if value.len() == 0 {
-                                return Err(EvalexprError::CustomMessage(
-                                    "Input Value Required".to_string(),
-                                ));
-                            }
-                            return Ok(Value::Tuple(
-                                value.into_iter().map(|x| Value::Int(x as i64)).collect(),
-                            ));
-                        }
-                        GetDocumentResultType::Boolean(value) => {
-                            debug!("Value: {:?}", value);
-                            return Ok(Value::Boolean(value));
-                        }
-                        GetDocumentResultType::BooleanArray(value) => {
-                            debug!("Value: {:?}", value);
-                            if value.len() == 0 {
-                                return Err(EvalexprError::CustomMessage(
-                                    "Input Value Required".to_string(),
-                                ));
-                            }
-                            return Ok(Value::Tuple(
-                                value.into_iter().map(Value::Boolean).collect(),
-                            ));
-                        }
-                        _ => {
-                            return Err(EvalexprError::CustomMessage(
-                                "Value is not primitive.".to_string(),
-                            ));
-                        }
-                    }
-                }
-            }
-            ScalarOptions::Object => {
-                if fields[0].list.unwrap_or(false) {
-                    let mut values = vec![];
-                    match document_value.unwrap() {
-                        GetDocumentResultType::DocumentArray(document) => {
-                            fields.remove(0);
-                            for document in document {
-                                values.push(
-                                    Guard::get_input_value(document, fields.clone()).unwrap(),
-                                );
-                            }
-                            debug!("Values: {:?}", values);
-                            Ok(Value::Tuple(values))
-                        }
-                        _ => {
-                            return Err(EvalexprError::CustomMessage(
-                                "Expected document array.".to_string(),
-                            ));
-                        }
-                    }
-                } else {
-                    fields.remove(0);
-                    match document_value.unwrap() {
-                        GetDocumentResultType::Document(value) => {
-                            Ok(Guard::get_input_value(value, fields).unwrap())
-                        }
-                        _ => {
-                            return Err(EvalexprError::CustomMessage(
-                                "Expected document object.".to_string(),
-                            ));
-                        }
-                    }
-                }
-            }
-        }
     }
 
     pub fn create_guard_context(
