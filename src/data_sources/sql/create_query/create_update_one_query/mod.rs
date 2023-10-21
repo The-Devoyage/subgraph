@@ -34,9 +34,10 @@ impl SqlDataSource {
 
         query.push_str(" WHERE ");
 
+        let query_input = input.get("query").unwrap();
         let (nested_query, combined_where_values) = SqlDataSource::create_nested_query_recursive(
             true,
-            &vec![input.clone().into()],
+            &vec![query_input.clone()],
             entity,
             dialect,
             FilterOperator::And,

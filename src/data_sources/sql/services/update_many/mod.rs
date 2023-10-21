@@ -1,4 +1,4 @@
-use bson::Document;
+use bson::{doc, Document};
 use log::debug;
 
 use crate::{
@@ -102,11 +102,15 @@ impl Services {
                     };
                 }
 
+                let query_input = doc! {
+                    "query": input_document
+                };
+
                 let (find_many_query_string, ..) = SqlDataSource::create_find_many_query(
                     entity,
                     &sql_query.table,
                     &dialect,
-                    &input_document,
+                    &query_input,
                 )?;
 
                 let mut find_many_query = sqlx::query(&find_many_query_string);
@@ -296,6 +300,7 @@ impl Services {
                         &sql_query.values,
                     )?;
 
+                // Create the input document to find the newly updated data
                 let mut input_document = Document::new();
 
                 for (index, key) in find_many_where_keys.iter().enumerate() {
@@ -313,11 +318,17 @@ impl Services {
                     }
                 }
 
+                let query_doc = doc! {
+                    "query": input_document
+                };
+
+                debug!("Query document: {:?}", query_doc);
+
                 let (find_many_query_string, ..) = SqlDataSource::create_find_many_query(
                     entity,
                     &sql_query.table,
                     &dialect,
-                    &input_document,
+                    &query_doc,
                 )?;
 
                 let mut find_many_query = sqlx::query(&find_many_query_string);
