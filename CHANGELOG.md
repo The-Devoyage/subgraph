@@ -10,6 +10,7 @@
 ### Fixed
 
 - Service imports now import more than one additional file.
+- Nested properties now import with entity imports.
 
 ## [v0.0.11]
 

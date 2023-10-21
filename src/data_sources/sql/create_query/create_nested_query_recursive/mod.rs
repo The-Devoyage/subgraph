@@ -1,4 +1,4 @@
-use bson::Bson;
+use bson::{doc, Bson};
 use log::debug;
 use serde::{Deserialize, Serialize};
 
@@ -19,22 +19,23 @@ pub enum FilterOperator {
 impl SqlDataSource {
     pub fn create_nested_query_recursive(
         is_first: bool,
-        filters: &Vec<Bson>,
+        inputs: &Vec<Bson>,
         entity: &ServiceEntityConfig,
         dialect: &DialectEnum,
         filter_by_operator: FilterOperator,
     ) -> Result<(Option<String>, Vec<SqlValueEnum>), async_graphql::Error> {
-        debug!("Creating Recursive Nested Query");
+        debug!("Creating Recursive Nested Query From: {:?}", inputs);
         let mut nested_query = String::new();
         let mut combined_where_values = vec![];
 
+        // Possibly need this for postgres.
         if is_first {
             nested_query.push_str(" (");
         } else {
             nested_query.push_str(" (");
         }
 
-        for (i, filter) in filters.iter().enumerate() {
+        for (i, filter) in inputs.iter().enumerate() {
             //get the and and the or filters and handle recursively
             let and_filters = filter.as_document().unwrap().get("AND");
             let or_filters = filter.as_document().unwrap().get("OR");
@@ -45,11 +46,23 @@ impl SqlDataSource {
                 initial_input.remove("AND");
             }
             if initial_input.contains_key("OR") {
+                debug!("Found OR key in initial input: {:?}", initial_input);
                 initial_input.remove("OR");
             }
 
+            // Only accept an initial_input or and_filters/or_filters.
+            // if (and_filters.is_some() || or_filters.is_some()) && !initial_input.is_empty() {
+            //     return Err(async_graphql::Error::from(format!(
+            //         "Combining AND/OR filters with other filters is not supported. Found: {:?}",
+            //         filter
+            //     )));
+            // }
+
+            // Nest inside a "query" property for recursive calls.
+            let query_input = doc! { "query": initial_input };
+
             let (where_keys, where_values, ..) =
-                SqlDataSource::get_key_data(&initial_input, entity, &ResolverType::FindOne)?;
+                SqlDataSource::get_key_data(&query_input, entity, &ResolverType::FindOne)?;
 
             combined_where_values.extend(where_values.clone());
 
@@ -92,7 +105,7 @@ impl SqlDataSource {
                 };
             }
 
-            if i != filters.len() - 1 {
+            if i != inputs.len() - 1 {
                 match filter_by_operator {
                     FilterOperator::And => nested_query.push_str(" AND "),
                     FilterOperator::Or => nested_query.push_str(" OR "),

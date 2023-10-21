@@ -183,6 +183,7 @@ impl SqlDataSource {
 
         let table;
 
+        // If the entity has a data source, use that table name
         if entity_data_source.is_some() {
             if entity_data_source.clone().unwrap().table.is_some() {
                 table = entity_data_source.unwrap().table.unwrap();
@@ -201,6 +202,7 @@ impl SqlDataSource {
             &entity,
         )?;
 
+        // Return the result from the database as a FieldValue
         match resolver_type {
             ResolverType::FindOne => {
                 let result = services::Services::find_one(&data_source.pool, &query).await?;

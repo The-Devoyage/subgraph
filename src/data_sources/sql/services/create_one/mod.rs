@@ -53,7 +53,9 @@ impl Services {
                 let last_inserted_id = query.execute(pool).await?.last_insert_id();
 
                 let input_document = doc! {
-                    "id": last_inserted_id as i32,
+                    "query": {
+                        "id": last_inserted_id as i32,
+                    }
                 };
 
                 let (find_one_query, ..) = SqlDataSource::create_find_one_query(
@@ -141,7 +143,9 @@ impl Services {
                 let last_inserted_rowid = query.execute(pool).await?.last_insert_rowid();
 
                 let input_document = doc! {
-                    "id": last_inserted_rowid as i32,
+                    "query": {
+                        "id": last_inserted_rowid as i32,
+                    }
                 };
 
                 let (find_one_query, ..) = SqlDataSource::create_find_one_query(
