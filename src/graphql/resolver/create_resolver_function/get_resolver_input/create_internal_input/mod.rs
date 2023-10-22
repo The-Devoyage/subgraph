@@ -1,5 +1,5 @@
 use async_graphql::dynamic::ResolverContext;
-use bson::Document;
+use bson::{doc, Document};
 use log::{debug, error};
 use sqlx::Row;
 
@@ -203,7 +203,7 @@ impl ServiceResolver {
         };
 
         let field_input = ctx.args.try_get(&format!("{}", ctx.field().name()))?;
-        let mut field_input = match field_input.deserialize::<Document>() {
+        let field_input = match field_input.deserialize::<Document>() {
             Ok(field_input) => field_input,
             Err(_) => {
                 return Err(async_graphql::Error::new(format!(
@@ -222,25 +222,39 @@ impl ServiceResolver {
         let scalar = as_type_field.scalar.clone();
         let list = as_type_field.list.unwrap_or(false);
 
+        //Get the query input, then modify it to include the parent value(s)
+        let mut query_input = field_input
+            .get("query")
+            .unwrap()
+            .as_document()
+            .unwrap()
+            .clone();
+
         match list {
             true => {
-                field_input = ServiceResolver::combine_list_values(
+                query_input = ServiceResolver::combine_list_values(
                     &parent_value,
-                    &mut field_input,
+                    &mut query_input,
                     &field_name,
                     &scalar,
                     &join_on,
                 )?
             }
             false => {
-                field_input = ServiceResolver::combine_primitive_value(
+                query_input = ServiceResolver::combine_primitive_value(
                     &parent_value,
-                    &mut field_input,
+                    &mut query_input,
                     &field_name,
                     &scalar,
                     &join_on,
                 )?
             }
+        };
+
+        debug!("Query Input: {:?}", query_input);
+
+        let field_input = doc! {
+            "query": query_input,
         };
 
         debug!("Internal Input: {:?}", field_input);

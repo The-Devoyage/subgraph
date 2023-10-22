@@ -50,6 +50,38 @@ impl Guard {
         Ok(())
     }
 
+    pub fn extract_input_values(input_document: Document) -> Result<Document, EvalexprError> {
+        let exclude_keys = vec!["OR".to_string(), "AND".to_string()];
+
+        let values_input = match input_document.get("values") {
+            Some(values_input) => values_input.as_document(),
+            None => {
+                error!("Missing input property `values`.");
+                return Err(EvalexprError::CustomMessage(
+                    "Missing input property `values`.".to_string(),
+                ));
+            }
+        };
+
+        match values_input {
+            Some(values_input) => {
+                let mut cloned_values = values_input.clone();
+                for key in &exclude_keys {
+                    if cloned_values.contains_key(key) {
+                        cloned_values.remove(key);
+                    }
+                }
+                Ok(cloned_values)
+            }
+            None => {
+                error!("Failed to parse `values` input.");
+                return Err(EvalexprError::CustomMessage(
+                    "Failed to parse `values` input.".to_string(),
+                ));
+            }
+        }
+    }
+
     /// The input object provided will have a recursive shape.
     /// {
     ///   "query": {
@@ -60,16 +92,17 @@ impl Guard {
     /// }
     ///
     /// Returns a vec of queries.
-    pub fn extract_input_queries(
-        input_document: Document,
-    ) -> Result<Vec<Document>, async_graphql::Error> {
+    pub fn extract_input_queries(input_document: Document) -> Result<Vec<Document>, EvalexprError> {
+        debug!("Extracting Input Queries: {:?}", input_document);
         let mut documents = vec![];
 
         let query_document = match input_document.get("query") {
             Some(q) => q,
             None => {
                 error!("Can't find query in document.");
-                return Err(async_graphql::Error::new("Can't find query in document."));
+                return Err(EvalexprError::CustomMessage(
+                    "Can't find property `query`.".to_string(),
+                ));
             }
         };
 
@@ -100,13 +133,17 @@ impl Guard {
 
         if or_queries.is_some() {
             for query in or_queries.unwrap().as_array().unwrap() {
-                let nested = Guard::extract_input_queries(query.as_document().unwrap().clone())?;
+                let query_doc = doc! {
+                    "query": query.as_document().unwrap().clone()
+                };
+                let nested = Guard::extract_input_queries(query_doc)?;
                 for query in nested {
                     documents.push(query);
                 }
             }
         }
 
+        debug!("Extracted Queries: {:?}", documents);
         Ok(documents)
     }
 
@@ -120,53 +157,75 @@ impl Guard {
         let context = context_map! {
             "input" => Function::new(move |argument| {
                 debug!("Input Argument: {:?}", argument);
-                let key = argument.as_string()?;
+                let arguments = argument.as_fixed_len_tuple(2)?;
+                if let (Value::String(root), key) = (&arguments[0].clone(), &arguments[1].clone()) {
+                    let matching_keys = vec!["query", "values"];
 
-                let query_documents = match Guard::extract_input_queries(input_document.clone()) {
-                    Ok(query_documents) => query_documents,
-                    Err(err) => {
-                        error!("Error extracting input queries: {:?}", err);
-                        return Err(EvalexprError::expected_string(argument.clone()));
+                    if !matching_keys.contains(&root.as_str()) {
+                        error!("First key in input guard must be a key of the input object.");
+                        return Err(EvalexprError::CustomMessage("First key in input guard must be a key of the input object.".to_string()))
                     }
-                };
 
-                let mut values_tuple = vec![];
-                let is_nested = key.contains(".");
+                    if let Value::String(key) = key {
+                        let documents;
 
-                for input_document in query_documents {
-                    let json = serde_json::to_value(input_document.clone()).unwrap();
-
-                    // If the specified input is nested, extract the nested value.
-                    if is_nested {
-                        let keys: Vec<&str> = key.split(".").collect();
-                        let mut value = &json[keys[0]];
-                        for key in keys.iter().skip(1) {
-                            value = &value[key];
-                        }
-                        debug!("Input Value: {:?}", value);
-
-                          if value.is_null() {
-                            return Ok(Value::Empty);
+                        if root == "query" {
+                            documents = Guard::extract_input_queries(input_document.clone())?
+                        } else {
+                            let values_document = Guard::extract_input_values(input_document.clone())?;
+                            documents = vec![values_document];
                         }
 
-                        //TEST: Does this work with bools??
-                        let value = Value::String(value.as_str().unwrap().to_string());
+                        let mut values_tuple = vec![];
+                        let is_nested = key.contains(".");
+                        let excluded_keys = vec!["AND", "OR"];
 
-                        values_tuple.push(value);
-                    } else { // Else extract the value directly.
-                        let value = json.get(key.clone());
-                        debug!("Input Value: {:?}", value);
-                        let value = match value {
-                            Some(value) => Value::String(value.as_str().unwrap().to_string()),
-                            None => Value::Empty
-                        };
-                        values_tuple.push(value);
-                    };
+                        for input_document in documents {
+                            let json = serde_json::to_value(input_document.clone()).unwrap();
+
+                            // If the specified input is nested, extract the nested value.
+                            if is_nested {
+                                let keys: Vec<&str> = key.split(".").collect();
+                                let mut value = &json[keys[0]];
+                                for key in keys.iter().skip(1) {
+                                    if excluded_keys.contains(key) {
+                                        continue;
+                                    }
+                                    value = &value[key];
+                                }
+
+                                if value.is_null() {
+                                    return Ok(Value::Empty);
+                                }
+
+                                let value = Value::String(value.as_str().unwrap().to_string());
+
+                                values_tuple.push(value);
+                            } else { // Else extract the value directly.
+                                if excluded_keys.contains(&key.as_str()) {
+                                    continue;
+                                }
+                                let value = json.get(key.clone());
+                                let value = match value {
+                                    Some(value) => Value::String(value.as_str().unwrap().to_string()),
+                                    None => continue,
+                                };
+                                values_tuple.push(value);
+                            };
+                        }
+
+                        // Return a tuple of the found values so that they be used in guard checks.
+                        let values = Value::from(values_tuple);
+                        debug!("Input Value Tuples: {:?}", values);
+                        Ok(values)
+                    } else {
+                        error!("Arguments [1] incorrect.");
+                        Err(EvalexprError::expected_string(arguments[1].clone()))
+                    }
+                } else {
+                    error!("Arguments [0] incorrect.");
+                    Err(EvalexprError::expected_string(arguments[0].clone()))
                 }
-
-                // Return a tuple of the found values so that they be used in guard checks.
-                let values = Value::from(values_tuple);
-                Ok(values)
             }),
             "headers" => Function::new(move |argument| {
                 let key = argument.as_string()?;
