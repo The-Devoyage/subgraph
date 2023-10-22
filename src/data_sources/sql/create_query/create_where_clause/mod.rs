@@ -10,13 +10,23 @@ impl SqlDataSource {
         dialect: &DialectEnum,
         mut offset: Option<i32>,
         where_values: &Vec<SqlValueEnum>,
-    ) -> String {
+    ) -> Result<String, async_graphql::Error> {
         debug!("Creating Where Clause");
+        debug!("Where Keys: {:?}", where_keys);
+        debug!("Where Values: {:?}", where_values);
         let parameterized_query = if !where_keys.is_empty() {
             let mut query = String::new();
 
             for i in 0..where_keys.len() {
                 query.push_str(&where_keys[i]);
+
+                // If where_values[i] does not exist, return error.
+                if where_values.len() <= i {
+                    return Err(async_graphql::Error::new(format!(
+                        "Where value for key does not exist.",
+                    )));
+                }
+
                 let is_list = match where_values[i] {
                     SqlValueEnum::StringList(_)
                     | SqlValueEnum::IntList(_)
@@ -70,6 +80,6 @@ impl SqlDataSource {
             String::new()
         };
         debug!("Where Clause: {}", parameterized_query);
-        parameterized_query
+        Ok(parameterized_query)
     }
 }

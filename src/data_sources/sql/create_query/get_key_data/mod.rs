@@ -11,7 +11,8 @@ mod parse_query_input;
 mod parse_values_input;
 
 impl SqlDataSource {
-    /// Creates vectors of keys and values. They persist order.
+    /// Creates vectors of keys and values parsed from the user provided input.
+    /// They persist order.
     /// Keys and values are assocciated with where clause and value clause.
     pub fn get_key_data(
         input_object: &Document,

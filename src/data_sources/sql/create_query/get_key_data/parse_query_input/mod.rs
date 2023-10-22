@@ -7,6 +7,7 @@ use crate::{
 };
 
 impl SqlDataSource {
+    /// Creates vectors of keys and values parsed from the user provided input.
     pub fn parse_query_input(
         value: &Bson,
         mut where_keys: Vec<String>,
@@ -22,6 +23,7 @@ impl SqlDataSource {
 
         let excluded_keys = vec!["OR".to_string(), "AND".to_string()];
 
+        // Iterate through the query object and create a vector of keys and values
         for (key, value) in query_object.unwrap().iter() {
             if excluded_keys.contains(&key) {
                 continue;
