@@ -12,6 +12,10 @@
 - Service imports now import more than one additional file.
 - Nested properties now import with entity imports.
 
+### Changed
+
+- Input function in guards now accepts two params to specify values vs query.
+
 ## [v0.0.11]
 
 ### Added

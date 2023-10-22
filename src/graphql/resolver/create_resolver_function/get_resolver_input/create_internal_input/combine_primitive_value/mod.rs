@@ -7,13 +7,14 @@ use log::{debug, error};
 impl ServiceResolver {
     pub fn combine_primitive_value(
         parent_value: &Document,
-        field_input: &mut Document,
+        field_input_query: &mut Document,
         field_name: &str,
         scalar: &ScalarOptions,
         join_on: &str,
     ) -> Result<Document, async_graphql::Error> {
         debug!("Combining Primitive Value With Input");
         debug!("Parent Value: {:?}", parent_value);
+        debug!("Join On: {}", join_on);
 
         match scalar {
             ScalarOptions::Int => {
@@ -28,7 +29,7 @@ impl ServiceResolver {
                         )));
                     }
                 };
-                field_input.insert(join_on, join_on_value);
+                field_input_query.insert(join_on, join_on_value);
             }
             ScalarOptions::String => {
                 let join_on_value = parent_value.get_str(&field_name);
@@ -42,7 +43,7 @@ impl ServiceResolver {
                         )));
                     }
                 };
-                field_input.insert(join_on, join_on_value);
+                field_input_query.insert(join_on, join_on_value);
             }
             ScalarOptions::Boolean => {
                 let join_on_value = parent_value.get_bool(&field_name);
@@ -56,7 +57,7 @@ impl ServiceResolver {
                         )));
                     }
                 };
-                field_input.insert(join_on, join_on_value);
+                field_input_query.insert(join_on, join_on_value);
             }
             ScalarOptions::ObjectID => {
                 let join_on_value = parent_value.get_object_id(&field_name);
@@ -68,11 +69,12 @@ impl ServiceResolver {
                         join_on_value
                     }
                 };
-                field_input.insert(join_on, join_on_value);
+                field_input_query.insert(join_on, join_on_value);
             }
             _ => return Err(async_graphql::Error::new("Invalid Scalar Type")),
         };
 
-        Ok(field_input.clone())
+        debug!("Field Input Query: {:?}", field_input_query);
+        Ok(field_input_query.clone())
     }
 }
