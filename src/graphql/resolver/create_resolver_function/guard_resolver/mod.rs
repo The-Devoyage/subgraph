@@ -26,8 +26,12 @@ impl ServiceResolver {
     ) -> Result<(), async_graphql::Error> {
         debug!("Guard Resolver Function");
 
-        let guard_context =
-            Guard::create_guard_context(headers, token_data, input_document.clone())?;
+        let guard_context = Guard::create_guard_context(
+            headers,
+            token_data,
+            input_document.clone(),
+            resolver_type.to_string(),
+        )?;
         let resolver_guards =
             match ServiceEntityConfig::get_resolver(&entity, resolver_type.clone()) {
                 Some(resolver) => {
