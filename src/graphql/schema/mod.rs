@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use async_graphql::dynamic::{Object, Scalar, Schema, SchemaBuilder};
 use base64::{engine::general_purpose, Engine as _};
 use biscuit_auth::{KeyPair, PrivateKey};
@@ -18,6 +20,19 @@ pub enum ResolverType {
     UpdateOne,
     UpdateMany,
     InternalType,
+}
+
+impl Display for ResolverType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ResolverType::FindOne => write!(f, "FindOne"),
+            ResolverType::FindMany => write!(f, "FindMany"),
+            ResolverType::CreateOne => write!(f, "CreateOne"),
+            ResolverType::UpdateOne => write!(f, "UpdateOne"),
+            ResolverType::UpdateMany => write!(f, "UpdateMany"),
+            ResolverType::InternalType => write!(f, "InternalType"),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]

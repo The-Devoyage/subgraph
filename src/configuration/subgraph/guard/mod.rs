@@ -151,6 +151,7 @@ impl Guard {
         headers: HeaderMap,
         token_data: Option<TokenData>,
         input_document: Document,
+        resolver_type: String,
     ) -> Result<HashMapContext, async_graphql::Error> {
         debug!("Creating Guard Context");
 
@@ -258,10 +259,16 @@ impl Guard {
                         None => Err(EvalexprError::expected_string(argument.clone()))
                     }
             }),
+            "resolver_type" => Function::new(move |_| {
+                Ok(Value::String(resolver_type.clone()))
+            }),
             "every" => Function::new(move |argument| {
                 let arguments = argument.as_fixed_len_tuple(2)?;
                 if let (Value::Tuple(a), b) = (&arguments[0].clone(), &arguments[1].clone()) {
                     if let Value::String(_) | Value::Int(_) | Value::Float(_) | Value::Boolean(_) = b {
+                        if a.len() == 0 {
+                            return Ok(Value::Boolean(false));
+                        }
                         Ok(a.iter().all(|x| x == b).into())
                     } else {
                         Err(EvalexprError::type_error(
