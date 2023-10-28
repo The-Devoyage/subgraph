@@ -23,6 +23,7 @@ impl SqlDataSource {
         entity: &ServiceEntityConfig,
         dialect: &DialectEnum,
         filter_by_operator: FilterOperator,
+        has_more: bool,
     ) -> Result<(Option<String>, Vec<SqlValueEnum>), async_graphql::Error> {
         debug!("Creating Recursive Nested Query From: {:?}", inputs);
         let mut nested_query = String::new();
@@ -51,12 +52,12 @@ impl SqlDataSource {
             }
 
             // Only accept an initial_input or and_filters/or_filters.
-            // if (and_filters.is_some() || or_filters.is_some()) && !initial_input.is_empty() {
-            //     return Err(async_graphql::Error::from(format!(
-            //         "Combining AND/OR filters with other filters is not supported. Found: {:?}",
-            //         filter
-            //     )));
-            // }
+            if (and_filters.is_some() || or_filters.is_some()) && !initial_input.is_empty() {
+                return Err(async_graphql::Error::from(format!(
+                    "Combining AND/OR filters with other filters is not supported. Found: {:?}",
+                    filter
+                )));
+            }
 
             // Nest inside a "query" property for recursive calls.
             let query_input = doc! { "query": initial_input };
@@ -72,6 +73,15 @@ impl SqlDataSource {
             nested_query.push_str(&parameterized_query);
 
             let is_first = i == 0;
+            let is_last = i == inputs.len() - 1;
+            let has_more = and_filters.is_some() || or_filters.is_some();
+            debug!(
+                "is_first: {}, is_last: {}, index: {}, input_length: {}",
+                is_first,
+                is_last,
+                i,
+                inputs.len()
+            );
 
             if and_filters.is_some() {
                 let (and_query, and_where_values) = SqlDataSource::create_nested_query_recursive(
@@ -80,6 +90,7 @@ impl SqlDataSource {
                     entity,
                     dialect,
                     FilterOperator::And,
+                    or_filters.is_some(),
                 )?;
 
                 combined_where_values.extend(and_where_values.clone());
@@ -96,6 +107,7 @@ impl SqlDataSource {
                     entity,
                     dialect,
                     FilterOperator::Or,
+                    false,
                 )?;
 
                 combined_where_values.extend(or_where_values.clone());
@@ -114,6 +126,10 @@ impl SqlDataSource {
         }
 
         nested_query.push_str(")");
+
+        if has_more {
+            nested_query.push_str(" AND ");
+        }
 
         debug!("Nested query: {}", nested_query);
 

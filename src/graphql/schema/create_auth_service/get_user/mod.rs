@@ -1,4 +1,4 @@
-use bson::doc;
+use bson::{doc, Regex};
 use log::debug;
 use sqlx::Row;
 
@@ -18,8 +18,14 @@ impl ServiceSchemaBuilder {
         let user = match &data_source {
             DataSource::Mongo(mongo_ds) => {
                 debug!("Getting User - Mongo Data Source");
+
+                let identifier_regex = Regex {
+                    pattern: identifier.to_string(),
+                    options: "i".to_string(),
+                };
+
                 let filter = doc! {
-                    "identifier": &identifier
+                    "identifier": identifier_regex
                 };
 
                 let user = mongo_ds
@@ -36,9 +42,10 @@ impl ServiceSchemaBuilder {
                 debug!("SQL data source");
                 let user = match sql_ds.config.dialect {
                     DialectEnum::MYSQL => {
-                        let query =
-                            sqlx::query("SELECT * FROM subgraph_user WHERE identifier = ?;")
-                                .bind(&identifier);
+                        let query = sqlx::query(
+                            "SELECT * FROM subgraph_user WHERE LOWER(identifier) = LOWER(?);",
+                        )
+                        .bind(&identifier);
 
                         let user = match sql_ds.pool.clone() {
                             PoolEnum::MySql(pool) => query.fetch_one(&pool).await,
@@ -74,9 +81,10 @@ impl ServiceSchemaBuilder {
                         })
                     }
                     DialectEnum::SQLITE => {
-                        let query =
-                            sqlx::query("SELECT * FROM subgraph_user WHERE identifier = ?;")
-                                .bind(&identifier);
+                        let query = sqlx::query(
+                            "SELECT * FROM subgraph_user WHERE LOWER(identifier) = LOWER(?);",
+                        )
+                        .bind(&identifier);
 
                         let user = match sql_ds.pool.clone() {
                             PoolEnum::SqLite(pool) => query.fetch_one(&pool).await,
@@ -112,9 +120,10 @@ impl ServiceSchemaBuilder {
                         user
                     }
                     DialectEnum::POSTGRES => {
-                        let query =
-                            sqlx::query("SELECT * FROM subgraph_user WHERE identifier = $1;")
-                                .bind(&identifier);
+                        let query = sqlx::query(
+                            "SELECT * FROM subgraph_user WHERE LOWER(identifier) = ($1);",
+                        )
+                        .bind(&identifier);
 
                         let user = match sql_ds.pool.clone() {
                             PoolEnum::Postgres(pool) => query.fetch_one(&pool).await,
