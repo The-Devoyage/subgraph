@@ -15,6 +15,7 @@
 ### Changed
 
 - Input function in guards now accepts two params to specify values vs query.
+- Identifiers are no longer case sensitive for built in auth service.
 
 ## [v0.0.11]
 
