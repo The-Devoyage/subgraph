@@ -31,7 +31,6 @@ impl SqlDataSource {
             }
         }
 
-        //TODO: Can we delete this now? Possibly needed for Postgres DB
         let offset = Some(value_keys.len() as i32);
 
         query.push_str(" WHERE ");
@@ -44,6 +43,7 @@ impl SqlDataSource {
             dialect,
             FilterOperator::And,
             false,
+            offset,
         )?;
 
         if let Some(nested_query) = nested_query {

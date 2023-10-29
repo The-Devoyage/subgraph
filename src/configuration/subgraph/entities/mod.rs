@@ -25,6 +25,7 @@ pub enum ScalarOptions {
     Boolean,
     ObjectID,
     Object,
+    UUID,
 }
 
 impl ScalarOptions {
@@ -36,6 +37,7 @@ impl ScalarOptions {
             ScalarOptions::Boolean => ElementType::Boolean,
             ScalarOptions::ObjectID => ElementType::ObjectId,
             ScalarOptions::Object => ElementType::EmbeddedDocument,
+            ScalarOptions::UUID => ElementType::String,
         }
     }
 }

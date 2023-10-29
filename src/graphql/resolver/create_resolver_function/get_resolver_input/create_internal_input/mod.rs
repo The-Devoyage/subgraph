@@ -67,7 +67,9 @@ impl ServiceResolver {
                                             })?;
                                         document.insert(&field_name, column_value);
                                     }
-                                    ScalarOptions::String | ScalarOptions::ObjectID => {
+                                    ScalarOptions::String
+                                    | ScalarOptions::ObjectID
+                                    | ScalarOptions::UUID => {
                                         let column_value: &str =
                                             rr.try_get(field_name.as_str()).map_err(|e| {
                                                 error!("Error getting string column value: {}", e);
@@ -111,7 +113,9 @@ impl ServiceResolver {
                                             })?;
                                         document.insert(&field_name, column_value);
                                     }
-                                    ScalarOptions::String | ScalarOptions::ObjectID => {
+                                    ScalarOptions::String
+                                    | ScalarOptions::ObjectID
+                                    | ScalarOptions::UUID => {
                                         let column_value: &str =
                                             rr.try_get(field_name.as_str()).map_err(|e| {
                                                 error!("Error getting string column value: {}", e);
@@ -155,7 +159,9 @@ impl ServiceResolver {
                                             })?;
                                         document.insert(&field_name, column_value);
                                     }
-                                    ScalarOptions::String | ScalarOptions::ObjectID => {
+                                    ScalarOptions::String
+                                    | ScalarOptions::ObjectID
+                                    | ScalarOptions::UUID => {
                                         let column_value: &str =
                                             rr.try_get(field_name.as_str()).map_err(|e| {
                                                 error!("Error getting string column value: {}", e);

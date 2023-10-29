@@ -61,6 +61,9 @@ impl ServiceInput {
 
                 type_ref_with_inputs.type_ref
             }
+            ScalarOptions::UUID => {
+                ServiceInput::get_entity_string_field_type(resolver_type, is_list, is_required)
+            }
         };
 
         TypeRefWithInputs { type_ref, inputs }

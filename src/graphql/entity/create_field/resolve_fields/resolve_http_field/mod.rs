@@ -44,6 +44,10 @@ impl ServiceEntity {
                 let value = value.to_string();
                 Ok(Value::from(value))
             }
+            ScalarOptions::UUID => {
+                let value = value.to_string();
+                Ok(Value::from(value))
+            }
         }
     }
 }

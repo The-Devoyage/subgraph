@@ -17,6 +17,20 @@ impl ServiceResolver {
         debug!("Join On: {}", join_on);
 
         match scalar {
+            ScalarOptions::String | ScalarOptions::UUID => {
+                let join_on_value = parent_value.get_str(&field_name);
+                let join_on_value = match join_on_value {
+                    Ok(join_on_value) => join_on_value,
+                    Err(_) => {
+                        error!("Field {} not found. Invalid String", field_name);
+                        return Err(async_graphql::Error::new(format!(
+                            "Field {} not found. Invalid String",
+                            field_name
+                        )));
+                    }
+                };
+                field_input_query.insert(join_on, join_on_value);
+            }
             ScalarOptions::Int => {
                 let join_on_value = parent_value.get_i32(&field_name);
                 let join_on_value = match join_on_value {
@@ -25,20 +39,6 @@ impl ServiceResolver {
                         error!("Field {} not found. Invalid Int", field_name);
                         return Err(async_graphql::Error::new(format!(
                             "Field {} not found. Invalid Int",
-                            field_name
-                        )));
-                    }
-                };
-                field_input_query.insert(join_on, join_on_value);
-            }
-            ScalarOptions::String => {
-                let join_on_value = parent_value.get_str(&field_name);
-                let join_on_value = match join_on_value {
-                    Ok(join_on_value) => join_on_value,
-                    Err(_) => {
-                        error!("Field {} not found. Invalid String", field_name);
-                        return Err(async_graphql::Error::new(format!(
-                            "Field {} not found. Invalid String",
                             field_name
                         )));
                     }

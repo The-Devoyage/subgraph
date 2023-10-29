@@ -62,14 +62,13 @@ impl ServiceSchemaBuilder {
                             let uuid = mysql_row.try_get("uuid").unwrap_or("").to_string();
 
                             let user = ServiceUser {
-                                uuid: uuid::Uuid::parse_str(&uuid).unwrap_or(uuid::Uuid::new_v4()),
+                                uuid: uuid::Uuid::parse_str(&uuid).unwrap_or(uuid::Uuid::nil()),
                                 identifier,
                                 registration_state: serde_json::from_str(&registration_state)
                                     .expect("Failed to deserialize registration state"),
-                                passkey: serde_json::from_str(&passkey)
-                                    .expect("Failed to deserialize passkey"),
+                                passkey: serde_json::from_str(&passkey).unwrap_or(None),
                                 authentication_state: serde_json::from_str(&authentication_state)
-                                    .expect("Failed to deserialize authentication state"),
+                                    .unwrap_or(None),
                             };
                             Some(user)
                         });
@@ -100,7 +99,7 @@ impl ServiceSchemaBuilder {
                                 sqlite_row.try_get("authentication_state").unwrap_or("");
                             let uuid = sqlite_row.try_get("uuid").unwrap_or("").to_string();
                             let user = ServiceUser {
-                                uuid: uuid::Uuid::parse_str(&uuid).unwrap_or(uuid::Uuid::new_v4()),
+                                uuid: uuid::Uuid::parse_str(&uuid).unwrap_or(uuid::Uuid::nil()),
                                 identifier,
                                 registration_state: serde_json::from_str(&registration_state)
                                     .expect("Failed to deserialize registration state"),
@@ -136,16 +135,15 @@ impl ServiceSchemaBuilder {
                             let passkey = pg_row.try_get("passkey").unwrap_or("");
                             let authentication_state =
                                 pg_row.try_get("authentication_state").unwrap_or("");
-                            let uuid = pg_row.try_get("uuid").unwrap_or("").to_string();
+                            let uuid = pg_row.try_get("uuid").unwrap_or(uuid::Uuid::nil());
                             let user = ServiceUser {
-                                uuid: uuid::Uuid::parse_str(&uuid).unwrap_or(uuid::Uuid::new_v4()),
+                                uuid,
                                 identifier,
                                 registration_state: serde_json::from_str(&registration_state)
                                     .expect("Failed to deserialize registration state"),
-                                passkey: serde_json::from_str(&passkey)
-                                    .expect("Failed to deserialize pub key"),
+                                passkey: serde_json::from_str(&passkey).unwrap_or(None),
                                 authentication_state: serde_json::from_str(&authentication_state)
-                                    .expect("Failed to deserialize authentication state"),
+                                    .unwrap_or(None),
                             };
                             Some(user)
                         })

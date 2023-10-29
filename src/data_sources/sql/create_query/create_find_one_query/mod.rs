@@ -27,6 +27,7 @@ impl SqlDataSource {
             dialect,
             FilterOperator::And,
             false,
+            None,
         )?;
 
         if let Some(nested_query) = nested_query {

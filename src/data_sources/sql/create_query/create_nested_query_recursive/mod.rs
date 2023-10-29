@@ -24,6 +24,7 @@ impl SqlDataSource {
         dialect: &DialectEnum,
         filter_by_operator: FilterOperator,
         has_more: bool,
+        offset: Option<i32>,
     ) -> Result<(Option<String>, Vec<SqlValueEnum>), async_graphql::Error> {
         debug!("Creating Recursive Nested Query From: {:?}", inputs);
         let mut nested_query = String::new();
@@ -68,7 +69,7 @@ impl SqlDataSource {
             combined_where_values.extend(where_values.clone());
 
             let parameterized_query =
-                SqlDataSource::create_where_clause(&where_keys, dialect, None, &where_values)?;
+                SqlDataSource::create_where_clause(&where_keys, dialect, offset, &where_values)?;
 
             nested_query.push_str(&parameterized_query);
 
@@ -91,6 +92,7 @@ impl SqlDataSource {
                     dialect,
                     FilterOperator::And,
                     or_filters.is_some(),
+                    offset,
                 )?;
 
                 combined_where_values.extend(and_where_values.clone());
@@ -108,6 +110,7 @@ impl SqlDataSource {
                     dialect,
                     FilterOperator::Or,
                     false,
+                    offset,
                 )?;
 
                 combined_where_values.extend(or_where_values.clone());
@@ -131,11 +134,12 @@ impl SqlDataSource {
             nested_query.push_str(" AND ");
         }
 
-        debug!("Nested query: {}", nested_query);
-
         if nested_query == " ()" || nested_query.is_empty() || nested_query == " And ()" {
             return Ok((None, combined_where_values));
         }
+
+        debug!("Nested query: {}", nested_query);
+        debug!("Combined Where Values: {:?}", combined_where_values);
 
         Ok((Some(nested_query), combined_where_values))
     }
