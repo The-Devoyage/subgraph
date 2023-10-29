@@ -71,6 +71,13 @@ impl ServiceEntity {
                     TypeRef::named(entity_field.name.clone())
                 }
             }
+            ScalarOptions::UUID => {
+                if entity_field.list.unwrap_or(false) {
+                    TypeRef::named_list_nn(TypeRef::STRING)
+                } else {
+                    TypeRef::named(TypeRef::STRING)
+                }
+            }
         };
 
         TypeRefsAndDefs {

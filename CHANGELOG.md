@@ -6,11 +6,13 @@
 
 - Use `--watch` when starting to reload changes to config file directory.
 - Return `user_identifier` on auth success.
+- Added `resolver_type()` built in function for use with guards.
 
 ### Fixed
 
 - Service imports now import more than one additional file.
 - Nested properties now import with entity imports.
+- Register user for postgres Data Source.
 
 ### Changed
 

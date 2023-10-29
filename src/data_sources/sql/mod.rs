@@ -45,6 +45,8 @@ pub enum SqlValueEnum {
     StringList(Vec<String>),
     IntList(Vec<i32>),
     BoolList(Vec<bool>),
+    UUID(uuid::Uuid),
+    UUIDList(Vec<uuid::Uuid>),
 }
 
 #[derive(Debug, Clone)]

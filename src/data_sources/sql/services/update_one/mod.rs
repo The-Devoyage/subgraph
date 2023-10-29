@@ -47,6 +47,14 @@ impl Services {
                                 update_query = update_query.bind(bool)
                             }
                         }
+                        SqlValueEnum::UUID(v) => {
+                            update_query = update_query.bind(v);
+                        }
+                        SqlValueEnum::UUIDList(values) => {
+                            for uuid in values {
+                                update_query = update_query.bind(uuid)
+                            }
+                        }
                     }
                 }
 
@@ -76,6 +84,14 @@ impl Services {
                                 update_query = update_query.bind(bool)
                             }
                         }
+                        SqlValueEnum::UUID(v) => {
+                            update_query = update_query.bind(v);
+                        }
+                        SqlValueEnum::UUIDList(values) => {
+                            for uuid in values {
+                                update_query = update_query.bind(uuid)
+                            }
+                        }
                     }
                 }
 
@@ -103,6 +119,9 @@ impl Services {
                         }
                         SqlValueEnum::Bool(v) => {
                             input_document.insert(key, v);
+                        }
+                        SqlValueEnum::UUID(v) => {
+                            input_document.insert(key, v.to_string());
                         }
                         _ => return Err(async_graphql::Error::from("Invalid Value Type")),
                     }
@@ -141,6 +160,14 @@ impl Services {
                         SqlValueEnum::BoolList(values) => {
                             for bool in values {
                                 find_one_query = find_one_query.bind(bool)
+                            }
+                        }
+                        SqlValueEnum::UUID(v) => {
+                            find_one_query = find_one_query.bind(v);
+                        }
+                        SqlValueEnum::UUIDList(values) => {
+                            for uuid in values {
+                                find_one_query = find_one_query.bind(uuid)
                             }
                         }
                     }

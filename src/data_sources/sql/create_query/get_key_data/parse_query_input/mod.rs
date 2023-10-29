@@ -49,7 +49,14 @@ impl SqlDataSource {
             } else {
                 if value.as_str().is_some() {
                     let cleaned_value = clean_string(&value.to_string());
-                    where_values.push(SqlValueEnum::String(cleaned_value));
+                    match uuid::Uuid::parse_str(&cleaned_value) {
+                        Ok(uuid) => {
+                            where_values.push(SqlValueEnum::UUID(uuid));
+                        }
+                        Err(_) => {
+                            where_values.push(SqlValueEnum::String(cleaned_value));
+                        }
+                    }
                 } else if value.as_i32().is_some() {
                     where_values.push(SqlValueEnum::Int(value.as_i32().unwrap()));
                 } else if value.as_bool().is_some() {

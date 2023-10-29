@@ -49,6 +49,12 @@ impl Services {
                                 update_query = update_query.bind(bool)
                             }
                         }
+                        SqlValueEnum::UUID(uuid) => update_query = update_query.bind(uuid),
+                        SqlValueEnum::UUIDList(uuids) => {
+                            for uuid in uuids {
+                                update_query = update_query.bind(uuid)
+                            }
+                        }
                     }
                 }
                 for value in &sql_query.where_values {
@@ -77,6 +83,12 @@ impl Services {
                         SqlValueEnum::BoolList(values) => {
                             for bool in values {
                                 update_query = update_query.bind(bool)
+                            }
+                        }
+                        SqlValueEnum::UUID(uuid) => update_query = update_query.bind(uuid),
+                        SqlValueEnum::UUIDList(uuids) => {
+                            for uuid in uuids {
+                                update_query = update_query.bind(uuid)
                             }
                         }
                     }
@@ -143,6 +155,12 @@ impl Services {
                                 find_many_query = find_many_query.bind(bool)
                             }
                         }
+                        SqlValueEnum::UUID(uuid) => find_many_query = find_many_query.bind(uuid),
+                        SqlValueEnum::UUIDList(uuids) => {
+                            for uuid in uuids {
+                                find_many_query = find_many_query.bind(uuid)
+                            }
+                        }
                     }
                 }
 
@@ -156,6 +174,7 @@ impl Services {
             }
             PoolEnum::Postgres(pool) => {
                 let mut update_query = sqlx::query(&sql_query.query);
+                debug!("PG VALUES: {:?}", sql_query);
                 for value in &sql_query.values {
                     match value {
                         SqlValueEnum::String(v) => {
@@ -182,6 +201,12 @@ impl Services {
                         SqlValueEnum::BoolList(values) => {
                             for bool in values {
                                 update_query = update_query.bind(bool)
+                            }
+                        }
+                        SqlValueEnum::UUID(uuid) => update_query = update_query.bind(uuid),
+                        SqlValueEnum::UUIDList(uuids) => {
+                            for uuid in uuids {
+                                update_query = update_query.bind(uuid)
                             }
                         }
                     }
@@ -212,6 +237,12 @@ impl Services {
                         SqlValueEnum::BoolList(values) => {
                             for bool in values {
                                 update_query = update_query.bind(bool)
+                            }
+                        }
+                        SqlValueEnum::UUID(uuid) => update_query = update_query.bind(uuid),
+                        SqlValueEnum::UUIDList(uuids) => {
+                            for uuid in uuids {
+                                update_query = update_query.bind(uuid)
                             }
                         }
                     }
@@ -256,6 +287,12 @@ impl Services {
                                 update_query = update_query.bind(bool)
                             }
                         }
+                        SqlValueEnum::UUID(uuid) => update_query = update_query.bind(uuid),
+                        SqlValueEnum::UUIDList(uuids) => {
+                            for uuid in uuids {
+                                update_query = update_query.bind(uuid)
+                            }
+                        }
                     }
                 }
 
@@ -285,6 +322,12 @@ impl Services {
                         SqlValueEnum::BoolList(values) => {
                             for bool in values {
                                 update_query = update_query.bind(bool)
+                            }
+                        }
+                        SqlValueEnum::UUID(uuid) => update_query = update_query.bind(uuid),
+                        SqlValueEnum::UUIDList(uuids) => {
+                            for uuid in uuids {
+                                update_query = update_query.bind(uuid)
                             }
                         }
                     }
@@ -358,6 +401,12 @@ impl Services {
                         SqlValueEnum::BoolList(values) => {
                             for bool in values {
                                 find_many_query = find_many_query.bind(bool)
+                            }
+                        }
+                        SqlValueEnum::UUID(uuid) => find_many_query = find_many_query.bind(uuid),
+                        SqlValueEnum::UUIDList(uuids) => {
+                            for uuid in uuids {
+                                find_many_query = find_many_query.bind(uuid)
                             }
                         }
                     }

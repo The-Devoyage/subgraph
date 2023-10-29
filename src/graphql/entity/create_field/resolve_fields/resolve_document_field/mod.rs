@@ -26,6 +26,7 @@ impl ServiceEntity {
                 ServiceEntity::resolve_document_boolean_scalar(document, field)
             }
             ScalarOptions::Object => ServiceEntity::resolve_document_object_scalar(document, field),
+            ScalarOptions::UUID => ServiceEntity::resolve_document_uuid_scalar(document, field),
         }
     }
 
@@ -76,6 +77,26 @@ impl ServiceEntity {
                 values.into_iter().map(|value| Value::from(value)).collect(),
             )),
             _ => unreachable!("Invalid result type for boolean scalar"),
+        }
+    }
+
+    pub fn resolve_document_uuid_scalar(
+        document: &Document,
+        field: &ServiceEntityFieldConfig,
+    ) -> Result<Value, async_graphql::Error> {
+        debug!("Resolving UUID Scalar");
+
+        let resolved = DocumentUtils::get_from_document(document, field)?;
+
+        match resolved {
+            GetDocumentResultType::UUID(value) => Ok(Value::from(value.to_string())),
+            GetDocumentResultType::UUIDArray(values) => Ok(Value::List(
+                values
+                    .into_iter()
+                    .map(|value| Value::from(value.to_string()))
+                    .collect(),
+            )),
+            _ => unreachable!("Invalid result type for UUID scalar"),
         }
     }
 

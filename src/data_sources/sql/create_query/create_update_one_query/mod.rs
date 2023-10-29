@@ -32,6 +32,9 @@ impl SqlDataSource {
             }
         }
 
+        // Offset used for postgres WHERE key placeholders, $1, $2
+        let offset = Some(value_keys.len() as i32);
+
         query.push_str(" WHERE ");
 
         let query_input = input.get("query").unwrap();
@@ -42,6 +45,7 @@ impl SqlDataSource {
             dialect,
             FilterOperator::And,
             false,
+            offset,
         )?;
 
         if let Some(nested_query) = nested_query {

@@ -146,6 +146,41 @@ impl SqlDataSource {
                         }
                     }
                 }
+                ScalarOptions::UUID => {
+                    if list {
+                        let value = value.as_array();
+                        if value.is_some() {
+                            let key = key.to_string();
+                            let values = value
+                                .unwrap()
+                                .iter()
+                                .map(|x| {
+                                    let x = x.as_str().unwrap_or("");
+                                    let uuid = uuid::Uuid::parse_str(x);
+                                    if uuid.is_ok() {
+                                        uuid.unwrap()
+                                    } else {
+                                        uuid::Uuid::nil()
+                                    }
+                                })
+                                .collect();
+                            if is_where_clause {
+                                where_keys.push(key);
+                                where_values.push(SqlValueEnum::UUIDList(values));
+                            }
+                        }
+                    } else {
+                        let value = uuid::Uuid::parse_str(value.as_str().unwrap())
+                            .map_err(|_| async_graphql::Error::new("Invalid UUID"))?;
+                        if is_where_clause {
+                            where_keys.push(key.to_string());
+                            where_values.push(SqlValueEnum::UUID(value));
+                        } else {
+                            value_keys.push(key.to_string());
+                            values.push(SqlValueEnum::UUID(value));
+                        }
+                    }
+                }
                 _ => {
                     error!("Unsupported Scalar Type");
                     return Err(async_graphql::Error::new("Unsupported Scalar Type"));

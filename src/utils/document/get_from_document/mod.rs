@@ -16,6 +16,8 @@ pub enum GetDocumentResultType {
     BooleanArray(Vec<bool>),
     Document(bson::Document),
     DocumentArray(Vec<bson::Document>),
+    UUID(uuid::Uuid),
+    UUIDArray(Vec<uuid::Uuid>),
     None,
 }
 
@@ -52,6 +54,11 @@ impl DocumentUtils {
                 field.list.unwrap_or(false),
             ),
             ScalarOptions::Object => DocumentUtils::get_document_object_scalar(
+                document,
+                &field.name,
+                field.list.unwrap_or(false),
+            ),
+            ScalarOptions::UUID => DocumentUtils::get_document_uuid_scalar(
                 document,
                 &field.name,
                 field.list.unwrap_or(false),
@@ -124,6 +131,39 @@ impl DocumentUtils {
         let value = document.get_bool(field_name)?;
         debug!("Found Boolean Value: {:?}", value);
         Ok(GetDocumentResultType::Boolean(value))
+    }
+
+    pub fn get_document_uuid_scalar(
+        document: &bson::Document,
+        field_name: &str,
+        is_list: bool,
+    ) -> Result<GetDocumentResultType, async_graphql::Error> {
+        if is_list {
+            if let Some(Bson::Array(documents)) = document.get(field_name) {
+                let values = documents
+                    .into_iter()
+                    .map(|value| {
+                        let value = value.as_str().unwrap_or("");
+                        let uuid = uuid::Uuid::parse_str(value);
+                        if uuid.is_err() {
+                            uuid::Uuid::nil()
+                        } else {
+                            uuid.unwrap()
+                        }
+                    })
+                    .collect();
+                debug!("Found UUID Values: {:?}", values);
+                return Ok(GetDocumentResultType::UUIDArray(values));
+            } else {
+                return Ok(GetDocumentResultType::UUIDArray(vec![]));
+            }
+        }
+
+        let value = document.get_str(field_name)?;
+        debug!("Found UUID Value: {:?}", value);
+        Ok(GetDocumentResultType::UUID(
+            uuid::Uuid::parse_str(value).unwrap(),
+        ))
     }
 
     pub fn get_document_object_id_scalar(

@@ -41,6 +41,14 @@ impl Services {
                                 query = query.bind(bool)
                             }
                         }
+                        SqlValueEnum::UUID(v) => {
+                            query = query.bind(v);
+                        }
+                        SqlValueEnum::UUIDList(values) => {
+                            for uuid in values {
+                                query = query.bind(uuid)
+                            }
+                        }
                     }
                 }
 
@@ -84,6 +92,14 @@ impl Services {
                                 query = query.bind(bool)
                             }
                         }
+                        SqlValueEnum::UUID(v) => {
+                            query = query.bind(v);
+                        }
+                        SqlValueEnum::UUIDList(values) => {
+                            for uuid in values {
+                                query = query.bind(uuid)
+                            }
+                        }
                     }
                 }
 
@@ -123,6 +139,14 @@ impl Services {
                         SqlValueEnum::BoolList(values) => {
                             for bool in values {
                                 query = query.bind(bool)
+                            }
+                        }
+                        SqlValueEnum::UUID(v) => {
+                            query = query.bind(v);
+                        }
+                        SqlValueEnum::UUIDList(values) => {
+                            for uuid in values {
+                                query = query.bind(uuid)
                             }
                         }
                     }
