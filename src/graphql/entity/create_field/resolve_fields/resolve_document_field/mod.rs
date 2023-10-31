@@ -27,6 +27,9 @@ impl ServiceEntity {
             }
             ScalarOptions::Object => ServiceEntity::resolve_document_object_scalar(document, field),
             ScalarOptions::UUID => ServiceEntity::resolve_document_uuid_scalar(document, field),
+            ScalarOptions::DateTime => {
+                ServiceEntity::resolve_document_datetime_scalar(document, field)
+            }
         }
     }
 
@@ -97,6 +100,27 @@ impl ServiceEntity {
                     .collect(),
             )),
             _ => unreachable!("Invalid result type for UUID scalar"),
+        }
+    }
+
+    pub fn resolve_document_datetime_scalar(
+        document: &Document,
+        field: &ServiceEntityFieldConfig,
+    ) -> Result<Value, async_graphql::Error> {
+        debug!("Resolving DateTime Scalar");
+
+        let resolved = DocumentUtils::get_from_document(document, field)?;
+
+        match resolved {
+            // NOTE: Not sure if this is the correct format for DateTime
+            GetDocumentResultType::DateTime(value) => Ok(Value::from(value.to_rfc3339())),
+            GetDocumentResultType::DateTimeArray(values) => Ok(Value::List(
+                values
+                    .into_iter()
+                    .map(|value| Value::from(value.to_rfc3339()))
+                    .collect(),
+            )),
+            _ => unreachable!("Invalid result type for DateTime scalar"),
         }
     }
 

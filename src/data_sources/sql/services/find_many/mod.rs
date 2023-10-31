@@ -51,6 +51,14 @@ impl Services {
                                 query = query.bind(uuid)
                             }
                         }
+                        SqlValueEnum::DateTime(v) => {
+                            query = query.bind(v);
+                        }
+                        SqlValueEnum::DateTimeList(values) => {
+                            for datetime in values {
+                                query = query.bind(datetime)
+                            }
+                        }
                     }
                 }
 
@@ -99,6 +107,14 @@ impl Services {
                                 query = query.bind(uuid)
                             }
                         }
+                        SqlValueEnum::DateTime(v) => {
+                            query = query.bind(v);
+                        }
+                        SqlValueEnum::DateTimeList(values) => {
+                            for datetime in values {
+                                query = query.bind(datetime)
+                            }
+                        }
                     }
                 }
 
@@ -145,6 +161,14 @@ impl Services {
                         SqlValueEnum::UUIDList(values) => {
                             for uuid in values {
                                 query = query.bind(uuid)
+                            }
+                        }
+                        SqlValueEnum::DateTime(v) => {
+                            query = query.bind(v);
+                        }
+                        SqlValueEnum::DateTimeList(values) => {
+                            for datetime in values {
+                                query = query.bind(datetime)
                             }
                         }
                     }

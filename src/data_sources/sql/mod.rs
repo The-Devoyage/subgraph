@@ -47,6 +47,8 @@ pub enum SqlValueEnum {
     BoolList(Vec<bool>),
     UUID(uuid::Uuid),
     UUIDList(Vec<uuid::Uuid>),
+    DateTime(chrono::DateTime<chrono::Utc>),
+    DateTimeList(Vec<chrono::DateTime<chrono::Utc>>),
 }
 
 #[derive(Debug, Clone)]

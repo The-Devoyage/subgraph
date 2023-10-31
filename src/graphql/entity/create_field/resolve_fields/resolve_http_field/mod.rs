@@ -48,6 +48,10 @@ impl ServiceEntity {
                 let value = value.to_string();
                 Ok(Value::from(value))
             }
+            ScalarOptions::DateTime => {
+                let value = value.to_string();
+                Ok(Value::from(value))
+            }
         }
     }
 }

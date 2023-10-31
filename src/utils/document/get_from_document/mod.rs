@@ -18,6 +18,8 @@ pub enum GetDocumentResultType {
     DocumentArray(Vec<bson::Document>),
     UUID(uuid::Uuid),
     UUIDArray(Vec<uuid::Uuid>),
+    DateTime(chrono::DateTime<chrono::Utc>),
+    DateTimeArray(Vec<chrono::DateTime<chrono::Utc>>),
     None,
 }
 
@@ -59,6 +61,11 @@ impl DocumentUtils {
                 field.list.unwrap_or(false),
             ),
             ScalarOptions::UUID => DocumentUtils::get_document_uuid_scalar(
+                document,
+                &field.name,
+                field.list.unwrap_or(false),
+            ),
+            ScalarOptions::DateTime => DocumentUtils::get_document_datetime_scalar(
                 document,
                 &field.name,
                 field.list.unwrap_or(false),
@@ -164,6 +171,44 @@ impl DocumentUtils {
         Ok(GetDocumentResultType::UUID(
             uuid::Uuid::parse_str(value).unwrap(),
         ))
+    }
+
+    pub fn get_document_datetime_scalar(
+        document: &bson::Document,
+        field_name: &str,
+        is_list: bool,
+    ) -> Result<GetDocumentResultType, async_graphql::Error> {
+        if is_list {
+            if let Some(Bson::Array(documents)) = document.get(field_name) {
+                // Check all values are valid dates
+                let is_valid = documents.iter().all(|value| {
+                    let value = value.as_datetime();
+                    if value.is_none() {
+                        return false;
+                    }
+                    true
+                });
+                if !is_valid {
+                    return Err(async_graphql::Error::new("Invalid DateTime"));
+                }
+                let values = documents
+                    .into_iter()
+                    .map(|value| {
+                        let value = value.as_datetime().unwrap();
+                        value.to_chrono()
+                    })
+                    .collect();
+                debug!("Found DateTime Values: {:?}", values);
+                return Ok(GetDocumentResultType::DateTimeArray(values));
+            } else {
+                return Ok(GetDocumentResultType::DateTimeArray(vec![]));
+            }
+        }
+
+        let value = document.get_datetime(field_name)?;
+        // convert bson datetime to chrono datetime
+        debug!("Found DateTime Value: {:?}", value);
+        Ok(GetDocumentResultType::DateTime(value.to_chrono()))
     }
 
     pub fn get_document_object_id_scalar(

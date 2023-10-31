@@ -64,6 +64,9 @@ impl ServiceInput {
             ScalarOptions::UUID => {
                 ServiceInput::get_entity_string_field_type(resolver_type, is_list, is_required)
             }
+            ScalarOptions::DateTime => {
+                ServiceInput::get_entity_string_field_type(resolver_type, is_list, is_required)
+            }
         };
 
         TypeRefWithInputs { type_ref, inputs }

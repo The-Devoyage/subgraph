@@ -23,7 +23,7 @@ impl ServiceResolver {
             }
         };
         match scalar {
-            ScalarOptions::String | ScalarOptions::UUID => {
+            ScalarOptions::String | ScalarOptions::UUID | ScalarOptions::DateTime => {
                 let join_on_value = join_on_value
                     .iter()
                     .map(|value| value.to_string())
