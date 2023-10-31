@@ -1,5 +1,5 @@
 use bson::{doc, Document};
-use log::debug;
+use log::{debug, error};
 
 use crate::{
     configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
@@ -55,6 +55,14 @@ impl Services {
                                 update_query = update_query.bind(uuid)
                             }
                         }
+                        SqlValueEnum::DateTime(date_time) => {
+                            update_query = update_query.bind(date_time)
+                        }
+                        SqlValueEnum::DateTimeList(date_times) => {
+                            for date_time in date_times {
+                                update_query = update_query.bind(date_time)
+                            }
+                        }
                     }
                 }
                 for value in &sql_query.where_values {
@@ -91,10 +99,21 @@ impl Services {
                                 update_query = update_query.bind(uuid)
                             }
                         }
+                        SqlValueEnum::DateTime(date_time) => {
+                            update_query = update_query.bind(date_time)
+                        }
+                        SqlValueEnum::DateTimeList(date_times) => {
+                            for date_time in date_times {
+                                update_query = update_query.bind(date_time)
+                            }
+                        }
                     }
                 }
 
-                update_query.execute(pool).await?;
+                update_query.execute(pool).await.map_err(|e| {
+                    error!("Error executing update many query: {}", e);
+                    e
+                })?;
 
                 let (find_many_where_keys, find_many_where_values) =
                     SqlDataSource::create_update_return_key_data(
@@ -110,6 +129,8 @@ impl Services {
                         SqlValueEnum::String(v) => input_document.insert(key, v),
                         SqlValueEnum::Int(v) => input_document.insert(key, v),
                         SqlValueEnum::Bool(v) => input_document.insert(key, v),
+                        SqlValueEnum::UUID(v) => input_document.insert(key, v.to_string()),
+                        SqlValueEnum::DateTime(v) => input_document.insert(key, v),
                         _ => return Err(async_graphql::Error::from("Invalid Value Type")),
                     };
                 }
@@ -161,10 +182,21 @@ impl Services {
                                 find_many_query = find_many_query.bind(uuid)
                             }
                         }
+                        SqlValueEnum::DateTime(date_time) => {
+                            find_many_query = find_many_query.bind(date_time)
+                        }
+                        SqlValueEnum::DateTimeList(date_times) => {
+                            for date_time in date_times {
+                                find_many_query = find_many_query.bind(date_time)
+                            }
+                        }
                     }
                 }
 
-                let rows = find_many_query.fetch_all(pool).await?;
+                let rows = find_many_query.fetch_all(pool).await.map_err(|e| {
+                    error!("Error executing find many query: {}", e);
+                    e
+                })?;
 
                 let mut response_rows = Vec::new();
                 for row in rows {
@@ -209,6 +241,14 @@ impl Services {
                                 update_query = update_query.bind(uuid)
                             }
                         }
+                        SqlValueEnum::DateTime(date_time) => {
+                            update_query = update_query.bind(date_time)
+                        }
+                        SqlValueEnum::DateTimeList(date_times) => {
+                            for date_time in date_times {
+                                update_query = update_query.bind(date_time)
+                            }
+                        }
                     }
                 }
                 for value in &sql_query.where_values {
@@ -245,10 +285,22 @@ impl Services {
                                 update_query = update_query.bind(uuid)
                             }
                         }
+                        SqlValueEnum::DateTime(date_time) => {
+                            update_query = update_query.bind(date_time)
+                        }
+                        SqlValueEnum::DateTimeList(date_times) => {
+                            for date_time in date_times {
+                                update_query = update_query.bind(date_time)
+                            }
+                        }
                     }
                 }
 
-                let rows = update_query.fetch_all(pool).await?;
+                let rows = update_query.fetch_all(pool).await.map_err(|e| {
+                    error!("Error: {:?}", e);
+                    e
+                })?;
+
                 let mut response_rows = Vec::new();
                 for row in rows {
                     response_rows.push(Some(ResponseRow::Postgres(row)));
@@ -293,6 +345,14 @@ impl Services {
                                 update_query = update_query.bind(uuid)
                             }
                         }
+                        SqlValueEnum::DateTime(date_time) => {
+                            update_query = update_query.bind(date_time)
+                        }
+                        SqlValueEnum::DateTimeList(date_times) => {
+                            for date_time in date_times {
+                                update_query = update_query.bind(date_time)
+                            }
+                        }
                     }
                 }
 
@@ -330,10 +390,28 @@ impl Services {
                                 update_query = update_query.bind(uuid)
                             }
                         }
+                        SqlValueEnum::DateTime(date_time) => {
+                            update_query = update_query.bind(date_time)
+                        }
+                        SqlValueEnum::DateTimeList(date_times) => {
+                            for date_time in date_times {
+                                update_query = update_query.bind(date_time)
+                            }
+                        }
                     }
                 }
 
-                update_query.execute(pool).await?;
+                update_query
+                    .execute(pool)
+                    .await
+                    .map_err(|e| {
+                        error!("Error updating data: {}", e);
+                        e
+                    })
+                    .map_err(|e| {
+                        error!("Error: {:?}", e);
+                        e
+                    })?;
 
                 let (find_many_where_keys, find_many_where_values) =
                     SqlDataSource::create_update_return_key_data(
@@ -355,6 +433,12 @@ impl Services {
                             input_document.insert(key, v);
                         }
                         SqlValueEnum::Bool(v) => {
+                            input_document.insert(key, v);
+                        }
+                        SqlValueEnum::UUID(v) => {
+                            input_document.insert(key, v.to_string());
+                        }
+                        SqlValueEnum::DateTime(v) => {
                             input_document.insert(key, v);
                         }
                         _ => return Err(async_graphql::Error::new("Invalid value type")),
@@ -409,10 +493,21 @@ impl Services {
                                 find_many_query = find_many_query.bind(uuid)
                             }
                         }
+                        SqlValueEnum::DateTime(date_time) => {
+                            find_many_query = find_many_query.bind(date_time)
+                        }
+                        SqlValueEnum::DateTimeList(date_times) => {
+                            for date_time in date_times {
+                                find_many_query = find_many_query.bind(date_time)
+                            }
+                        }
                     }
                 }
 
-                let rows = find_many_query.fetch_all(pool).await?;
+                let rows = find_many_query.fetch_all(pool).await.map_err(|e| {
+                    error!("Error finding data: {}", e);
+                    e
+                })?;
 
                 let mut response_rows = Vec::new();
 

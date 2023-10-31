@@ -26,6 +26,7 @@ pub enum ScalarOptions {
     ObjectID,
     Object,
     UUID,
+    DateTime,
 }
 
 impl ScalarOptions {
@@ -38,6 +39,7 @@ impl ScalarOptions {
             ScalarOptions::ObjectID => ElementType::ObjectId,
             ScalarOptions::Object => ElementType::EmbeddedDocument,
             ScalarOptions::UUID => ElementType::String,
+            ScalarOptions::DateTime => ElementType::DateTime,
         }
     }
 }

@@ -2,6 +2,7 @@ use async_graphql::dynamic::ResolverContext;
 use bson::{doc, Document};
 use log::{debug, error};
 use sqlx::Row;
+use uuid::Uuid;
 
 use crate::{
     configuration::subgraph::entities::{
@@ -69,7 +70,8 @@ impl ServiceResolver {
                                     }
                                     ScalarOptions::String
                                     | ScalarOptions::ObjectID
-                                    | ScalarOptions::UUID => {
+                                    | ScalarOptions::UUID
+                                    | ScalarOptions::DateTime => {
                                         let column_value: &str =
                                             rr.try_get(field_name.as_str()).map_err(|e| {
                                                 error!("Error getting string column value: {}", e);
@@ -115,7 +117,8 @@ impl ServiceResolver {
                                     }
                                     ScalarOptions::String
                                     | ScalarOptions::ObjectID
-                                    | ScalarOptions::UUID => {
+                                    | ScalarOptions::UUID
+                                    | ScalarOptions::DateTime => {
                                         let column_value: &str =
                                             rr.try_get(field_name.as_str()).map_err(|e| {
                                                 error!("Error getting string column value: {}", e);
@@ -161,7 +164,7 @@ impl ServiceResolver {
                                     }
                                     ScalarOptions::String
                                     | ScalarOptions::ObjectID
-                                    | ScalarOptions::UUID => {
+                                    | ScalarOptions::DateTime => {
                                         let column_value: &str =
                                             rr.try_get(field_name.as_str()).map_err(|e| {
                                                 error!("Error getting string column value: {}", e);
@@ -171,6 +174,17 @@ impl ServiceResolver {
                                                 ))
                                             })?;
                                         document.insert(&field_name, column_value);
+                                    }
+                                    ScalarOptions::UUID => {
+                                        let column_value: Uuid =
+                                            rr.try_get(field_name.as_str()).map_err(|e| {
+                                                error!("Error getting uuid column value: {}", e);
+                                                async_graphql::Error::new(format!(
+                                                    "Error getting column value: {}",
+                                                    e
+                                                ))
+                                            })?;
+                                        document.insert(&field_name, column_value.to_string());
                                     }
                                     ScalarOptions::Boolean => {
                                         let column_value: bool =

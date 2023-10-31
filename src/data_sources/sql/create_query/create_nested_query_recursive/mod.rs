@@ -37,6 +37,8 @@ impl SqlDataSource {
             nested_query.push_str(" (");
         }
 
+        let mut offset = Some(offset.unwrap_or(0));
+
         for (i, filter) in inputs.iter().enumerate() {
             //get the and and the or filters and handle recursively
             let and_filters = filter.as_document().unwrap().get("AND");
@@ -74,15 +76,6 @@ impl SqlDataSource {
             nested_query.push_str(&parameterized_query);
 
             let is_first = i == 0;
-            let is_last = i == inputs.len() - 1;
-            let has_more = and_filters.is_some() || or_filters.is_some();
-            debug!(
-                "is_first: {}, is_last: {}, index: {}, input_length: {}",
-                is_first,
-                is_last,
-                i,
-                inputs.len()
-            );
 
             if and_filters.is_some() {
                 let (and_query, and_where_values) = SqlDataSource::create_nested_query_recursive(
@@ -126,6 +119,8 @@ impl SqlDataSource {
                     FilterOperator::Or => nested_query.push_str(" OR "),
                 }
             }
+
+            offset = Some(offset.unwrap() + 1);
         }
 
         nested_query.push_str(")");

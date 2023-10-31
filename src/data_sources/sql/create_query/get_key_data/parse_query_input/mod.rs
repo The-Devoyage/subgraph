@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use bson::Bson;
 use log::{debug, error};
 
@@ -31,14 +33,52 @@ impl SqlDataSource {
 
             where_keys.push(key.to_string());
 
+            // HACK: This should be more efficient. Rather than checking each value, we should
+            // already know what type of value we are expecting based on the key.
             if value.as_array().is_some() {
                 let value = value.as_array().unwrap();
                 if value[0].as_str().is_some() {
-                    let values = value
-                        .iter()
-                        .map(|x| x.as_str().unwrap().to_string())
-                        .collect();
-                    where_values.push(SqlValueEnum::StringList(values));
+                    // Check if all values are UUIDs
+                    let is_valid = value.iter().all(|x| {
+                        let cleaned_value = clean_string(&x.to_string());
+                        match uuid::Uuid::parse_str(&cleaned_value) {
+                            Ok(_) => true,
+                            Err(_) => false,
+                        }
+                    });
+
+                    if is_valid {
+                        let values = value
+                            .iter()
+                            .map(|x| {
+                                let cleaned_value = clean_string(&x.to_string());
+                                uuid::Uuid::parse_str(&cleaned_value).unwrap()
+                            })
+                            .collect();
+                        where_values.push(SqlValueEnum::UUIDList(values));
+                    } else {
+                        let is_valid_dates = value.iter().all(|x| {
+                            let cleaned_value = clean_string(&x.to_string());
+                            match chrono::DateTime::<chrono::Utc>::from_str(&cleaned_value) {
+                                Ok(_) => true,
+                                Err(_) => false,
+                            }
+                        });
+                        if is_valid_dates {
+                            let values = value
+                                .iter()
+                                .map(|x| {
+                                    let cleaned_value = clean_string(&x.to_string());
+                                    chrono::DateTime::from_str(&cleaned_value).unwrap()
+                                })
+                                .collect();
+                            where_values.push(SqlValueEnum::DateTimeList(values));
+                        } else {
+                            where_values.push(SqlValueEnum::StringList(
+                                value.iter().map(|x| clean_string(&x.to_string())).collect(),
+                            ));
+                        }
+                    }
                 } else if value[0].as_i32().is_some() {
                     let values = value.iter().map(|x| x.as_i32().unwrap()).collect();
                     where_values.push(SqlValueEnum::IntList(values));
@@ -53,9 +93,14 @@ impl SqlDataSource {
                         Ok(uuid) => {
                             where_values.push(SqlValueEnum::UUID(uuid));
                         }
-                        Err(_) => {
-                            where_values.push(SqlValueEnum::String(cleaned_value));
-                        }
+                        Err(_) => match chrono::DateTime::from_str(&cleaned_value) {
+                            Ok(date) => {
+                                where_values.push(SqlValueEnum::DateTime(date));
+                            }
+                            Err(_) => {
+                                where_values.push(SqlValueEnum::String(cleaned_value));
+                            }
+                        },
                     }
                 } else if value.as_i32().is_some() {
                     where_values.push(SqlValueEnum::Int(value.as_i32().unwrap()));

@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use bson::Bson;
 use log::{debug, error};
 
@@ -10,6 +12,7 @@ use crate::{
 };
 
 impl SqlDataSource {
+    /// Converts the `input.values` struct provided by the client.
     pub fn parse_values_input(
         value: &Bson,
         mut where_keys: Vec<String>,
@@ -178,6 +181,58 @@ impl SqlDataSource {
                         } else {
                             value_keys.push(key.to_string());
                             values.push(SqlValueEnum::UUID(value));
+                        }
+                    }
+                }
+                ScalarOptions::DateTime => {
+                    if list {
+                        let value = value.as_array();
+                        if value.is_some() {
+                            let key = key.to_string();
+                            //check that all values are valid date times
+                            let is_dates_valid = value.unwrap().iter().all(|x| {
+                                let x = x.as_str().unwrap_or("");
+                                let date_time = chrono::DateTime::<chrono::Utc>::from_str(x);
+                                date_time.is_ok()
+                            });
+                            if !is_dates_valid {
+                                return Err(async_graphql::Error::new(
+                                    "Invalid DateTime String in Vector",
+                                ));
+                            }
+                            let values = value
+                                .unwrap()
+                                .iter()
+                                .map(|x| {
+                                    let x = x.as_str().unwrap_or("");
+                                    let date_time = chrono::DateTime::from_str(x);
+                                    date_time.unwrap()
+                                })
+                                .collect();
+                            if is_where_clause {
+                                where_keys.push(key);
+                                where_values.push(SqlValueEnum::DateTimeList(values));
+                            }
+                        }
+                    } else {
+                        let date_time = match value.as_str() {
+                            Some(dt) => dt,
+                            None => {
+                                return Err(async_graphql::Error::new("Invalid DateTime String"))
+                            }
+                        };
+                        let date_time = match chrono::DateTime::from_str(date_time) {
+                            Ok(dt) => dt,
+                            Err(_) => {
+                                return Err(async_graphql::Error::new("Failed to parse DateTime"))
+                            }
+                        };
+                        if is_where_clause {
+                            where_keys.push(key.to_string());
+                            where_values.push(SqlValueEnum::DateTime(date_time));
+                        } else {
+                            value_keys.push(key.to_string());
+                            values.push(SqlValueEnum::DateTime(date_time));
                         }
                     }
                 }

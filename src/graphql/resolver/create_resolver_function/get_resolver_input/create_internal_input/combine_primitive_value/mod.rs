@@ -17,7 +17,7 @@ impl ServiceResolver {
         debug!("Join On: {}", join_on);
 
         match scalar {
-            ScalarOptions::String | ScalarOptions::UUID => {
+            ScalarOptions::String | ScalarOptions::UUID | ScalarOptions::DateTime => {
                 let join_on_value = parent_value.get_str(&field_name);
                 let join_on_value = match join_on_value {
                     Ok(join_on_value) => join_on_value,

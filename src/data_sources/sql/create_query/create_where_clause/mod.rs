@@ -53,6 +53,8 @@ impl SqlDataSource {
                             SqlValueEnum::StringList(ref list) => list.len(),
                             SqlValueEnum::IntList(ref list) => list.len(),
                             SqlValueEnum::BoolList(ref list) => list.len(),
+                            SqlValueEnum::UUIDList(ref list) => list.len(),
+                            SqlValueEnum::DateTimeList(ref list) => list.len(),
                             _ => 0,
                         };
 

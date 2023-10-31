@@ -79,6 +79,13 @@ impl ServiceEntity {
                     TypeRef::named_nn(TypeRef::STRING)
                 }
             }
+            ScalarOptions::DateTime => {
+                if entity_field.list.unwrap_or(false) {
+                    TypeRef::named_nn_list_nn(TypeRef::STRING)
+                } else {
+                    TypeRef::named_nn(TypeRef::STRING)
+                }
+            }
         };
 
         TypeRefsAndDefs {
