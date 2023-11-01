@@ -8,9 +8,9 @@ impl SqlDataSource {
     pub fn create_where_clause(
         where_keys: &Vec<String>,
         dialect: &DialectEnum,
-        mut offset: Option<i32>,
+        mut pg_param_offset: Option<i32>,
         where_values: &Vec<SqlValueEnum>,
-    ) -> Result<String, async_graphql::Error> {
+    ) -> Result<(String, i32), async_graphql::Error> {
         debug!("Creating Where Clause");
         debug!("Where Keys: {:?}", where_keys);
         debug!("Where Values: {:?}", where_values);
@@ -39,8 +39,10 @@ impl SqlDataSource {
                 };
                 query.push_str(operator);
 
-                let index = if offset.is_some() {
-                    Some(i as i32 + offset.unwrap())
+                // This is used to offset the placeholder index for postgres.
+                // It is incremented by the number of placeholders added to the query.
+                let index = if pg_param_offset.is_some() {
+                    Some(i as i32 + pg_param_offset.unwrap())
                 } else {
                     Some(0)
                 };
@@ -64,7 +66,9 @@ impl SqlDataSource {
                                 query.push_str(", ");
                             }
                         }
-                        offset = Some(offset.unwrap_or(0) + placeholder_count as i32 - 1);
+
+                        pg_param_offset =
+                            Some(pg_param_offset.unwrap_or(0) + placeholder_count as i32 - 1);
                     }
                     _ => query.push_str(&SqlDataSource::get_placeholder(dialect, index)),
                 };
@@ -77,11 +81,12 @@ impl SqlDataSource {
                     query.push_str(" AND ");
                 }
             }
+            pg_param_offset = Some(pg_param_offset.unwrap_or(0) + where_keys.len() as i32);
             query
         } else {
             String::new()
         };
         debug!("Where Clause: {}", parameterized_query);
-        Ok(parameterized_query)
+        Ok((parameterized_query, pg_param_offset.unwrap_or(0)))
     }
 }

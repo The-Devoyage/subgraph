@@ -24,7 +24,7 @@ impl SqlDataSource {
         dialect: &DialectEnum,
         filter_by_operator: FilterOperator,
         has_more: bool,
-        offset: Option<i32>,
+        pg_param_offset: Option<i32>,
     ) -> Result<(Option<String>, Vec<SqlValueEnum>), async_graphql::Error> {
         debug!("Creating Recursive Nested Query From: {:?}", inputs);
         let mut nested_query = String::new();
@@ -37,7 +37,7 @@ impl SqlDataSource {
             nested_query.push_str(" (");
         }
 
-        let mut offset = Some(offset.unwrap_or(0));
+        let mut pg_param_offset = Some(pg_param_offset.unwrap_or(0));
 
         for (i, filter) in inputs.iter().enumerate() {
             //get the and and the or filters and handle recursively
@@ -50,7 +50,6 @@ impl SqlDataSource {
                 initial_input.remove("AND");
             }
             if initial_input.contains_key("OR") {
-                debug!("Found OR key in initial input: {:?}", initial_input);
                 initial_input.remove("OR");
             }
 
@@ -70,22 +69,29 @@ impl SqlDataSource {
 
             combined_where_values.extend(where_values.clone());
 
-            let parameterized_query =
-                SqlDataSource::create_where_clause(&where_keys, dialect, offset, &where_values)?;
+            let (parameterized_query, offset) = SqlDataSource::create_where_clause(
+                &where_keys,
+                dialect,
+                pg_param_offset,
+                &where_values,
+            )?;
+
+            pg_param_offset = Some(offset);
 
             nested_query.push_str(&parameterized_query);
 
             let is_first = i == 0;
 
             if and_filters.is_some() {
+                let and_filters = and_filters.unwrap().as_array().unwrap();
                 let (and_query, and_where_values) = SqlDataSource::create_nested_query_recursive(
                     is_first,
-                    &and_filters.unwrap().as_array().unwrap(),
+                    and_filters,
                     entity,
                     dialect,
                     FilterOperator::And,
                     or_filters.is_some(),
-                    offset,
+                    pg_param_offset,
                 )?;
 
                 combined_where_values.extend(and_where_values.clone());
@@ -96,14 +102,15 @@ impl SqlDataSource {
             }
 
             if or_filters.is_some() {
+                let or_filters = or_filters.unwrap().as_array().unwrap();
                 let (or_query, or_where_values) = SqlDataSource::create_nested_query_recursive(
                     is_first,
-                    &or_filters.unwrap().as_array().unwrap(),
+                    or_filters,
                     entity,
                     dialect,
                     FilterOperator::Or,
                     false,
-                    offset,
+                    pg_param_offset,
                 )?;
 
                 combined_where_values.extend(or_where_values.clone());
@@ -119,8 +126,6 @@ impl SqlDataSource {
                     FilterOperator::Or => nested_query.push_str(" OR "),
                 }
             }
-
-            offset = Some(offset.unwrap() + 1);
         }
 
         nested_query.push_str(")");
