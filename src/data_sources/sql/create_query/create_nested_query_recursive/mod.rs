@@ -64,8 +64,12 @@ impl SqlDataSource {
             // Nest inside a "query" property for recursive calls.
             let query_input = doc! { "query": initial_input };
 
-            let (where_keys, where_values, ..) =
-                SqlDataSource::get_key_data(&query_input, entity, &ResolverType::FindOne)?;
+            let (where_keys, where_values, ..) = SqlDataSource::get_key_data(
+                &query_input,
+                entity,
+                &ResolverType::FindOne,
+                &dialect,
+            )?;
 
             combined_where_values.extend(where_values.clone());
 

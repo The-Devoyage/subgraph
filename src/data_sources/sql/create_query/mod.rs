@@ -30,7 +30,7 @@ impl SqlDataSource {
         debug!("Creating SQL Query");
 
         let (where_keys, mut where_values, value_keys, values) =
-            SqlDataSource::get_key_data(&input, entity, &resolver_type)?;
+            SqlDataSource::get_key_data(&input, entity, &resolver_type, &dialect)?;
 
         // Generate the query string and get the where values.
         let query = match resolver_type {

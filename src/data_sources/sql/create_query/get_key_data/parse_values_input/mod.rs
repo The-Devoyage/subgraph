@@ -4,8 +4,11 @@ use bson::Bson;
 use log::{debug, error};
 
 use crate::{
-    configuration::subgraph::entities::{
-        service_entity_field::ServiceEntityFieldConfig, ScalarOptions, ServiceEntityConfig,
+    configuration::subgraph::{
+        data_sources::sql::DialectEnum,
+        entities::{
+            service_entity_field::ServiceEntityFieldConfig, ScalarOptions, ServiceEntityConfig,
+        },
     },
     data_sources::sql::{SqlDataSource, SqlValueEnum},
     graphql::schema::ResolverType,
@@ -21,6 +24,7 @@ impl SqlDataSource {
         mut values: Vec<SqlValueEnum>,
         entity: &ServiceEntityConfig,
         resolver_type: &ResolverType,
+        dialect: &DialectEnum,
     ) -> Result<
         (
             Vec<String>,
@@ -180,7 +184,15 @@ impl SqlDataSource {
                             where_values.push(SqlValueEnum::UUID(value));
                         } else {
                             value_keys.push(key.to_string());
-                            values.push(SqlValueEnum::UUID(value));
+                            // If SQLITE Dialect, push as string
+                            match dialect {
+                                DialectEnum::SQLITE => {
+                                    values.push(SqlValueEnum::String(value.to_string()));
+                                }
+                                _ => {
+                                    values.push(SqlValueEnum::UUID(value));
+                                }
+                            }
                         }
                     }
                 }
