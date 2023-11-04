@@ -2,7 +2,7 @@ use bson::Document;
 use log::debug;
 
 use crate::{
-    configuration::subgraph::entities::ServiceEntityConfig,
+    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
     data_sources::sql::{SqlDataSource, SqlValueEnum},
     graphql::schema::ResolverType,
 };
@@ -18,6 +18,7 @@ impl SqlDataSource {
         input_object: &Document,
         entity: &ServiceEntityConfig,
         resolver_type: &ResolverType,
+        dialect: &DialectEnum,
     ) -> Result<
         (
             Vec<String>,
@@ -41,10 +42,11 @@ impl SqlDataSource {
                     values,
                     entity,
                     resolver_type,
+                    dialect,
                 )?;
             } else if key == "query" {
                 (where_keys, where_values) =
-                    SqlDataSource::parse_query_input(value, where_keys, where_values)?;
+                    SqlDataSource::parse_query_input(value, where_keys, where_values, dialect)?;
             }
         }
 

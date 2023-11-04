@@ -116,7 +116,7 @@ impl SqlDataSource {
                 let path = sql_data_source_config.migrations_path.clone();
                 if path.is_some() {
                     let path = path.unwrap();
-                    debug!("Running Migrations: {:?}", &path);
+                    info!("Running Migrations: {:?}", &path);
 
                     let migration = sqlx::migrate::Migrator::new(Path::new(&path)).await;
                     match migration {
@@ -156,11 +156,12 @@ impl SqlDataSource {
                             }
                         },
                         Err(e) => {
-                            debug!("Error: {:?}", e);
+                            error!("Migrations Failed: {:?}", e);
                         }
                     }
                 }
             } else if migrate == "revert" {
+                //TODO:
             }
         }
 
