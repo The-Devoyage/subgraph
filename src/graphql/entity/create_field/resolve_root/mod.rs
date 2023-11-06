@@ -1,7 +1,7 @@
 use async_graphql::{dynamic::ResolverContext, ErrorExtensions, Value};
 use bson::Document;
 use json::JsonValue;
-use log::debug;
+use log::{debug, error};
 
 use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
@@ -106,6 +106,7 @@ impl ServiceEntity {
                             Ok(Some(value))
                         } else {
                             if entity_required {
+                                error!("Failed to resolve root field.");
                                 return Err(async_graphql::Error::new(
                                     "Failed to resolve root field.",
                                 )

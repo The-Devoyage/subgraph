@@ -1,5 +1,6 @@
 use async_graphql::dynamic::ResolverContext;
 use bson::Document;
+use log::debug;
 
 use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
@@ -15,7 +16,8 @@ impl ServiceResolver {
         ctx: &ResolverContext,
         as_type_field: &Option<ServiceEntityFieldConfig>,
         resolver_type: &ResolverType,
-    ) -> Result<Document, async_graphql::Error> {
+    ) -> Result<Option<Document>, async_graphql::Error> {
+        debug!("Getting Resolver Input");
         let input_document = match resolver_type {
             ResolverType::InternalType => {
                 let as_field = if let Some(as_field) = as_type_field {
@@ -28,10 +30,11 @@ impl ServiceResolver {
             _ => {
                 let input = ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
                 let input_document = &input.deserialize::<Document>().unwrap();
-                input_document.clone()
+                Some(input_document.clone())
             }
         };
 
+        debug!("Resolver Input: {:?}", input_document);
         Ok(input_document)
     }
 }

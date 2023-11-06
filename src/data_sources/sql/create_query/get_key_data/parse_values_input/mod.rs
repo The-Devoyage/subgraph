@@ -45,6 +45,11 @@ impl SqlDataSource {
             debug!("Processing Key: {:?}", key);
             debug!("Processing Value: {:?}", value.to_string());
 
+            //If value === null, skip
+            if value.as_null().is_some() {
+                continue;
+            }
+
             let field = ServiceEntityConfig::get_field(entity.clone(), key.to_string());
 
             if field.is_err() {
