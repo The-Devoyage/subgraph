@@ -20,7 +20,7 @@ impl ServiceResolver {
     pub fn create_internal_input(
         ctx: &ResolverContext,
         as_type_field: ServiceEntityFieldConfig,
-    ) -> Result<Document, async_graphql::Error> {
+    ) -> Result<Option<Document>, async_graphql::Error> {
         debug!("Creating Internal Input: {:?}", ctx.field().name());
         debug!("As Type Field: {:?}", as_type_field);
 
@@ -30,6 +30,8 @@ impl ServiceResolver {
             ctx.field().name().to_string()
         };
 
+        // Try to downcast as a document, which is what is returned from mongo db.
+        // If it fails, then try to downcast as a response row, which is what is returned from sql.
         let parent_value = match ctx.parent_value.try_downcast_ref::<Option<Document>>() {
             Ok(parent_value) => {
                 if let Some(parent_value) = parent_value {
@@ -51,14 +53,15 @@ impl ServiceResolver {
                             ResponseRow::SqLite(rr) => {
                                 let mut document = Document::new();
 
-                                //TODO: Apply to other sql
+                                // If the config does not provide a value to join on, then allow
+                                // them to search with any criteria
                                 if as_type_field.join_on.is_none() {
-                                    return Ok(document);
+                                    return Ok(Some(document));
                                 }
 
                                 match as_type_field.scalar {
                                     ScalarOptions::Int => {
-                                        let column_value: i64 =
+                                        let column_value: Option<i64> =
                                             rr.try_get(field_name.as_str()).map_err(|e| {
                                                 error!("Error getting int column value: {}", e);
                                                 async_graphql::Error::new(format!(
@@ -66,13 +69,15 @@ impl ServiceResolver {
                                                     e
                                                 ))
                                             })?;
-                                        document.insert(&field_name, column_value);
+                                        if let Some(column_value) = column_value {
+                                            document.insert(&field_name, column_value);
+                                        }
                                     }
                                     ScalarOptions::String
                                     | ScalarOptions::ObjectID
                                     | ScalarOptions::UUID
                                     | ScalarOptions::DateTime => {
-                                        let column_value: &str =
+                                        let column_value: Option<&str> =
                                             rr.try_get(field_name.as_str()).map_err(|e| {
                                                 error!("Error getting string column value: {}", e);
                                                 async_graphql::Error::new(format!(
@@ -80,10 +85,12 @@ impl ServiceResolver {
                                                     e
                                                 ))
                                             })?;
-                                        document.insert(&field_name, column_value);
+                                        if let Some(column_value) = column_value {
+                                            document.insert(&field_name, column_value);
+                                        }
                                     }
                                     ScalarOptions::Boolean => {
-                                        let column_value: bool =
+                                        let column_value: Option<bool> =
                                             rr.try_get(field_name.as_str()).map_err(|e| {
                                                 error!("Error getting boolean column value: {}", e);
                                                 async_graphql::Error::new(format!(
@@ -91,7 +98,9 @@ impl ServiceResolver {
                                                     e
                                                 ))
                                             })?;
-                                        document.insert(&field_name, column_value);
+                                        if let Some(column_value) = column_value {
+                                            document.insert(&field_name, column_value);
+                                        }
                                     }
                                     _ => Err(async_graphql::Error::new(format!(
                                         "Unsupported scalar type: {:?}",
@@ -103,9 +112,15 @@ impl ServiceResolver {
                             ResponseRow::MySql(rr) => {
                                 let mut document = Document::new();
 
+                                // If the config does not provide a value to join on, then allow
+                                // them to search with any criteria
+                                if as_type_field.join_on.is_none() {
+                                    return Ok(Some(document));
+                                }
+
                                 match as_type_field.scalar {
                                     ScalarOptions::Int => {
-                                        let column_value: i64 =
+                                        let column_value: Option<i64> =
                                             rr.try_get(field_name.as_str()).map_err(|e| {
                                                 error!("Error getting int column value: {}", e);
                                                 async_graphql::Error::new(format!(
@@ -113,13 +128,15 @@ impl ServiceResolver {
                                                     e
                                                 ))
                                             })?;
-                                        document.insert(&field_name, column_value);
+                                        if let Some(column_value) = column_value {
+                                            document.insert(&field_name, column_value);
+                                        }
                                     }
                                     ScalarOptions::String
                                     | ScalarOptions::ObjectID
                                     | ScalarOptions::UUID
                                     | ScalarOptions::DateTime => {
-                                        let column_value: &str =
+                                        let column_value: Option<&str> =
                                             rr.try_get(field_name.as_str()).map_err(|e| {
                                                 error!("Error getting string column value: {}", e);
                                                 async_graphql::Error::new(format!(
@@ -127,10 +144,12 @@ impl ServiceResolver {
                                                     e
                                                 ))
                                             })?;
-                                        document.insert(&field_name, column_value);
+                                        if let Some(column_value) = column_value {
+                                            document.insert(&field_name, column_value);
+                                        }
                                     }
                                     ScalarOptions::Boolean => {
-                                        let column_value: bool =
+                                        let column_value: Option<bool> =
                                             rr.try_get(field_name.as_str()).map_err(|e| {
                                                 error!("Error getting boolean column value: {}", e);
                                                 async_graphql::Error::new(format!(
@@ -138,7 +157,9 @@ impl ServiceResolver {
                                                     e
                                                 ))
                                             })?;
-                                        document.insert(&field_name, column_value);
+                                        if let Some(column_value) = column_value {
+                                            document.insert(&field_name, column_value);
+                                        }
                                     }
                                     _ => Err(async_graphql::Error::new(format!(
                                         "Unsupported scalar type: {:?}",
@@ -150,9 +171,15 @@ impl ServiceResolver {
                             ResponseRow::Postgres(rr) => {
                                 let mut document = Document::new();
 
+                                // If the config does not provide a value to join on, then allow
+                                // them to search with any criteria
+                                if as_type_field.join_on.is_none() {
+                                    return Ok(Some(document));
+                                }
+
                                 match as_type_field.scalar {
                                     ScalarOptions::Int => {
-                                        let column_value: i64 =
+                                        let column_value: Option<i64> =
                                             rr.try_get(field_name.as_str()).map_err(|e| {
                                                 error!("Error getting int column value: {}", e);
                                                 async_graphql::Error::new(format!(
@@ -160,12 +187,14 @@ impl ServiceResolver {
                                                     e
                                                 ))
                                             })?;
-                                        document.insert(&field_name, column_value);
+                                        if let Some(column_value) = column_value {
+                                            document.insert(&field_name, column_value);
+                                        }
                                     }
                                     ScalarOptions::String
                                     | ScalarOptions::ObjectID
                                     | ScalarOptions::DateTime => {
-                                        let column_value: &str =
+                                        let column_value: Option<&str> =
                                             rr.try_get(field_name.as_str()).map_err(|e| {
                                                 error!("Error getting string column value: {}", e);
                                                 async_graphql::Error::new(format!(
@@ -173,10 +202,13 @@ impl ServiceResolver {
                                                     e
                                                 ))
                                             })?;
-                                        document.insert(&field_name, column_value);
+                                        if let Some(column_value) = column_value {
+                                            document.insert(&field_name, column_value);
+                                        }
                                     }
+                                    //TODO: Ensure nothing is added if null is received.
                                     ScalarOptions::UUID => {
-                                        let column_value: Uuid =
+                                        let column_value: Option<Uuid> =
                                             rr.try_get(field_name.as_str()).map_err(|e| {
                                                 error!("Error getting uuid column value: {}", e);
                                                 async_graphql::Error::new(format!(
@@ -184,10 +216,13 @@ impl ServiceResolver {
                                                     e
                                                 ))
                                             })?;
-                                        document.insert(&field_name, column_value.to_string());
+
+                                        if let Some(column_value) = column_value {
+                                            document.insert(&field_name, column_value.to_string());
+                                        }
                                     }
                                     ScalarOptions::Boolean => {
-                                        let column_value: bool =
+                                        let column_value: Option<bool> =
                                             rr.try_get(field_name.as_str()).map_err(|e| {
                                                 error!("Error getting boolean column value: {}", e);
                                                 async_graphql::Error::new(format!(
@@ -195,7 +230,9 @@ impl ServiceResolver {
                                                     e
                                                 ))
                                             })?;
-                                        document.insert(&field_name, column_value);
+                                        if let Some(column_value) = column_value {
+                                            document.insert(&field_name, column_value);
+                                        }
                                     }
                                     _ => Err(async_graphql::Error::new(format!(
                                         "Unsupported scalar type: {:?}",
@@ -236,7 +273,7 @@ impl ServiceResolver {
         let join_on = match as_type_field.join_on.clone() {
             Some(join_on) => join_on,
             None => {
-                return Ok(field_input);
+                return Ok(Some(field_input));
             }
         };
         let scalar = as_type_field.scalar.clone();
@@ -273,11 +310,15 @@ impl ServiceResolver {
 
         debug!("Query Input: {:?}", query_input);
 
+        if query_input.is_empty() {
+            return Ok(None);
+        }
+
         let field_input = doc! {
             "query": query_input,
         };
 
         debug!("Internal Input: {:?}", field_input);
-        Ok(field_input)
+        Ok(Some(field_input))
     }
 }
