@@ -2,7 +2,7 @@ use async_graphql::{
     dynamic::{Field, FieldFuture, InputValue, TypeRef},
     Value,
 };
-use bson::doc;
+use bson::{doc, Bson};
 use log::{debug, error};
 
 use crate::{
@@ -92,7 +92,9 @@ impl ServiceSchemaBuilder {
                             let user = doc! {
                                 "uuid": user_uuid_string.to_string(),
                                 "identifier": identifier.clone(),
-                                "registration_state": &reg_state
+                                "registration_state": &reg_state,
+                                "authentication_state": Bson::Null,
+                                "passkey": Bson::Null,
                             };
 
                             mongo_ds

@@ -5,40 +5,28 @@ use mongodb::{
     Database,
 };
 
-use crate::data_sources::mongo::MongoDataSource;
-
 use super::Services;
 
 impl Services {
     pub async fn update_one(
         db: Database,
-        mut input: Document,
+        input: Document,
         collection: String,
     ) -> Result<Option<Document>, async_graphql::Error> {
         debug!("Executing Update One");
 
         let coll = db.collection::<Document>(&collection);
 
-        debug!("Found Collection: {:?}", collection);
-
-        let mut filter = to_document(input.get("query").unwrap())?;
-
-        filter = MongoDataSource::convert_object_id_string_to_object_id_from_doc(filter)?;
-
-        debug!("Filter: {:?}", filter);
-
-        input.remove("query");
-
-        debug!("Input: {:?}", input);
+        let filter = to_document(input.get("query").unwrap())?;
 
         let options = FindOneAndUpdateOptions::builder()
             .return_document(ReturnDocument::After)
             .upsert(true)
             .build();
 
-        let update_doc = Services::create_nested_fields(&input);
+        let values = to_document(input.get("values").unwrap())?;
 
-        debug!("Update Doc: {:?}", update_doc);
+        let update_doc = Services::create_nested_fields(&values);
 
         let document = coll
             .find_one_and_update(filter, doc! {"$set": update_doc}, options)

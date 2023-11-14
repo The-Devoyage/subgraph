@@ -1,4 +1,5 @@
 use async_graphql::dynamic::TypeRef;
+use log::debug;
 
 use crate::graphql::{input::ServiceInput, schema::ResolverType};
 
@@ -8,6 +9,10 @@ impl ServiceInput {
         is_list: bool,
         is_required: bool,
     ) -> TypeRef {
+        debug!(
+            "get_entity_string_field_type: resolver_type: {:?}, is_list: {}, is_required: {}",
+            resolver_type, is_list, is_required
+        );
         match resolver_type {
             ResolverType::FindOne
             | ResolverType::FindMany

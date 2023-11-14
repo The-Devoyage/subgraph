@@ -115,7 +115,7 @@ impl ServiceSchemaBuilder {
             let rest_inputs = ServiceInput::new(
                 values_input_name.clone(),
                 entity.fields.clone(),
-                ResolverType::FindOne,
+                resolver_type.clone(), // NOTE: Previously had FINDONE here.
                 exclude_from_input,
             )
             .build(None);

@@ -41,6 +41,18 @@ impl Services {
                 }
             } else {
                 if let Some(array) = value.as_array() {
+                    // If not a filter array, then call recursively on each document in the array
+                    if key == "$and" || key == "$or" {
+                        let mut docs = vec![];
+                        for b in array {
+                            let find_filter =
+                                Services::create_nested_find_filter(b.as_document().unwrap());
+                            docs.push(find_filter);
+                        }
+                        find_doc.insert(key.clone(), docs);
+                        continue;
+                    }
+
                     let is_docs = array.iter().all(|bson| bson.as_document().is_some());
                     if is_docs {
                         let mut docs = vec![];

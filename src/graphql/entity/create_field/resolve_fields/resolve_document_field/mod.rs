@@ -18,8 +18,9 @@ impl ServiceEntity {
         debug!("Resolving Document Field: {:?}", field.name);
 
         match &field.scalar {
-            ScalarOptions::String | ScalarOptions::ObjectID => {
-                ServiceEntity::resolve_document_string_scalar(document, field)
+            ScalarOptions::String => ServiceEntity::resolve_document_string_scalar(document, field),
+            ScalarOptions::ObjectID => {
+                ServiceEntity::resolve_document_object_id_scalar(document, field)
             }
             ScalarOptions::Int => ServiceEntity::resolve_document_int_scalar(document, field),
             ScalarOptions::Boolean => {
@@ -30,6 +31,19 @@ impl ServiceEntity {
             ScalarOptions::DateTime => {
                 ServiceEntity::resolve_document_datetime_scalar(document, field)
             }
+        }
+    }
+
+    pub fn resolve_document_object_id_scalar(
+        document: &Document,
+        field: &ServiceEntityFieldConfig,
+    ) -> Result<Value, async_graphql::Error> {
+        debug!("Resolving Object ID Scalar");
+        let resolved = DocumentUtils::get_from_document(document, field)?;
+
+        match resolved {
+            GetDocumentResultType::ObjectID(object_id) => Ok(Value::from(object_id.to_string())),
+            _ => unreachable!("Invalid result type for object id scalar"),
         }
     }
 

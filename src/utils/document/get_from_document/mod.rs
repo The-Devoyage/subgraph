@@ -1,4 +1,4 @@
-use bson::Bson;
+use bson::{oid::ObjectId, Bson};
 use log::debug;
 
 use crate::configuration::subgraph::entities::{
@@ -14,6 +14,8 @@ pub enum GetDocumentResultType {
     IntArray(Vec<i32>),
     Boolean(bool),
     BooleanArray(Vec<bool>),
+    ObjectID(bson::oid::ObjectId),
+    ObjectIDArray(Vec<bson::oid::ObjectId>),
     Document(bson::Document),
     DocumentArray(Vec<bson::Document>),
     UUID(uuid::Uuid),
@@ -220,18 +222,18 @@ impl DocumentUtils {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 let value = documents
                     .into_iter()
-                    .map(|value| value.as_object_id().unwrap().to_string())
-                    .collect::<Vec<String>>();
+                    .map(|value| value.as_object_id().unwrap())
+                    .collect::<Vec<ObjectId>>();
                 debug!("Found ObjectID Value: {:?}", value);
-                return Ok(GetDocumentResultType::StringArray(value));
+                return Ok(GetDocumentResultType::ObjectIDArray(value));
             } else {
-                return Ok(GetDocumentResultType::StringArray(vec![]));
+                return Ok(GetDocumentResultType::ObjectIDArray(vec![]));
             }
         }
 
         let value = document.get_object_id(field_name)?;
         debug!("Found ObjectID Value: {:?}", value);
-        Ok(GetDocumentResultType::String(value.to_string()))
+        Ok(GetDocumentResultType::ObjectID(value))
     }
 
     pub fn get_document_object_scalar(

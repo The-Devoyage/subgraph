@@ -56,13 +56,20 @@ impl ServiceSchemaBuilder {
                 let filter = doc! {
                     "identifier": identifer_regex
                 };
-                let update = doc! {
+                let mut update = doc! {
                     "$set": {
                         "registration_state": serde_json::to_string(&service_user.registration_state).unwrap(),
                         "passkey": serde_json::to_string(&service_user.passkey).unwrap(),
-                        "authentication_state": serde_json::to_string(&service_user.authentication_state).unwrap(),
                     }
                 };
+                if let Some(authentication_state) = service_user.authentication_state {
+                    update.insert(
+                        "$set",
+                        doc! {
+                            "authentication_state": serde_json::to_string(&authentication_state).unwrap(),
+                        },
+                    );
+                }
                 let options = FindOneAndUpdateOptions::builder().upsert(true).build();
                 let user = mongo_ds
                     .db
