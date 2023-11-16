@@ -45,7 +45,7 @@ impl SqlDataSource {
             debug!("Processing Key: {:?}", key);
             debug!("Processing Value: {:?}", value.to_string());
 
-            //If value === null, skip
+            //If value == null, skip
             if value.as_null().is_some() {
                 continue;
             }
@@ -60,6 +60,7 @@ impl SqlDataSource {
                 )));
             }
 
+            //NOTE: Since separating logic, it may not be needed to specify this variable.
             let is_where_clause = match resolver_type {
                 ResolverType::FindOne | ResolverType::FindMany => true,
                 ResolverType::CreateOne | ResolverType::UpdateOne | ResolverType::UpdateMany => {
@@ -191,7 +192,7 @@ impl SqlDataSource {
                             value_keys.push(key.to_string());
                             // If SQLITE Dialect, push as string
                             match dialect {
-                                DialectEnum::SQLITE => {
+                                DialectEnum::SQLITE | DialectEnum::MYSQL => {
                                     values.push(SqlValueEnum::String(value.to_string()));
                                 }
                                 _ => {

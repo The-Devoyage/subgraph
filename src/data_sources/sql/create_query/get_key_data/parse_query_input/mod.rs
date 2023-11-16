@@ -108,7 +108,7 @@ impl SqlDataSource {
 
                             // Sqlite does not support UUIDs
                             match dialect {
-                                DialectEnum::SQLITE => {
+                                DialectEnum::SQLITE | DialectEnum::MYSQL => {
                                     where_values.push(SqlValueEnum::String(cleaned_value));
                                     continue;
                                 }

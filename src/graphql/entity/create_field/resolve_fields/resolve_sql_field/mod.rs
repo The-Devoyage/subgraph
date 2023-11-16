@@ -247,15 +247,16 @@ impl ServiceEntity {
 
         match response_row {
             ResponseRow::MySql(row) => {
-                let value: Option<&str> = row.try_get(field_name).map_err(|e| {
-                    error!("Error resolving DateTime field: {:?}", e.to_string());
-                    async_graphql::Error::new(format!(
-                        "Error resolving DateTime field: {:?}",
-                        e.to_string()
-                    ))
-                })?;
+                let value: Option<chrono::DateTime<chrono::Utc>> =
+                    row.try_get(field_name).map_err(|e| {
+                        error!("Error resolving DateTime field: {:?}", e.to_string());
+                        async_graphql::Error::new(format!(
+                            "Error resolving DateTime field: {:?}",
+                            e.to_string()
+                        ))
+                    })?;
                 match value {
-                    Some(value) => Ok(Value::from(value.to_string())),
+                    Some(value) => Ok(Value::from(value.to_rfc3339())),
                     None => Ok(Value::Null),
                 }
             }
