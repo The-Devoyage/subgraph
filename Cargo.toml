@@ -49,3 +49,8 @@ features = [
     "macro-diagnostics",
 ]
 
+[features]
+static_ssl = ['openssl/vendored']
+
+[dependencies.openssl]
+optional = true
