@@ -4,6 +4,7 @@
 
 ### Added
 
+- Request Filters - AND and OR options to find and/or update.
 - Use `--watch` when starting to reload changes to config file directory.
 - Return `user_identifier` on auth success.
 - Added `resolver_type()` built in function for use with guards.
