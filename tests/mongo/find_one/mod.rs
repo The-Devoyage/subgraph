@@ -5,7 +5,7 @@ async fn find_one() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_user(create_user_input: { name: "Bongo", age: 10, married: false, email: "nickisyourfan@gmail.com" }) {
+            create_user(create_user_input: { values: { name: "Bongo", age: 10, married: false, email: "nickisyourfan@gmail.com" } }) {
                 _id
             }
         }
@@ -15,7 +15,7 @@ async fn find_one() {
     let request = async_graphql::Request::new(
         r#"
         {
-            get_user(get_user_input: { name: "Bongo", age: 10, married: false, email: "nickisyourfan@gmail.com" }) {
+            get_user(get_user_input: { query: { name: "Bongo", age: 10, married: false, email: "nickisyourfan@gmail.com" } }) {
                 _id
             }
         }
@@ -31,7 +31,7 @@ async fn find_one_by_string() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_user(create_user_input: { name: "Squirrel", age: 7, married: false, email: "squirrel@noemail.com" }) {
+            create_user(create_user_input: { values: { name: "Squirrel", age: 7, married: false, email: "squirrel@noemail.com" } }) {
                 _id
             }
         }
@@ -41,7 +41,7 @@ async fn find_one_by_string() {
     let request = async_graphql::Request::new(
         r#"
         {
-            get_user(get_user_input: { name: "Squirrel" }) {
+            get_user(get_user_input: { query: { name: "Squirrel" } }) {
                 _id
             }
         }
@@ -57,7 +57,7 @@ async fn find_one_by_int() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_user(create_user_input: { name: "Turtle", age: 77, married: false, email: "turtle@noemail.com" }) {
+            create_user(create_user_input: { values: name: "Turtle", age: 77, married: false, email: "turtle@noemail.com" } }) {
                 _id
             }
         }
@@ -67,7 +67,7 @@ async fn find_one_by_int() {
     let request = async_graphql::Request::new(
         r#"
         {
-            get_user(get_user_input: { age: 77 }) {
+            get_user(get_user_input: { query: { age: 77 } }) {
                 _id
             }
         }
@@ -83,7 +83,7 @@ async fn find_one_by_bool() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_user(create_user_input: { name: "Jackson", age: 14, married: true, email: "jackson@noemail.com" }) {
+            create_user(create_user_input: { values: { name: "Jackson", age: 14, married: true, email: "jackson@noemail.com" } }) {
                 _id
             }
         }
@@ -93,7 +93,7 @@ async fn find_one_by_bool() {
     let request = async_graphql::Request::new(
         r#"
         {
-            get_user(get_user_input: { married: true }) {
+            get_user(get_user_input: { query: { married: true } }) {
                 _id
             }
         }
@@ -109,7 +109,7 @@ async fn returns_correct_scalars() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_user(create_user_input: { name: "Jordan", age: 2, married: true, email: "jordan@noemail.com" }) {
+            create_user(create_user_input: { values: { name: "Jordan", age: 2, married: true, email: "jordan@noemail.com" } }) {
                 _id
             }
         }
@@ -119,7 +119,7 @@ async fn returns_correct_scalars() {
     let request = async_graphql::Request::new(
         r#"
         {
-            get_user(get_user_input: { name: "Jordan" }) {
+            get_user(get_user_input: { query: { name: "Jordan" } }) {
                 _id
                 name
                 age
@@ -148,11 +148,13 @@ async fn resolve_nested_object() {
         r#"
         mutation {
             create_beer(create_beer_input: { 
-                name: "Nested Mosiac", 
-                ratings: [5, 4],
-                brand: { 
-                    name: "Community" 
-                } 
+                values: {
+                    name: "Nested Mosiac", 
+                    ratings: [5, 4],
+                    brand: { 
+                        name: "Community" 
+                    } 
+                }
             }) {
                 _id
             }
@@ -163,7 +165,7 @@ async fn resolve_nested_object() {
     let request = async_graphql::Request::new(
         r#"
         {
-            get_beer(get_beer_input: { name: "Nested Mosiac" }) {
+            get_beer(get_beer_input: { query: { name: "Nested Mosiac" } }) {
                 _id
                 name
                 ratings
@@ -192,11 +194,13 @@ async fn find_one_by_nested_object() {
         r#"
         mutation {
             create_beer(create_beer_input: { 
+            values: {
                 name: "Mosiac", 
                 ratings: [5, 4, 5, 4, 3],
                 brand: { 
                     name: "Community" 
                 } 
+            }
             }) {
                 _id
             }
@@ -207,7 +211,7 @@ async fn find_one_by_nested_object() {
     let request = async_graphql::Request::new(
         r#"
         {
-            get_beer(get_beer_input: { brand: { name: "Community" } }) {
+            get_beer(get_beer_input: { query: { brand: { name: "Community" } } }) {
                 _id
                 ratings
                 brand {
@@ -228,11 +232,13 @@ async fn find_one_by_list() {
         r#"
         mutation {
             create_beer(create_beer_input: { 
+            values: {
                 name: "Mosiac", 
                 ratings: [5, 4, 5, 4, 3],
                 brand: { 
                     name: "Community" 
                 } 
+            }
             }) {
                 _id
             }
@@ -243,7 +249,7 @@ async fn find_one_by_list() {
     let request = async_graphql::Request::new(
         r#"
         {
-            get_beer(get_beer_input: { ratings: [5] }) {
+            get_beer(get_beer_input: { query: { ratings: [5] } }) {
                 _id
             }
         }
@@ -260,10 +266,12 @@ async fn find_joined_to_mongo_ds() {
         r#"
         mutation {
             create_user(create_user_input: { 
-                name: "Laura", 
-                age: 33,
-                married: true,
-                email: "laura@laura.com"
+                values: {
+                    name: "Laura", 
+                    age: 33,
+                    married: true,
+                    email: "laura@laura.com"
+                }
             }) {
                 _id
             }
@@ -279,7 +287,7 @@ async fn find_joined_to_mongo_ds() {
     let fav_car = async_graphql::Request::new(
         r#"
         mutation {
-            create_car(create_car_input: { model: "Camero", price: 1, status: true }) {
+            create_car(create_car_input: { values: { model: "Camero", price: 1, status: true } }) {
                 id
             }
         }
@@ -293,7 +301,7 @@ async fn find_joined_to_mongo_ds() {
     let create_coffee_mutation = format!(
         r#"
         mutation {{
-            create_coffee(create_coffee_input: {{ name: "Ascension", price: 14, available: false, created_by: "{}" }}) {{
+            create_coffee(create_coffee_input: {{ values: {{ name: "Ascension", price: 14, available: false, created_by: "{}" }} }}) {{
                 id
             }}
         }}
@@ -309,7 +317,7 @@ async fn find_joined_to_mongo_ds() {
     let comment_one = async_graphql::Request::new(
         r#"
         mutation {
-            create_comment(create_comment_input: { content: "join_one test", status: true }) {
+            create_comment(create_comment_input: { values: { content: "join_one test", status: true } }) {
                 id
             }
         }
@@ -323,7 +331,7 @@ async fn find_joined_to_mongo_ds() {
     let comment_two = async_graphql::Request::new(
         r#"
         mutation {
-            create_comment(create_comment_input: { content: "join_two test", status: true }) {
+            create_comment(create_comment_input: { values: { content: "join_two test", status: true } }) {
                 id
             }
         }
@@ -343,13 +351,15 @@ async fn find_joined_to_mongo_ds() {
         r#"
         mutation {{
             create_dog(create_dog_input: {{
-                name: "Buddy",
-                age: 5,
-                owner: "{}",
-                fav_car: {},
-                fav_coffee: {},
-                todo: 1,
-                comments: [{}, {}]
+                values: {{
+                    name: "Buddy",
+                    age: 5,
+                    owner: "{}",
+                    fav_car: {},
+                    fav_coffee: {},
+                    todo: 1,
+                    comments: [{}, {}]
+                }}
             }}) {{
                 _id
             }}
@@ -368,35 +378,35 @@ async fn find_joined_to_mongo_ds() {
     let request = async_graphql::Request::new(format!(
         r#"
         {{
-            get_dog(get_dog_input: {{ _id: "{}" }}) {{
+            get_dog(get_dog_input: {{ query: {{ _id: "{}" }} }}) {{
                 _id
                 name
                 age
-                owner(owner: {{}}) {{
+                owner(owner: {{ query: {{}} }} ) {{
                     _id
                     name
                     age
                     married
                 }}
-                fav_car(fav_car: {{}}) {{
+                fav_car(fav_car: {{ query: {{}} }} ) {{
                     id
                     model
                     price
                     status
                 }}
-                fav_coffee(fav_coffee: {{}}) {{
+                fav_coffee( fav_coffee: {{ query: {{}} }} ) {{
                     id
                     name
                     price
                     available
                 }}
-                todo(todo: {{}}) {{
+                todo(todo: {{ query: {{}} }}) {{
                     id
                     userId
                     title
                     completed
                 }}
-                comments(comments: {{}}) {{
+                comments(comments: {{ query: {{}} }}) {{
                     id
                     content
                     status
@@ -418,16 +428,18 @@ async fn find_with_nested_object() {
         r#"
         mutation {
             create_user(create_user_input: { 
-                name: "Rory", 
-                age: 22, 
-                married: false, 
-                email: "rory@rory.com",
-                address: {
-                    line_one: "address lineone",
-                    line_two: "address linetwo",
-                    city: "address city",
-                    state: "address state",
-                    zip: "address zip"
+                values: {
+                    name: "Rory", 
+                    age: 22, 
+                    married: false, 
+                    email: "rory@rory.com",
+                    address: {
+                        line_one: "address lineone",
+                        line_two: "address linetwo",
+                        city: "address city",
+                        state: "address state",
+                        zip: "address zip"
+                    }
                 }
             }) {
                 _id
@@ -440,7 +452,7 @@ async fn find_with_nested_object() {
     let request = async_graphql::Request::new(
         r#"
         {
-            get_user(get_user_input: { address: { line_one: "address lineone" } }) {
+            get_user(get_user_input: { query: { address: { line_one: "address lineone" } } }) {
                 _id
             }
         }
@@ -456,7 +468,7 @@ async fn resolve_typename() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_user(create_user_input: { name: "BongoWithTypeName", age: 10, married: false, email: "nickisyourfan@gmail.com" }) {
+            create_user(create_user_input: { values: { name: "BongoWithTypeName", age: 10, married: false, email: "nickisyourfan@gmail.com" } }) {
                 _id
                 __typename
             }

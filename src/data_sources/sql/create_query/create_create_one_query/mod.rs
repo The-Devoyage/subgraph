@@ -7,7 +7,7 @@ impl SqlDataSource {
         table_name: &str,
         value_keys: &Vec<String>,
         dialect: &DialectEnum,
-    ) -> String {
+    ) -> Result<String, async_graphql::Error> {
         let mut query = String::new();
         query.push_str("INSERT INTO ");
         query.push_str(table_name);
@@ -21,12 +21,14 @@ impl SqlDataSource {
         }
 
         query.push_str(") VALUES (");
+
         for i in 0..value_keys.len() {
             query.push_str(SqlDataSource::get_placeholder(dialect, Some(i as i32)).as_str());
             if i != value_keys.len() - 1 {
                 query.push_str(", ");
             }
         }
+
         query.push_str(")");
 
         match dialect {
@@ -39,6 +41,7 @@ impl SqlDataSource {
         if !query.ends_with(';') {
             query.push(';');
         }
-        query
+
+        Ok(query)
     }
 }

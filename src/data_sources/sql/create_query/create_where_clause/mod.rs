@@ -8,16 +8,25 @@ impl SqlDataSource {
     pub fn create_where_clause(
         where_keys: &Vec<String>,
         dialect: &DialectEnum,
-        mut offset: Option<i32>,
+        mut pg_param_offset: Option<i32>,
         where_values: &Vec<SqlValueEnum>,
-    ) -> String {
+    ) -> Result<(String, i32), async_graphql::Error> {
         debug!("Creating Where Clause");
+        debug!("Where Keys: {:?}", where_keys);
+        debug!("Where Values: {:?}", where_values);
         let parameterized_query = if !where_keys.is_empty() {
             let mut query = String::new();
-            query.push_str(" WHERE ");
 
             for i in 0..where_keys.len() {
                 query.push_str(&where_keys[i]);
+
+                // If where_values[i] does not exist, return error.
+                if where_values.len() <= i {
+                    return Err(async_graphql::Error::new(format!(
+                        "Where value for key does not exist.",
+                    )));
+                }
+
                 let is_list = match where_values[i] {
                     SqlValueEnum::StringList(_)
                     | SqlValueEnum::IntList(_)
@@ -30,8 +39,10 @@ impl SqlDataSource {
                 };
                 query.push_str(operator);
 
-                let index = if offset.is_some() {
-                    Some(i as i32 + offset.unwrap())
+                // This is used to offset the placeholder index for postgres.
+                // It is incremented by the number of placeholders added to the query.
+                let index = if pg_param_offset.is_some() {
+                    Some(i as i32 + pg_param_offset.unwrap())
                 } else {
                     Some(0)
                 };
@@ -44,6 +55,8 @@ impl SqlDataSource {
                             SqlValueEnum::StringList(ref list) => list.len(),
                             SqlValueEnum::IntList(ref list) => list.len(),
                             SqlValueEnum::BoolList(ref list) => list.len(),
+                            SqlValueEnum::UUIDList(ref list) => list.len(),
+                            SqlValueEnum::DateTimeList(ref list) => list.len(),
                             _ => 0,
                         };
 
@@ -53,7 +66,9 @@ impl SqlDataSource {
                                 query.push_str(", ");
                             }
                         }
-                        offset = Some(offset.unwrap_or(0) + placeholder_count as i32 - 1);
+
+                        pg_param_offset =
+                            Some(pg_param_offset.unwrap_or(0) + placeholder_count as i32 - 1);
                     }
                     _ => query.push_str(&SqlDataSource::get_placeholder(dialect, index)),
                 };
@@ -66,11 +81,12 @@ impl SqlDataSource {
                     query.push_str(" AND ");
                 }
             }
+            pg_param_offset = Some(pg_param_offset.unwrap_or(0) + where_keys.len() as i32);
             query
         } else {
             String::new()
         };
         debug!("Where Clause: {}", parameterized_query);
-        parameterized_query
+        Ok((parameterized_query, pg_param_offset.unwrap_or(0)))
     }
 }

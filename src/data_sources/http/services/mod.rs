@@ -1,3 +1,4 @@
+use async_graphql::ErrorExtensions;
 use http::Method;
 use log::{debug, info};
 use reqwest::Client;
@@ -27,7 +28,8 @@ impl Services {
                     true => res.text().await?,
                     _ => {
                         debug!("Response Status: {:?}", res.status());
-                        Err(async_graphql::Error::new("HTTP Request Failed"))?
+                        Err(async_graphql::Error::new("HTTP Request Failed")
+                            .extend_with(|_, e| e.set("status", res.status().as_u16())))?
                     }
                 }
             }

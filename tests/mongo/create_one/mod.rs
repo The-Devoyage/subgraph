@@ -5,7 +5,7 @@ async fn create_one() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_user(create_user_input: { name: "Nick", age: 30, married: true, email: "nickisyourfan@gmail.com" }) {
+            create_user(create_user_input: { values: { name: "Nick", age: 30, married: true, email: "nickisyourfan@gmail.com" } }) {
                 _id
             }
         }
@@ -21,16 +21,18 @@ async fn create_one_nested_object() {
         r#"
         mutation {
             create_user(create_user_input: { 
-                name: "Rory", 
-                age: 22, 
-                married: false, 
-                email: "rory@rory.com",
-                address: {
-                    line_one: "address lineone",
-                    line_two: "address linetwo",
-                    city: "address city",
-                    state: "address state",
-                    zip: "address zip"
+                values: {
+                    name: "Rory", 
+                    age: 22, 
+                    married: false, 
+                    email: "rory@rory.com",
+                    address: {
+                        line_one: "address lineone",
+                        line_two: "address linetwo",
+                        city: "address city",
+                        state: "address state",
+                        zip: "address zip"
+                    }
                 }
             }) {
                 _id

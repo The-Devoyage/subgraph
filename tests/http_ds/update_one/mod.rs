@@ -5,7 +5,7 @@ async fn update_one() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            update_todo(update_todo_input: { completed: false, query: { id: 1 } }) {
+            update_todo(update_todo_input: { values: { completed: false }, query: { id: 1 } }) {
                 id
             }
         }

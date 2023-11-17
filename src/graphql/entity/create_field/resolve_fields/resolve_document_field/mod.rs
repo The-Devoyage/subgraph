@@ -18,14 +18,32 @@ impl ServiceEntity {
         debug!("Resolving Document Field: {:?}", field.name);
 
         match &field.scalar {
-            ScalarOptions::String | ScalarOptions::ObjectID => {
-                ServiceEntity::resolve_document_string_scalar(document, field)
+            ScalarOptions::String => ServiceEntity::resolve_document_string_scalar(document, field),
+            ScalarOptions::ObjectID => {
+                ServiceEntity::resolve_document_object_id_scalar(document, field)
             }
             ScalarOptions::Int => ServiceEntity::resolve_document_int_scalar(document, field),
             ScalarOptions::Boolean => {
                 ServiceEntity::resolve_document_boolean_scalar(document, field)
             }
             ScalarOptions::Object => ServiceEntity::resolve_document_object_scalar(document, field),
+            ScalarOptions::UUID => ServiceEntity::resolve_document_uuid_scalar(document, field),
+            ScalarOptions::DateTime => {
+                ServiceEntity::resolve_document_datetime_scalar(document, field)
+            }
+        }
+    }
+
+    pub fn resolve_document_object_id_scalar(
+        document: &Document,
+        field: &ServiceEntityFieldConfig,
+    ) -> Result<Value, async_graphql::Error> {
+        debug!("Resolving Object ID Scalar");
+        let resolved = DocumentUtils::get_from_document(document, field)?;
+
+        match resolved {
+            GetDocumentResultType::ObjectID(object_id) => Ok(Value::from(object_id.to_string())),
+            _ => unreachable!("Invalid result type for object id scalar"),
         }
     }
 
@@ -76,6 +94,47 @@ impl ServiceEntity {
                 values.into_iter().map(|value| Value::from(value)).collect(),
             )),
             _ => unreachable!("Invalid result type for boolean scalar"),
+        }
+    }
+
+    pub fn resolve_document_uuid_scalar(
+        document: &Document,
+        field: &ServiceEntityFieldConfig,
+    ) -> Result<Value, async_graphql::Error> {
+        debug!("Resolving UUID Scalar");
+
+        let resolved = DocumentUtils::get_from_document(document, field)?;
+
+        match resolved {
+            GetDocumentResultType::UUID(value) => Ok(Value::from(value.to_string())),
+            GetDocumentResultType::UUIDArray(values) => Ok(Value::List(
+                values
+                    .into_iter()
+                    .map(|value| Value::from(value.to_string()))
+                    .collect(),
+            )),
+            _ => unreachable!("Invalid result type for UUID scalar"),
+        }
+    }
+
+    pub fn resolve_document_datetime_scalar(
+        document: &Document,
+        field: &ServiceEntityFieldConfig,
+    ) -> Result<Value, async_graphql::Error> {
+        debug!("Resolving DateTime Scalar");
+
+        let resolved = DocumentUtils::get_from_document(document, field)?;
+
+        match resolved {
+            // NOTE: Not sure if this is the correct format for DateTime
+            GetDocumentResultType::DateTime(value) => Ok(Value::from(value.to_rfc3339())),
+            GetDocumentResultType::DateTimeArray(values) => Ok(Value::List(
+                values
+                    .into_iter()
+                    .map(|value| Value::from(value.to_rfc3339()))
+                    .collect(),
+            )),
+            _ => unreachable!("Invalid result type for DateTime scalar"),
         }
     }
 

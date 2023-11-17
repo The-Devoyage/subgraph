@@ -5,7 +5,7 @@ async fn find_one() {
     let request = async_graphql::Request::new(
         r#"
         {
-            get_todo(get_todo_input: { id: 1 }) {
+            get_todo(get_todo_input: { query: { id: 1 } }) {
                 id
             }
         }
@@ -40,7 +40,7 @@ async fn find_one_by_int() {
     let request = async_graphql::Request::new(
         r#"
         {
-            get_todo(get_todo_input: { id: 1 }) {
+            get_todo(get_todo_input: { query: { id: 1 } }) {
                 id
             }
         }

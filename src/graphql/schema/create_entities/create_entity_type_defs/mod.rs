@@ -3,7 +3,7 @@ use crate::{
 };
 
 use super::ServiceSchemaBuilder;
-use async_graphql::dynamic::Object;
+use async_graphql::dynamic::{Enum, Object};
 use log::debug;
 
 impl ServiceSchemaBuilder {
@@ -12,6 +12,15 @@ impl ServiceSchemaBuilder {
         for type_def in type_defs {
             debug!("Registering Type Def: {:?}", type_def);
             self.schema_builder = self.schema_builder.register(type_def);
+        }
+        self
+    }
+
+    pub fn register_enums(mut self, enums: Vec<Enum>) -> Self {
+        debug!("Registering Enums");
+        for enum_def in enums {
+            debug!("Registering Enum Def: {:?}", enum_def);
+            self.schema_builder = self.schema_builder.register(enum_def);
         }
         self
     }

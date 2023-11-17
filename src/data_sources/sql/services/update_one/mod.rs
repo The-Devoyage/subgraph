@@ -1,7 +1,8 @@
+use bson::{doc, Document};
 use log::debug;
 
 use crate::{
-    configuration::subgraph::data_sources::sql::DialectEnum,
+    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
     data_sources::sql::{PoolEnum, SqlDataSource, SqlQuery, SqlValueEnum},
 };
 
@@ -9,6 +10,7 @@ use super::{ResponseRow, Services};
 
 impl Services {
     pub async fn update_one(
+        entity: &ServiceEntityConfig,
         pool_enum: &PoolEnum,
         sql_query: &SqlQuery,
         dialect: DialectEnum,
@@ -21,7 +23,7 @@ impl Services {
 
                 for value in &sql_query.values {
                     match value {
-                        SqlValueEnum::String(v) => {
+                        SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -30,7 +32,7 @@ impl Services {
                         SqlValueEnum::Bool(v) => {
                             update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::StringList(values) => {
+                        SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
                             for string in values {
                                 update_query = update_query.bind(string)
                             }
@@ -43,6 +45,22 @@ impl Services {
                         SqlValueEnum::BoolList(values) => {
                             for bool in values {
                                 update_query = update_query.bind(bool)
+                            }
+                        }
+                        SqlValueEnum::UUID(v) => {
+                            update_query = update_query.bind(v);
+                        }
+                        SqlValueEnum::UUIDList(values) => {
+                            for uuid in values {
+                                update_query = update_query.bind(uuid)
+                            }
+                        }
+                        SqlValueEnum::DateTime(v) => {
+                            update_query = update_query.bind(v);
+                        }
+                        SqlValueEnum::DateTimeList(values) => {
+                            for datetime in values {
+                                update_query = update_query.bind(datetime)
                             }
                         }
                     }
@@ -50,7 +68,7 @@ impl Services {
 
                 for value in &sql_query.where_values {
                     match value {
-                        SqlValueEnum::String(v) => {
+                        SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -59,7 +77,7 @@ impl Services {
                         SqlValueEnum::Bool(v) => {
                             update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::StringList(values) => {
+                        SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
                             for string in values {
                                 update_query = update_query.bind(string)
                             }
@@ -72,6 +90,22 @@ impl Services {
                         SqlValueEnum::BoolList(values) => {
                             for bool in values {
                                 update_query = update_query.bind(bool)
+                            }
+                        }
+                        SqlValueEnum::UUID(v) => {
+                            update_query = update_query.bind(v);
+                        }
+                        SqlValueEnum::UUIDList(values) => {
+                            for uuid in values {
+                                update_query = update_query.bind(uuid)
+                            }
+                        }
+                        SqlValueEnum::DateTime(v) => {
+                            update_query = update_query.bind(v);
+                        }
+                        SqlValueEnum::DateTimeList(values) => {
+                            for datetime in values {
+                                update_query = update_query.bind(datetime)
                             }
                         }
                     }
@@ -85,20 +119,46 @@ impl Services {
                         &sql_query.where_values,
                         &sql_query.value_keys,
                         &sql_query.values,
-                    );
+                    )?;
 
-                let find_one_query_string = SqlDataSource::create_find_one_query(
+                let mut input_document = Document::new();
+
+                //for each key in find_one_where_keys, add the key and value to the input_document
+                //TODO: Make sure this is a inputdocument.query
+                for (index, key) in find_one_where_keys.iter().enumerate() {
+                    match &find_one_where_values[index] {
+                        SqlValueEnum::String(v) => {
+                            input_document.insert(key, v);
+                        }
+                        SqlValueEnum::Int(v) => {
+                            input_document.insert(key, v);
+                        }
+                        SqlValueEnum::Bool(v) => {
+                            input_document.insert(key, v);
+                        }
+                        SqlValueEnum::UUID(v) => {
+                            input_document.insert(key, v.to_string());
+                        }
+                        _ => return Err(async_graphql::Error::from("Invalid Value Type")),
+                    }
+                }
+
+                let query_doc = doc! {
+                    "query": input_document
+                };
+
+                let (find_one_query_string, ..) = SqlDataSource::create_find_one_query(
+                    entity,
                     &sql_query.table,
-                    &find_one_where_keys,
                     &dialect,
-                    &find_one_where_values,
-                );
+                    &query_doc,
+                )?;
 
                 let mut find_one_query = sqlx::query(&find_one_query_string);
 
                 for value in &find_one_where_values {
                     match value {
-                        SqlValueEnum::String(v) => {
+                        SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
                             find_one_query = find_one_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -107,7 +167,7 @@ impl Services {
                         SqlValueEnum::Bool(v) => {
                             find_one_query = find_one_query.bind(v);
                         }
-                        SqlValueEnum::StringList(values) => {
+                        SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
                             for string in values {
                                 find_one_query = find_one_query.bind(string)
                             }
@@ -120,6 +180,22 @@ impl Services {
                         SqlValueEnum::BoolList(values) => {
                             for bool in values {
                                 find_one_query = find_one_query.bind(bool)
+                            }
+                        }
+                        SqlValueEnum::UUID(v) => {
+                            find_one_query = find_one_query.bind(v);
+                        }
+                        SqlValueEnum::UUIDList(values) => {
+                            for uuid in values {
+                                find_one_query = find_one_query.bind(uuid)
+                            }
+                        }
+                        SqlValueEnum::DateTime(v) => {
+                            find_one_query = find_one_query.bind(v);
+                        }
+                        SqlValueEnum::DateTimeList(values) => {
+                            for datetime in values {
+                                find_one_query = find_one_query.bind(datetime)
                             }
                         }
                     }

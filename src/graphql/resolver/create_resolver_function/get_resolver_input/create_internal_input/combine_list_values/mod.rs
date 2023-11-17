@@ -14,6 +14,7 @@ impl ServiceResolver {
         join_on: &str,
     ) -> Result<Document, async_graphql::Error> {
         debug!("Combining List Values With Input");
+        debug!("Join On: {}", join_on);
         let join_on_value = parent_value.get_array(&field_name);
         let join_on_value = match join_on_value {
             Ok(join_on_value) => join_on_value,
@@ -22,7 +23,7 @@ impl ServiceResolver {
             }
         };
         match scalar {
-            ScalarOptions::String => {
+            ScalarOptions::String | ScalarOptions::UUID | ScalarOptions::DateTime => {
                 let join_on_value = join_on_value
                     .iter()
                     .map(|value| value.to_string())

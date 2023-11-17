@@ -1,4 +1,4 @@
-use bson::Bson;
+use bson::{oid::ObjectId, Bson};
 use log::debug;
 
 use crate::configuration::subgraph::entities::{
@@ -14,8 +14,14 @@ pub enum GetDocumentResultType {
     IntArray(Vec<i32>),
     Boolean(bool),
     BooleanArray(Vec<bool>),
+    ObjectID(bson::oid::ObjectId),
+    ObjectIDArray(Vec<bson::oid::ObjectId>),
     Document(bson::Document),
     DocumentArray(Vec<bson::Document>),
+    UUID(uuid::Uuid),
+    UUIDArray(Vec<uuid::Uuid>),
+    DateTime(chrono::DateTime<chrono::Utc>),
+    DateTimeArray(Vec<chrono::DateTime<chrono::Utc>>),
     None,
 }
 
@@ -52,6 +58,16 @@ impl DocumentUtils {
                 field.list.unwrap_or(false),
             ),
             ScalarOptions::Object => DocumentUtils::get_document_object_scalar(
+                document,
+                &field.name,
+                field.list.unwrap_or(false),
+            ),
+            ScalarOptions::UUID => DocumentUtils::get_document_uuid_scalar(
+                document,
+                &field.name,
+                field.list.unwrap_or(false),
+            ),
+            ScalarOptions::DateTime => DocumentUtils::get_document_datetime_scalar(
                 document,
                 &field.name,
                 field.list.unwrap_or(false),
@@ -126,6 +142,77 @@ impl DocumentUtils {
         Ok(GetDocumentResultType::Boolean(value))
     }
 
+    pub fn get_document_uuid_scalar(
+        document: &bson::Document,
+        field_name: &str,
+        is_list: bool,
+    ) -> Result<GetDocumentResultType, async_graphql::Error> {
+        if is_list {
+            if let Some(Bson::Array(documents)) = document.get(field_name) {
+                let values = documents
+                    .into_iter()
+                    .map(|value| {
+                        let value = value.as_str().unwrap_or("");
+                        let uuid = uuid::Uuid::parse_str(value);
+                        if uuid.is_err() {
+                            uuid::Uuid::nil()
+                        } else {
+                            uuid.unwrap()
+                        }
+                    })
+                    .collect();
+                debug!("Found UUID Values: {:?}", values);
+                return Ok(GetDocumentResultType::UUIDArray(values));
+            } else {
+                return Ok(GetDocumentResultType::UUIDArray(vec![]));
+            }
+        }
+
+        let value = document.get_str(field_name)?;
+        debug!("Found UUID Value: {:?}", value);
+        Ok(GetDocumentResultType::UUID(
+            uuid::Uuid::parse_str(value).unwrap(),
+        ))
+    }
+
+    pub fn get_document_datetime_scalar(
+        document: &bson::Document,
+        field_name: &str,
+        is_list: bool,
+    ) -> Result<GetDocumentResultType, async_graphql::Error> {
+        if is_list {
+            if let Some(Bson::Array(documents)) = document.get(field_name) {
+                // Check all values are valid dates
+                let is_valid = documents.iter().all(|value| {
+                    let value = value.as_datetime();
+                    if value.is_none() {
+                        return false;
+                    }
+                    true
+                });
+                if !is_valid {
+                    return Err(async_graphql::Error::new("Invalid DateTime"));
+                }
+                let values = documents
+                    .into_iter()
+                    .map(|value| {
+                        let value = value.as_datetime().unwrap();
+                        value.to_chrono()
+                    })
+                    .collect();
+                debug!("Found DateTime Values: {:?}", values);
+                return Ok(GetDocumentResultType::DateTimeArray(values));
+            } else {
+                return Ok(GetDocumentResultType::DateTimeArray(vec![]));
+            }
+        }
+
+        let value = document.get_datetime(field_name)?;
+        // convert bson datetime to chrono datetime
+        debug!("Found DateTime Value: {:?}", value);
+        Ok(GetDocumentResultType::DateTime(value.to_chrono()))
+    }
+
     pub fn get_document_object_id_scalar(
         document: &bson::Document,
         field_name: &str,
@@ -135,18 +222,18 @@ impl DocumentUtils {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 let value = documents
                     .into_iter()
-                    .map(|value| value.as_object_id().unwrap().to_string())
-                    .collect::<Vec<String>>();
+                    .map(|value| value.as_object_id().unwrap())
+                    .collect::<Vec<ObjectId>>();
                 debug!("Found ObjectID Value: {:?}", value);
-                return Ok(GetDocumentResultType::StringArray(value));
+                return Ok(GetDocumentResultType::ObjectIDArray(value));
             } else {
-                return Ok(GetDocumentResultType::StringArray(vec![]));
+                return Ok(GetDocumentResultType::ObjectIDArray(vec![]));
             }
         }
 
         let value = document.get_object_id(field_name)?;
         debug!("Found ObjectID Value: {:?}", value);
-        Ok(GetDocumentResultType::String(value.to_string()))
+        Ok(GetDocumentResultType::ObjectID(value))
     }
 
     pub fn get_document_object_scalar(

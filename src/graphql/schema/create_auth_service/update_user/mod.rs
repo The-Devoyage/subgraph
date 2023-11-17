@@ -3,7 +3,7 @@ use crate::{
     data_sources::{sql::PoolEnum, DataSource},
     graphql::schema::ServiceSchemaBuilder,
 };
-use bson::doc;
+use bson::{doc, Regex};
 use log::debug;
 use mongodb::options::FindOneAndUpdateOptions;
 
@@ -49,16 +49,27 @@ impl ServiceSchemaBuilder {
 
         let user: Result<(), async_graphql::Error> = match &data_source {
             DataSource::Mongo(mongo_ds) => {
-                let filter = doc! {
-                    "identifier": service_user.identifier,
+                let identifer_regex = Regex {
+                    pattern: service_user.identifier.to_string(),
+                    options: "i".to_string(),
                 };
-                let update = doc! {
+                let filter = doc! {
+                    "identifier": identifer_regex
+                };
+                let mut update = doc! {
                     "$set": {
                         "registration_state": serde_json::to_string(&service_user.registration_state).unwrap(),
                         "passkey": serde_json::to_string(&service_user.passkey).unwrap(),
-                        "authentication_state": serde_json::to_string(&service_user.authentication_state).unwrap(),
                     }
                 };
+                if let Some(authentication_state) = service_user.authentication_state {
+                    update.insert(
+                        "$set",
+                        doc! {
+                            "authentication_state": serde_json::to_string(&authentication_state).unwrap(),
+                        },
+                    );
+                }
                 let options = FindOneAndUpdateOptions::builder().upsert(true).build();
                 let user = mongo_ds
                     .db
@@ -101,7 +112,7 @@ impl ServiceSchemaBuilder {
                         ),
                     });
                     let query_string = format!(
-                        "UPDATE subgraph_user SET {} WHERE identifier = ?;",
+                        "UPDATE subgraph_user SET {} WHERE LOWER(identifier) = (?);",
                         set_query
                     );
                     let query = sqlx::query(&query_string).bind(service_user.identifier.clone());
@@ -144,7 +155,7 @@ impl ServiceSchemaBuilder {
                         ),
                     });
                     let query_string = format!(
-                        "UPDATE subgraph_user SET {} WHERE identifier = $1 RETURNING *;",
+                        "UPDATE subgraph_user SET {} WHERE LOWER(identifier) = LOWER($1) RETURNING *;",
                         set_query
                     );
                     let query = sqlx::query(&query_string).bind(service_user.identifier.clone());
@@ -181,7 +192,7 @@ impl ServiceSchemaBuilder {
                         ),
                     });
                     let query_string = format!(
-                        "UPDATE subgraph_user SET {} WHERE identifier = ?;",
+                        "UPDATE subgraph_user SET {} WHERE LOWER(identifier) = LOWER(?);",
                         set_query
                     );
                     let query = sqlx::query(&query_string).bind(service_user.identifier.clone());

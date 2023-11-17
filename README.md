@@ -698,5 +698,15 @@ Additional guard functions that may be used within the `if_expr` syntax. Current
 | Additional Guard Functions | Description                                             | Usage                                                |
 | -------------------------- | ------------------------------------------------------- | ---------------------------------------------------- |
 | headers                    | Extracts a header value from request headers.           | "headers(\"authoriation\") == \"1234\""              |
-| input                      | Extracts a value from the user input.                   | "input(\"comments.user.id\") != \"23\""              |
+| input                      | Extracts a value from the user input.                   | "input(\"query\", \"comments.user.id\") != \"23\""   |
 | token_data                 | Extracts data from auth token, identifier and user_uuid | "token_data(\"user_uuid\") != input(\"created_by\")" |
+| resolver_type              | Shows the type of resolver in guard function            | "resolver_type() == \"FindOne\""                     |
+
+**Input Function**
+
+The input function can be used to extract data from the request input submitted by the client. Since support for nested querying has been
+implemented, this function returns a tuple or array of values that match the provided key.
+
+The first argument specifies the root location. Valid values include "query" and "values", which match to the required inputs for queries and mutations.
+
+The second argument is the key, which supports dot notation for nested values.
