@@ -91,6 +91,10 @@ Connect many data sources to a single API. Supports multiple instances of every 
 - SQLite Data Source - Connecct to SQLite Database(s).
 - HTTP Data Source - Integrate external Restful API(s).
 
+### Filtering
+
+Subgraph provides the ability for the client to specify custom filters with ease. Filters can be combined and used together (recursively) to create a query that targets the exact results needed for the application.
+
 ### Guards - Security
 
 Protecting the API is simple and can be done by adding `Guards` in the configuration file. Guards are quick to write expressions that if evaluated truthy result in a 403 like error (or custom error).
@@ -490,6 +494,69 @@ default_headers = [{ name = "Authorization", value = "Bearer $OPENAI_KEY" }]
 ### Resolvers
 
 By default, all resolvers are created for all entities. This is with the exception of the Update One resolver, in which SqLite and Postgres do not support the `LIMIT 1` query.
+
+### Filtering
+
+Filtering in a query can be done in a variety of combinations.
+
+**AND Filtering**
+
+Find user that is 20 years old AND is married.
+
+```graphql
+{
+  get_user(
+    get_user_input: { query: { AND: [{ age: 20 }, { married: false }] } }
+  ) {
+    _id
+  }
+}
+```
+
+**OR Filtering**
+
+Find user that is 20 years old or is not married.
+
+```graphql
+{
+  get_user(
+    get_user_input: { query: { OR: [{ age: 20 }, { married: false }] } }
+  ) {
+    _id
+  }
+}
+```
+
+Nested Examples
+
+Find user that is (20 and not married) OR (is 21 and not married.)
+
+```graphql
+{
+  get_user(
+    get_user_input: {
+      query: { OR: [{ age: 20, married: false }, { age: 21, married: false }] }
+    }
+  ) {
+    _id
+  }
+}
+```
+
+```graphql
+{
+  get_user(
+    get_user_input: {
+        query: { OR: [
+            { OR: [...] },
+            { OR: [...]}
+        ]}
+    }
+  ) {
+    _id
+  }
+}
+```
 
 ### Guards
 
