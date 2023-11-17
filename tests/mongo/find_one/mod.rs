@@ -481,3 +481,68 @@ async fn resolve_typename() {
     let typename = json["create_user"]["__typename"].as_str().unwrap();
     assert_eq!(typename, "user");
 }
+
+#[tokio::test]
+async fn find_one_with_or_filter() {
+    let request = async_graphql::Request::new(
+        r#"
+        mutation {
+            create_user(create_user_input: { values: { name: "BongoWithOrFilter", age: 199, married: false, email: "nickisyourfan@gmail.com" } }) {
+                _id
+            }
+        }
+        "#,
+    );
+    execute(request, None).await;
+    let request = async_graphql::Request::new(
+        r#"
+        mutation {
+            create_user(create_user_input: { values: { name: "BongoWithOrFilter", age: 198, married: false, email: "nickisyourfan@gmail.com" } }) {
+                _id
+            }
+        }
+        "#,
+    );
+    execute(request, None).await;
+
+    let request = async_graphql::Request::new(
+        r#"
+        {
+            get_user(get_user_input: { query: { OR: [{ age: 199 }, { age: 198 }] } }) {
+                _id
+            }
+        }
+        "#,
+    );
+    let response = execute(request, None).await;
+
+    assert!(response.is_ok());
+}
+
+#[tokio::test]
+async fn find_one_with_and_filter() {
+    let request = async_graphql::Request::new(
+        r#"
+        mutation {
+            create_user(create_user_input: { values: { name: "BongoWithAndFilter", age: 986, married: false, email: "nickisyourfan@gmail.com" } }) {
+                _id
+            }
+        }
+        "#,
+    );
+    execute(request, None).await;
+
+    let request = async_graphql::Request::new(
+        r#"
+        {
+            get_user(get_user_input: { query: { AND: [{ age: 986 }, { married: false }] } }) {
+                _id
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
+
+    assert!(response.is_ok());
+}

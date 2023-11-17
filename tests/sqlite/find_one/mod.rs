@@ -153,3 +153,35 @@ async fn join_sqlite_to_mongo() {
         user_id
     );
 }
+
+#[tokio::test]
+async fn find_one_with_and_filter() {
+    let request = async_graphql::Request::new(
+        r#"
+        query {
+            get_coffee(get_coffee_input: { query: { AND: [{ name: "Katz" }, { price: 15 }] } }) {
+                id
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
+    assert!(response.is_ok());
+}
+
+#[tokio::test]
+async fn find_one_with_or_filter() {
+    let request = async_graphql::Request::new(
+        r#"
+        query {
+            get_coffee(get_coffee_input: { query: { OR: [{ name: "Katz" }, { price: 15 }] } }) {
+                id
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
+    assert!(response.is_ok());
+}

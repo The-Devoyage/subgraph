@@ -129,3 +129,35 @@ async fn returns_correct_scalars() {
     );
     assert_eq!(comment.get("status").unwrap().as_bool().unwrap(), true);
 }
+
+#[tokio::test]
+async fn find_one_with_or_filter() {
+    let request = async_graphql::Request::new(
+        r#"
+        query {
+            get_comment(get_comment_input: { query: { OR: [{ id: 1 }, { id: 2 }] } }) {
+                id
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
+    assert!(response.is_ok());
+}
+
+#[tokio::test]
+async fn find_one_with_and_filter() {
+    let request = async_graphql::Request::new(
+        r#"
+        query {
+            get_comment(get_comment_input: { query: { AND: [{ id: 1 }, { content: "This is content test." }] } }) {
+                id
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
+    assert!(response.is_ok());
+}
