@@ -5,6 +5,7 @@ use crate::{
     configuration::subgraph::entities::{
         service_entity_field::ServiceEntityFieldConfig, ScalarOptions,
     },
+    data_sources::DataSource,
     graphql::schema::ResolverType,
 };
 
@@ -28,6 +29,7 @@ impl ServiceInput {
         entity_field: &ServiceEntityFieldConfig,
         resolver_type: &ResolverType,
         parent_input_prefix: &str,
+        entity_data_source: &DataSource,
     ) -> TypeRefWithInputs {
         debug!("Creating Entity Field Type For {:?}", entity_field.name);
 
@@ -53,6 +55,7 @@ impl ServiceInput {
                     entity_field,
                     resolver_type,
                     parent_input_prefix,
+                    entity_data_source,
                 );
 
                 for input in type_ref_with_inputs.inputs {

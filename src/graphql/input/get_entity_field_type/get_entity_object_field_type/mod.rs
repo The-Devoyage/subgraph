@@ -2,6 +2,7 @@ use async_graphql::dynamic::TypeRef;
 
 use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
+    data_sources::DataSource,
     graphql::{input::ServiceInput, schema::ResolverType},
 };
 
@@ -29,6 +30,7 @@ impl ServiceInput {
         entity_field: &ServiceEntityFieldConfig,
         resolver_type: &ResolverType,
         parent_input_prefix: &str,
+        entity_data_source: &DataSource,
     ) -> TypeRefWithInputs {
         let mut inputs = Vec::new();
 
@@ -43,6 +45,7 @@ impl ServiceInput {
             entity_field.fields.clone().unwrap_or(Vec::new()),
             resolver_type.clone(),
             None,
+            entity_data_source.clone(),
         )
         .build(None);
 

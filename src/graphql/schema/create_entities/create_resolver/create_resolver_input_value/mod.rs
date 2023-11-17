@@ -1,5 +1,6 @@
 use crate::{
     configuration::subgraph::entities::ServiceEntityConfig,
+    data_sources::DataSources,
     graphql::{
         input::ServiceInput,
         schema::{ExcludeFromInput, ResolverType, ServiceSchemaBuilder},
@@ -24,6 +25,8 @@ impl ServiceSchemaBuilder {
 
         let input_name =
             ServiceSchemaBuilder::get_resolver_input_name(&entity.name, resolver_type, None);
+        let data_sources = self.data_sources.clone();
+        let entity_data_source = DataSources::get_entity_data_soruce(&data_sources, entity);
 
         let mut root_input = InputObject::new(&input_name);
 
@@ -70,6 +73,7 @@ impl ServiceSchemaBuilder {
                 entity.fields.clone(),
                 ResolverType::FindOne,
                 exclude_from_input,
+                entity_data_source.clone(),
             )
             .build(Some(true));
 
@@ -117,6 +121,7 @@ impl ServiceSchemaBuilder {
                 entity.fields.clone(),
                 resolver_type.clone(), // NOTE: Previously had FINDONE here.
                 exclude_from_input,
+                entity_data_source.clone(),
             )
             .build(None);
 

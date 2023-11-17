@@ -1,7 +1,10 @@
 use async_graphql::dynamic::{InputObject, InputValue, TypeRef};
 use log::debug;
 
-use crate::configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig;
+use crate::{
+    configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
+    data_sources::DataSource,
+};
 
 use super::schema::{ExcludeFromInput, ResolverType};
 
@@ -12,6 +15,7 @@ pub struct ServiceInput {
     fields: Vec<ServiceEntityFieldConfig>,
     resolver_type: ResolverType,
     exclude_from_input: Option<ExcludeFromInput>,
+    entity_data_source: DataSource,
 }
 
 impl ServiceInput {
@@ -20,12 +24,14 @@ impl ServiceInput {
         fields: Vec<ServiceEntityFieldConfig>,
         resolver_type: ResolverType,
         exclude_from_input: Option<ExcludeFromInput>,
+        entity_data_source: DataSource,
     ) -> Self {
         ServiceInput {
             input_name,
             fields,
             resolver_type,
             exclude_from_input,
+            entity_data_source,
         }
     }
 
@@ -53,6 +59,7 @@ impl ServiceInput {
                     field,
                     &self.resolver_type,
                     &parent_input_name,
+                    &self.entity_data_source,
                 );
 
                 // Push inputs into vec to register all at once after creation.
@@ -74,6 +81,12 @@ impl ServiceInput {
         let include_filters = include_filters.unwrap_or(false)
             && (self.resolver_type == ResolverType::FindOne
                 || self.resolver_type == ResolverType::FindMany);
+
+        // Only add filter inputs for specific DataSources.
+        let include_filters = match self.entity_data_source {
+            DataSource::SQL(_) | DataSource::Mongo(_) => include_filters,
+            DataSource::HTTP(_) => false,
+        };
 
         // If include_filters is true, add the filter inputs.
         if include_filters {
