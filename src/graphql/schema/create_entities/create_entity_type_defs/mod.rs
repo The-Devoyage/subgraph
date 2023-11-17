@@ -16,7 +16,7 @@ impl ServiceSchemaBuilder {
         self
     }
 
-    pub fn register_enums(mut self, enums: Vec<Enum>) -> Self {
+    pub fn _register_enums(mut self, enums: Vec<Enum>) -> Self {
         debug!("Registering Enums");
         for enum_def in enums {
             debug!("Registering Enum Def: {:?}", enum_def);
