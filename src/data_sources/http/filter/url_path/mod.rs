@@ -163,15 +163,15 @@ impl HttpDataSource {
         debug!("Creating Path Filters");
 
         let mut path_segments = url.path_segments().ok_or_else(|| "URL Has no path.")?;
-        debug!("Deserialized Input {:?}", input);
         let mut url = Url::parse(url.as_str())?;
 
         input = match resolver_type {
-            ResolverType::FindOne | ResolverType::FindMany | ResolverType::CreateOne => input,
-            ResolverType::UpdateOne | ResolverType::UpdateMany => {
-                to_document(input.get("query").unwrap())?
-            }
-            _ => panic!("Invalid resolver type"),
+            ResolverType::FindOne
+            | ResolverType::FindMany
+            | ResolverType::UpdateOne
+            | ResolverType::UpdateMany => to_document(input.get("query").unwrap())?,
+            ResolverType::CreateOne => return Ok(url),
+            _ => Err(async_graphql::Error::new("Invalid resolver type"))?,
         };
 
         while let Some(path_segment) = path_segments.next() {

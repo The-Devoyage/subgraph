@@ -5,7 +5,7 @@ async fn find_many() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_coffees(get_coffees_input: { available: true }) {
+            get_coffees(get_coffees_input: { query: { available: true } }) {
                 id
             }
         }

@@ -5,7 +5,7 @@ async fn create_one() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_comment(create_comment_input: { content: "create_one test", status: true }) {
+            create_comment(create_comment_input: { values: { content: "create_one test", status: true } }) {
                 id
             }
         }

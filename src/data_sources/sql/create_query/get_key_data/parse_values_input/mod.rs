@@ -254,6 +254,46 @@ impl SqlDataSource {
                         }
                     }
                 }
+                ScalarOptions::ObjectID => {
+                    if list {
+                        let value = value.as_array();
+                        if value.is_some() {
+                            let key = key.to_string();
+                            // If every value in the array is a valid ObjectID, then push it to the list
+                            let is_object_ids_valid = value.unwrap().iter().all(|x| {
+                                let x = x.as_str().unwrap_or("");
+                                let object_id = bson::oid::ObjectId::from_str(x);
+                                object_id.is_ok()
+                            });
+                            if !is_object_ids_valid {
+                                return Err(async_graphql::Error::new(
+                                    "Invalid ObjectID String in Vector",
+                                ));
+                            }
+                            let values = value
+                                .unwrap()
+                                .iter()
+                                .map(|x| {
+                                    let x = x.as_str().unwrap_or("");
+                                    let object_id = bson::oid::ObjectId::from_str(x);
+                                    object_id.unwrap().to_string()
+                                })
+                                .collect();
+                            if is_where_clause {
+                                where_keys.push(key);
+                                where_values.push(SqlValueEnum::ObjectIDList(values));
+                            }
+                        }
+                    } else {
+                        let value = bson::oid::ObjectId::from_str(value.as_str().unwrap());
+                        if value.is_ok() {
+                            value_keys.push(key.to_string());
+                            values.push(SqlValueEnum::ObjectID(value.unwrap().to_string()));
+                        } else {
+                            return Err(async_graphql::Error::new("Invalid ObjectID"));
+                        }
+                    }
+                }
                 _ => {
                     error!("Unsupported Scalar Type");
                     return Err(async_graphql::Error::new("Unsupported Scalar Type"));

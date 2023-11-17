@@ -5,7 +5,7 @@ async fn find_one_from_import() {
     let request = async_graphql::Request::new(
         r#"
         {
-            get_import(get_import_input: {}) {
+            get_import(get_import_input: { query: {} }) {
                 _id
                 import_works     
             }

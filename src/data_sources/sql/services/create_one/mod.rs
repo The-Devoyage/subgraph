@@ -23,7 +23,7 @@ impl Services {
 
                 for value in &sql_query.values {
                     match value {
-                        SqlValueEnum::String(v) => {
+                        SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
                             query = query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -32,7 +32,7 @@ impl Services {
                         SqlValueEnum::Bool(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::StringList(values) => {
+                        SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
                             for string in values {
                                 query = query.bind(string)
                             }
@@ -93,7 +93,7 @@ impl Services {
 
                 for value in &sql_query.values {
                     match value {
-                        SqlValueEnum::String(v) => {
+                        SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
                             query = query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -102,7 +102,7 @@ impl Services {
                         SqlValueEnum::Bool(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::StringList(values) => {
+                        SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
                             for string in values {
                                 query = query.bind(string)
                             }
@@ -145,7 +145,7 @@ impl Services {
 
                 for value in &sql_query.values {
                     match value {
-                        SqlValueEnum::String(v) => {
+                        SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
                             query = query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -154,7 +154,7 @@ impl Services {
                         SqlValueEnum::Bool(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::StringList(values) => {
+                        SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
                             for string in values {
                                 query = query.bind(string)
                             }

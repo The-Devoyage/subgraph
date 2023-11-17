@@ -12,7 +12,7 @@ impl ServiceResolver {
     ) -> Result<Document, async_graphql::Error> {
         debug!("Combining Primitive Value With Input");
         debug!("Parent Value: {:?}", parent_value);
-        debug!("Join On: {}", join_on);
+        debug!("Join On: {} as {:?}", join_on, scalar);
 
         match scalar {
             ScalarOptions::String | ScalarOptions::UUID | ScalarOptions::DateTime => {
@@ -42,6 +42,13 @@ impl ServiceResolver {
                 if join_on_value.is_ok() {
                     let join_on_value = join_on_value.unwrap();
                     field_input_query.insert(join_on, join_on_value);
+                } else {
+                    // If sql dialect, attempt to get from string
+                    let join_on_value = parent_value.get_str(&field_name);
+                    if join_on_value.is_ok() {
+                        let join_on_value = join_on_value.unwrap();
+                        field_input_query.insert(join_on, join_on_value);
+                    }
                 }
             }
             _ => return Err(async_graphql::Error::new("Invalid Scalar Type")),

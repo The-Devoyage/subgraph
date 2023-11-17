@@ -5,7 +5,7 @@ async fn find_many() {
     let request = async_graphql::Request::new(
         r#"
         {
-            get_todos(get_todos_input: { userId: 1 }) {
+            get_todos(get_todos_input: { query: { userId: 1 } }) {
                 id
             }
         }

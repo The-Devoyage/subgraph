@@ -49,6 +49,8 @@ pub enum SqlValueEnum {
     UUIDList(Vec<uuid::Uuid>),
     DateTime(chrono::DateTime<chrono::Utc>),
     DateTimeList(Vec<chrono::DateTime<chrono::Utc>>),
+    ObjectID(String),
+    ObjectIDList(Vec<String>),
 }
 
 #[derive(Debug, Clone)]

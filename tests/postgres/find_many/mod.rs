@@ -5,7 +5,7 @@ async fn find_many() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_comments(get_comments_input: { status: true }) {
+            get_comments(get_comments_input: { query: { id: 1 } }) {
                 id
             }
         }
