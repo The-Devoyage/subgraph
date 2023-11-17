@@ -5,7 +5,7 @@ async fn update_many() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            update_todos(update_todos_input: { completed: false, query: { userId: 1 } }) {
+            update_todos(update_todos_input: { values: { completed: false }, query: { userId: 1 } } ) {
                 id
             }
         }

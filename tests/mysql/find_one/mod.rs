@@ -5,7 +5,7 @@ async fn find_one() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_car(get_car_input: { id: 1 }) {
+            get_car(get_car_input: { query: { id: 1 } }) {
                 id
             }
         }
@@ -21,7 +21,7 @@ async fn find_one_by_string() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_car(create_car_input: { model: "Suub", price: 1000, status: true }) {
+            create_car(create_car_input: { values: { model: "Suub", price: 1000, status: true } }) {
                 id
             }
         }
@@ -32,7 +32,7 @@ async fn find_one_by_string() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_car(get_car_input: { model: "Suub" }) {
+            get_car(get_car_input: { query: { model: "Suub" } }) {
                 id
             }
         }
@@ -48,7 +48,7 @@ async fn find_one_by_int() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_car(create_car_input: { model: "Tesla", price: 9898, status: true }) {
+            create_car(create_car_input: { values: { model: "Tesla", price: 9898, status: true } }) {
                 id
             }
         }
@@ -59,7 +59,7 @@ async fn find_one_by_int() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_car(get_car_input: { price: 9898 }) {
+            get_car(get_car_input: { query: { price: 9898 } }) {
                 id
             }
         }
@@ -75,7 +75,7 @@ async fn find_one_by_bool() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_car(create_car_input: { model: "Ford", price: 97, status: true }) {
+            create_car(create_car_input: { values: { model: "Ford", price: 97, status: true } }) {
                 id
             }
         }
@@ -86,7 +86,7 @@ async fn find_one_by_bool() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_car(get_car_input: { status: true }) {
+            get_car(get_car_input: { query: { status: true } }) {
                 id
             }
         }
@@ -102,7 +102,7 @@ async fn returns_correct_scalars() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_car(create_car_input: { model: "Mazda", price: 1075, status: false }) {
+            create_car(create_car_input: { values: { model: "Mazda", price: 1075, status: false } }) {
                 id
             }
         }
@@ -113,7 +113,7 @@ async fn returns_correct_scalars() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_car(get_car_input: { model: "Mazda", price: 1075, status: false}) {
+            get_car(get_car_input: { query: { model: "Mazda", price: 1075, status: false } }) {
                 id
                 model
                 price
@@ -131,4 +131,36 @@ async fn returns_correct_scalars() {
     assert_eq!(model, "Mazda");
     assert_eq!(price, 1075);
     assert_eq!(status, false);
+}
+
+#[tokio::test]
+async fn find_one_with_or_filter() {
+    let request = async_graphql::Request::new(
+        r#"
+        query {
+            get_car(get_car_input: { query: { OR: [{ id: 1 }, { id: 2 }] } }) {
+                id
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
+    assert!(response.is_ok());
+}
+
+#[tokio::test]
+async fn find_one_with_and_filter() {
+    let request = async_graphql::Request::new(
+        r#"
+        query {
+            get_car(get_car_input: { query: { AND: [{ id: 1 }, { id: 2 }] } }) {
+                id
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
+    assert!(response.is_err());
 }

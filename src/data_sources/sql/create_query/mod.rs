@@ -11,6 +11,7 @@ use super::{SqlDataSource, SqlQuery};
 pub mod create_create_one_query;
 pub mod create_find_many_query;
 pub mod create_find_one_query;
+pub mod create_nested_query_recursive;
 pub mod create_update_many_query;
 pub mod create_update_one_query;
 pub mod create_update_return_key_data;
@@ -25,42 +26,51 @@ impl SqlDataSource {
         table_name: &str,
         dialect: DialectEnum,
         entity: &ServiceEntityConfig,
-    ) -> SqlQuery {
+    ) -> Result<SqlQuery, async_graphql::Error> {
         debug!("Creating SQL Query");
 
-        let (where_keys, where_values, value_keys, values) =
-            SqlDataSource::get_key_data(&input, entity, &resolver_type);
+        let (where_keys, mut where_values, value_keys, values) =
+            SqlDataSource::get_key_data(&input, entity, &resolver_type, &dialect)?;
 
+        // Generate the query string and get the where values.
         let query = match resolver_type {
-            ResolverType::FindOne => SqlDataSource::create_find_one_query(
-                table_name,
-                &where_keys,
-                &dialect,
-                &where_values,
-            ),
-            ResolverType::FindMany => SqlDataSource::create_find_many_query(
-                table_name,
-                &where_keys,
-                &dialect,
-                &where_values,
-            ),
-            ResolverType::CreateOne => {
-                SqlDataSource::create_create_one_query(table_name, &value_keys, &dialect)
+            ResolverType::FindOne => {
+                let (query_string, combined_where_values) =
+                    SqlDataSource::create_find_one_query(&entity, table_name, &dialect, &input)?;
+                where_values = combined_where_values;
+                query_string
             }
-            ResolverType::UpdateOne => SqlDataSource::create_update_one_query(
-                table_name,
-                &value_keys,
-                &dialect,
-                &where_keys,
-                &where_values,
-            ),
-            ResolverType::UpdateMany => SqlDataSource::create_update_many_query(
-                table_name,
-                &value_keys,
-                &dialect,
-                &where_keys,
-                &where_values,
-            ),
+            ResolverType::FindMany => {
+                let (query_string, combined_where_values) =
+                    SqlDataSource::create_find_many_query(&entity, table_name, &dialect, &input)?;
+                where_values = combined_where_values;
+                query_string
+            }
+            ResolverType::CreateOne => {
+                SqlDataSource::create_create_one_query(table_name, &value_keys, &dialect)?
+            }
+            ResolverType::UpdateOne => {
+                let (query_string, combined_where_value) = SqlDataSource::create_update_one_query(
+                    &entity,
+                    table_name,
+                    &value_keys,
+                    &dialect,
+                    &input,
+                )?;
+                where_values = combined_where_value;
+                query_string
+            }
+            ResolverType::UpdateMany => {
+                let (query_string, combined_where_value) = SqlDataSource::create_update_many_query(
+                    &entity,
+                    table_name,
+                    &value_keys,
+                    &dialect,
+                    &input,
+                )?;
+                where_values = combined_where_value;
+                query_string
+            }
             _ => panic!("Invalid resolver type"),
         };
 
@@ -75,6 +85,6 @@ impl SqlDataSource {
 
         debug!("Query: {:?}", sql_query);
 
-        sql_query
+        Ok(sql_query)
     }
 }

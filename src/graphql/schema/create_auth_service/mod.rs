@@ -17,7 +17,9 @@ pub struct ServiceUser {
     identifier: String,
     #[serde(deserialize_with = "deserialize_registration_state")]
     registration_state: PasskeyRegistration,
+    #[serde(deserialize_with = "deserialize_passkey")]
     passkey: Option<Passkey>,
+    #[serde(deserialize_with = "deserialize_authentication_state")]
     authentication_state: Option<PasskeyAuthentication>,
 }
 
@@ -34,6 +36,26 @@ where
     let s = String::deserialize(deserializer)?;
     let reg_state = serde_json::from_str(&s).unwrap();
     Ok(reg_state)
+}
+
+fn deserialize_passkey<'de, D>(deserializer: D) -> Result<Option<Passkey>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    let passkey = serde_json::from_str(&s).unwrap();
+    Ok(passkey)
+}
+
+fn deserialize_authentication_state<'de, D>(
+    deserializer: D,
+) -> Result<Option<PasskeyAuthentication>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    let auth_state = serde_json::from_str(&s).unwrap();
+    Ok(auth_state)
 }
 
 impl ServiceSchemaBuilder {

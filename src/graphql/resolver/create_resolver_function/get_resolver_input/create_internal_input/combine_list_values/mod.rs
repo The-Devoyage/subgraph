@@ -14,6 +14,7 @@ impl ServiceResolver {
         join_on: &str,
     ) -> Result<Document, async_graphql::Error> {
         debug!("Combining List Values With Input");
+        debug!("Join On: {}", join_on);
         let join_on_value = parent_value.get_array(&field_name);
         let join_on_value = match join_on_value {
             Ok(join_on_value) => join_on_value,
@@ -22,12 +23,12 @@ impl ServiceResolver {
             }
         };
         match scalar {
-            ScalarOptions::String => {
+            ScalarOptions::String | ScalarOptions::UUID | ScalarOptions::DateTime => {
                 let join_on_value = join_on_value
                     .iter()
                     .map(|value| value.to_string())
                     .collect::<Vec<String>>();
-                field_input.insert(join_on.clone(), join_on_value);
+                field_input.insert(join_on, join_on_value);
             }
             ScalarOptions::Int => {
                 if join_on_value.iter().any(|value| value.as_i32().is_none()) {
@@ -42,7 +43,7 @@ impl ServiceResolver {
                     .iter()
                     .map(|value| value.as_i32().unwrap())
                     .collect::<Vec<i32>>();
-                field_input.insert(join_on.clone(), join_on_value);
+                field_input.insert(join_on, join_on_value);
             }
             ScalarOptions::Boolean => {
                 if join_on_value.iter().any(|value| value.as_bool().is_none()) {
@@ -56,7 +57,7 @@ impl ServiceResolver {
                     .iter()
                     .map(|value| value.as_bool().unwrap())
                     .collect::<Vec<bool>>();
-                field_input.insert(join_on.clone(), join_on_value);
+                field_input.insert(join_on, join_on_value);
             }
             ScalarOptions::ObjectID => {
                 if join_on_value.iter().any(|value| value.as_str().is_none()) {
@@ -83,7 +84,7 @@ impl ServiceResolver {
                     .iter()
                     .map(|value| ObjectId::from_str(value.as_str().unwrap()).unwrap())
                     .collect::<Vec<ObjectId>>();
-                field_input.insert(join_on.clone(), join_on_value);
+                field_input.insert(join_on, join_on_value);
             }
             _ => panic!("Invalid Scalar Type"),
         };

@@ -5,7 +5,7 @@ async fn update_one() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            update_car(update_car_input: { status: false, query: { id: 1 } }) {
+            update_car(update_car_input: { values: { status: false }, query: { id: 1 } }) {
                 id
             }
         }

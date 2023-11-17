@@ -12,7 +12,17 @@ impl Services {
     ) -> Result<Vec<Option<Document>>, async_graphql::Error> {
         let coll = db.collection::<Document>(&collection);
 
-        let filter = Services::create_nested_find_filter(&filter);
+        let query = match filter.get("query") {
+            Some(query) => query,
+            None => return Err(Error::new("Query filter not found")),
+        };
+
+        let query_doc = match query.as_document() {
+            Some(query_doc) => query_doc,
+            None => return Err(Error::new("Query filter not found")),
+        };
+
+        let filter = Services::create_nested_find_filter(&query_doc);
 
         let mut cursor = coll.find(filter, None).await?;
 

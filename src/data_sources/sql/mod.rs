@@ -45,6 +45,12 @@ pub enum SqlValueEnum {
     StringList(Vec<String>),
     IntList(Vec<i32>),
     BoolList(Vec<bool>),
+    UUID(uuid::Uuid),
+    UUIDList(Vec<uuid::Uuid>),
+    DateTime(chrono::DateTime<chrono::Utc>),
+    DateTimeList(Vec<chrono::DateTime<chrono::Utc>>),
+    ObjectID(String),
+    ObjectIDList(Vec<String>),
 }
 
 #[derive(Debug, Clone)]
@@ -61,6 +67,7 @@ impl SqlDataSource {
     pub async fn init(sql_data_source_config: &SqlDataSourceConfig, args: &CliArgs) -> DataSource {
         debug!("Initializing SQL Data Source");
 
+        // Create the pool
         let pool: PoolEnum = match sql_data_source_config.dialect {
             DialectEnum::SQLITE => {
                 debug!("Creating SQLite Pool: {:?}", &sql_data_source_config.uri);
@@ -111,7 +118,7 @@ impl SqlDataSource {
                 let path = sql_data_source_config.migrations_path.clone();
                 if path.is_some() {
                     let path = path.unwrap();
-                    debug!("Running Migrations: {:?}", &path);
+                    info!("Running Migrations: {:?}", &path);
 
                     let migration = sqlx::migrate::Migrator::new(Path::new(&path)).await;
                     match migration {
@@ -151,11 +158,12 @@ impl SqlDataSource {
                             }
                         },
                         Err(e) => {
-                            debug!("Error: {:?}", e);
+                            error!("Migrations Failed: {:?}", e);
                         }
                     }
                 }
             } else if migrate == "revert" {
+                //TODO:
             }
         }
 
@@ -182,6 +190,7 @@ impl SqlDataSource {
 
         let table;
 
+        // If the entity has a data source, use that table name
         if entity_data_source.is_some() {
             if entity_data_source.clone().unwrap().table.is_some() {
                 table = entity_data_source.unwrap().table.unwrap();
@@ -198,8 +207,9 @@ impl SqlDataSource {
             &table,
             data_source.config.dialect.clone(),
             &entity,
-        );
+        )?;
 
+        // Return the result from the database as a FieldValue
         match resolver_type {
             ResolverType::FindOne => {
                 let result = services::Services::find_one(&data_source.pool, &query).await?;
@@ -213,6 +223,7 @@ impl SqlDataSource {
             }
             ResolverType::CreateOne => {
                 let result = services::Services::create_one(
+                    &entity,
                     &data_source.pool,
                     &query,
                     data_source.config.dialect.clone(),
@@ -222,6 +233,7 @@ impl SqlDataSource {
             }
             ResolverType::UpdateOne => {
                 let result = services::Services::update_one(
+                    &entity,
                     &data_source.pool,
                     &query,
                     data_source.config.dialect.clone(),
@@ -231,6 +243,7 @@ impl SqlDataSource {
             }
             ResolverType::UpdateMany => {
                 let results = services::Services::update_many(
+                    &entity,
                     &data_source.pool,
                     &query,
                     data_source.config.dialect.clone(),

@@ -9,17 +9,18 @@ mod http_ds;
 mod mongo;
 mod mysql;
 mod postgres;
+mod service;
 mod sqlite;
 
 async fn spawn_app(args: subgraph::cli_args::CliArgs) -> Schema {
     let environment = Environment::new();
-    let mut subgraph_config = SubGraphConfig::new(&args);
+    let mut subgraph_config = SubGraphConfig::new(&args).unwrap();
     subgraph_config = Environment::replace_env_vars_in_config(subgraph_config, environment);
 
     let server = subgraph::run(args, subgraph_config)
         .await
         .expect("Failed to run server.");
-    let (server, schema) = server;
+    let (server, schema, _shutdown) = server;
     let _ = tokio::spawn(server);
     schema
 }
@@ -34,6 +35,7 @@ async fn execute(
         log_level: None,
         generate_keypair: false,
         migrate: None,
+        watch: false,
     });
     let schema = spawn_app(args).await;
     let headers = HeaderMap::new();

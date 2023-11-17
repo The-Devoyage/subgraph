@@ -28,6 +28,11 @@ pub struct CliArgs {
     ///Generate Key Pair
     #[arg(short, long)]
     pub generate_keypair: bool,
+
+    /// Start the service in watch mode. Changes made to the subgraph config file will be
+    /// automatically applied. The service will restart.
+    #[arg(short, long)]
+    pub watch: bool,
 }
 
 impl CliArgs {

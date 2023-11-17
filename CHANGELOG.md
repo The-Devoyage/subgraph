@@ -1,5 +1,24 @@
 # Changelog
 
+## [v0.0.12]
+
+### Added
+
+- Use `--watch` when starting to reload changes to config file directory.
+- Return `user_identifier` on auth success.
+- Added `resolver_type()` built in function for use with guards.
+
+### Fixed
+
+- Service imports now import more than one additional file.
+- Nested properties now import with entity imports.
+- Register user for postgres Data Source.
+
+### Changed
+
+- Input function in guards now accepts two params to specify values vs query.
+- Identifiers are no longer case sensitive for built in auth service.
+
 ## [v0.0.11]
 
 ### Added

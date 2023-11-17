@@ -5,7 +5,7 @@ async fn create_one() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_car(create_car_input: { model: "Subaru", price: 10100 status: true }) {
+            create_car(create_car_input: { values: { model: "Subaru", price: 10100 status: true } }) {
                 id
             }
         }

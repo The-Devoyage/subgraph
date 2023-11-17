@@ -1,7 +1,7 @@
 use async_graphql::{dynamic::ResolverContext, ErrorExtensions, Value};
 use bson::Document;
 use json::JsonValue;
-use log::debug;
+use log::{debug, error};
 
 use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
@@ -106,6 +106,7 @@ impl ServiceEntity {
                             Ok(Some(value))
                         } else {
                             if entity_required {
+                                error!("Failed to resolve root field.");
                                 return Err(async_graphql::Error::new(
                                     "Failed to resolve root field.",
                                 )
@@ -122,11 +123,14 @@ impl ServiceEntity {
                     Err(e) => {
                         debug!("Failed to downcast parent value: {:?}", e);
                         if entity_required {
-                            return Err(async_graphql::Error::new("Failed to resolve root field.")
-                                .extend_with(|_err, e| {
-                                    e.set("field", field_name);
-                                    e.set("entity", entity_field.name.clone());
-                                }));
+                            error!("Failed to resolve root field. Entity Required.");
+                            return Err(async_graphql::Error::new(
+                                "Failed to resolve root field. Entity Required.",
+                            )
+                            .extend_with(|_err, e| {
+                                e.set("field", field_name);
+                                e.set("entity", entity_field.name.clone());
+                            }));
                         } else {
                             return Ok(Some(Value::Null));
                         }

@@ -5,7 +5,7 @@ async fn find_one() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_comment(get_comment_input: { id: 1 }) {
+            get_comment(get_comment_input: { query: { id: 1 } }) {
                 id
             }
         }
@@ -21,7 +21,7 @@ async fn find_one_by_string() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_comment(create_comment_input: { content: "findOneByString", status: true }) {
+            create_comment(create_comment_input: { values: { content: "findOneByString", status: true } }) {
                 id
             }
         }
@@ -31,7 +31,7 @@ async fn find_one_by_string() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_comment(get_comment_input: { content: "findOneByString" }) {
+            get_comment(get_comment_input: { query: { content: "findOneByString" } }) {
                 id
             }
         }
@@ -47,7 +47,7 @@ async fn find_one_by_int() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_comment(create_comment_input: { content: "findOneByInt", status: true }) {
+            create_comment(create_comment_input: { values: { content: "findOneByInt", status: true } }) {
                 id
             }
         }
@@ -57,7 +57,7 @@ async fn find_one_by_int() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_comment(get_comment_input: { id: 2 }) {
+            get_comment(get_comment_input: { query: { id: 2 } }) {
                 id
             }
         }
@@ -73,7 +73,7 @@ async fn find_one_by_bool() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_comment(create_comment_input: { content: "findOneByBool", status: true }) {
+            create_comment(create_comment_input: { values: { content: "findOneByBool", status: true } }) {
                 id
             }
         }
@@ -83,7 +83,7 @@ async fn find_one_by_bool() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_comment(get_comment_input: { status: true }) {
+            get_comment(get_comment_input: { query: { status: true } }) {
                 id
             }
         }
@@ -99,7 +99,7 @@ async fn returns_correct_scalars() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_comment(create_comment_input: { content: "returnsCorrectScalars", status: true }) {
+            create_comment(create_comment_input: { values: { content: "returnsCorrectScalars", status: true } }) {
                 id
             }
         }
@@ -109,7 +109,7 @@ async fn returns_correct_scalars() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_comment(get_comment_input: { content: "returnsCorrectScalars" }) {
+            get_comment(get_comment_input: { query: { content: "returnsCorrectScalars" } }) {
                 id
                 content
                 status
@@ -128,4 +128,36 @@ async fn returns_correct_scalars() {
         "returnsCorrectScalars"
     );
     assert_eq!(comment.get("status").unwrap().as_bool().unwrap(), true);
+}
+
+#[tokio::test]
+async fn find_one_with_or_filter() {
+    let request = async_graphql::Request::new(
+        r#"
+        query {
+            get_comment(get_comment_input: { query: { OR: [{ id: 1 }, { id: 2 }] } }) {
+                id
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
+    assert!(response.is_ok());
+}
+
+#[tokio::test]
+async fn find_one_with_and_filter() {
+    let request = async_graphql::Request::new(
+        r#"
+        query {
+            get_comment(get_comment_input: { query: { AND: [{ id: 1 }, { content: "This is content test." }] } }) {
+                id
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
+    assert!(response.is_ok());
 }

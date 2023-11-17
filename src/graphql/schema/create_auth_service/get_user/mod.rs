@@ -1,11 +1,11 @@
-use bson::doc;
+use bson::{doc, Regex};
 use log::debug;
 use sqlx::Row;
 
 use crate::{
     configuration::subgraph::data_sources::sql::DialectEnum,
     data_sources::{sql::PoolEnum, DataSource},
-    graphql::schema::{create_entities::create_auth_service::ServiceUser, ServiceSchemaBuilder},
+    graphql::schema::{create_auth_service::ServiceUser, ServiceSchemaBuilder},
 };
 
 impl ServiceSchemaBuilder {
@@ -18,8 +18,14 @@ impl ServiceSchemaBuilder {
         let user = match &data_source {
             DataSource::Mongo(mongo_ds) => {
                 debug!("Getting User - Mongo Data Source");
+
+                let identifier_regex = Regex {
+                    pattern: identifier.to_string(),
+                    options: "i".to_string(),
+                };
+
                 let filter = doc! {
-                    "identifier": &identifier
+                    "identifier": identifier_regex
                 };
 
                 let user = mongo_ds
@@ -36,9 +42,10 @@ impl ServiceSchemaBuilder {
                 debug!("SQL data source");
                 let user = match sql_ds.config.dialect {
                     DialectEnum::MYSQL => {
-                        let query =
-                            sqlx::query("SELECT * FROM subgraph_user WHERE identifier = ?;")
-                                .bind(&identifier);
+                        let query = sqlx::query(
+                            "SELECT * FROM subgraph_user WHERE LOWER(identifier) = LOWER(?);",
+                        )
+                        .bind(&identifier);
 
                         let user = match sql_ds.pool.clone() {
                             PoolEnum::MySql(pool) => query.fetch_one(&pool).await,
@@ -55,14 +62,13 @@ impl ServiceSchemaBuilder {
                             let uuid = mysql_row.try_get("uuid").unwrap_or("").to_string();
 
                             let user = ServiceUser {
-                                uuid: uuid::Uuid::parse_str(&uuid).unwrap_or(uuid::Uuid::new_v4()),
+                                uuid: uuid::Uuid::parse_str(&uuid).unwrap_or(uuid::Uuid::nil()),
                                 identifier,
                                 registration_state: serde_json::from_str(&registration_state)
                                     .expect("Failed to deserialize registration state"),
-                                passkey: serde_json::from_str(&passkey)
-                                    .expect("Failed to deserialize passkey"),
+                                passkey: serde_json::from_str(&passkey).unwrap_or(None),
                                 authentication_state: serde_json::from_str(&authentication_state)
-                                    .expect("Failed to deserialize authentication state"),
+                                    .unwrap_or(None),
                             };
                             Some(user)
                         });
@@ -74,9 +80,10 @@ impl ServiceSchemaBuilder {
                         })
                     }
                     DialectEnum::SQLITE => {
-                        let query =
-                            sqlx::query("SELECT * FROM subgraph_user WHERE identifier = ?;")
-                                .bind(&identifier);
+                        let query = sqlx::query(
+                            "SELECT * FROM subgraph_user WHERE LOWER(identifier) = LOWER(?);",
+                        )
+                        .bind(&identifier);
 
                         let user = match sql_ds.pool.clone() {
                             PoolEnum::SqLite(pool) => query.fetch_one(&pool).await,
@@ -92,7 +99,7 @@ impl ServiceSchemaBuilder {
                                 sqlite_row.try_get("authentication_state").unwrap_or("");
                             let uuid = sqlite_row.try_get("uuid").unwrap_or("").to_string();
                             let user = ServiceUser {
-                                uuid: uuid::Uuid::parse_str(&uuid).unwrap_or(uuid::Uuid::new_v4()),
+                                uuid: uuid::Uuid::parse_str(&uuid).unwrap_or(uuid::Uuid::nil()),
                                 identifier,
                                 registration_state: serde_json::from_str(&registration_state)
                                     .expect("Failed to deserialize registration state"),
@@ -112,9 +119,10 @@ impl ServiceSchemaBuilder {
                         user
                     }
                     DialectEnum::POSTGRES => {
-                        let query =
-                            sqlx::query("SELECT * FROM subgraph_user WHERE identifier = $1;")
-                                .bind(&identifier);
+                        let query = sqlx::query(
+                            "SELECT * FROM subgraph_user WHERE LOWER(identifier) = ($1);",
+                        )
+                        .bind(&identifier);
 
                         let user = match sql_ds.pool.clone() {
                             PoolEnum::Postgres(pool) => query.fetch_one(&pool).await,
@@ -127,16 +135,15 @@ impl ServiceSchemaBuilder {
                             let passkey = pg_row.try_get("passkey").unwrap_or("");
                             let authentication_state =
                                 pg_row.try_get("authentication_state").unwrap_or("");
-                            let uuid = pg_row.try_get("uuid").unwrap_or("").to_string();
+                            let uuid = pg_row.try_get("uuid").unwrap_or(uuid::Uuid::nil());
                             let user = ServiceUser {
-                                uuid: uuid::Uuid::parse_str(&uuid).unwrap_or(uuid::Uuid::new_v4()),
+                                uuid,
                                 identifier,
                                 registration_state: serde_json::from_str(&registration_state)
                                     .expect("Failed to deserialize registration state"),
-                                passkey: serde_json::from_str(&passkey)
-                                    .expect("Failed to deserialize pub key"),
+                                passkey: serde_json::from_str(&passkey).unwrap_or(None),
                                 authentication_state: serde_json::from_str(&authentication_state)
-                                    .expect("Failed to deserialize authentication state"),
+                                    .unwrap_or(None),
                             };
                             Some(user)
                         })

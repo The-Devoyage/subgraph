@@ -5,6 +5,7 @@ use crate::{
     configuration::subgraph::entities::{
         service_entity_field::ServiceEntityFieldConfig, ScalarOptions,
     },
+    data_sources::DataSource,
     graphql::schema::ResolverType,
 };
 
@@ -22,10 +23,13 @@ mod get_entity_object_id_field_type;
 mod get_entity_string_field_type;
 
 impl ServiceInput {
+    /// Get the type ref for the entity field.
+    /// If field is an object, it will also create an input objects, recursivly, for the field.
     pub fn get_entity_field_type(
         entity_field: &ServiceEntityFieldConfig,
         resolver_type: &ResolverType,
         parent_input_prefix: &str,
+        entity_data_source: &DataSource,
     ) -> TypeRefWithInputs {
         debug!("Creating Entity Field Type For {:?}", entity_field.name);
 
@@ -51,6 +55,7 @@ impl ServiceInput {
                     entity_field,
                     resolver_type,
                     parent_input_prefix,
+                    entity_data_source,
                 );
 
                 for input in type_ref_with_inputs.inputs {
@@ -58,6 +63,12 @@ impl ServiceInput {
                 }
 
                 type_ref_with_inputs.type_ref
+            }
+            ScalarOptions::UUID => {
+                ServiceInput::get_entity_string_field_type(resolver_type, is_list, is_required)
+            }
+            ScalarOptions::DateTime => {
+                ServiceInput::get_entity_string_field_type(resolver_type, is_list, is_required)
             }
         };
 

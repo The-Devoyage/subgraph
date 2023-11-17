@@ -2,7 +2,7 @@ use async_graphql::{
     dynamic::{Field, FieldFuture, InputValue, TypeRef},
     Value,
 };
-use bson::doc;
+use bson::{doc, Bson};
 use log::{debug, error};
 
 use crate::{
@@ -84,15 +84,17 @@ impl ServiceSchemaBuilder {
                         }
                     };
 
-                    let user_uuid = user_uuid.to_string();
+                    let user_uuid_string = user_uuid.to_string();
 
                     // Save registration state to database
                     match &data_source {
                         DataSource::Mongo(mongo_ds) => {
                             let user = doc! {
-                                "uuid": user_uuid.to_string(),
+                                "uuid": user_uuid_string.to_string(),
                                 "identifier": identifier.clone(),
-                                "registration_state": &reg_state
+                                "registration_state": &reg_state,
+                                "authentication_state": Bson::Null,
+                                "passkey": Bson::Null,
                             };
 
                             mongo_ds
@@ -105,7 +107,7 @@ impl ServiceSchemaBuilder {
                             match sql_ds.config.dialect {
                                 DialectEnum::MYSQL => {
                                     let query = sqlx::query("INSERT INTO subgraph_user (uuid, identifier, registration_state) VALUES (?, ?, ?);")
-                                        .bind(&user_uuid)
+                                        .bind(&user_uuid_string)
                                         .bind(&identifier)
                                         .bind(&reg_state);
                                     match sql_ds.pool.clone() {
@@ -117,7 +119,7 @@ impl ServiceSchemaBuilder {
                                 }
                                 DialectEnum::SQLITE => {
                                     let query = sqlx::query("INSERT INTO subgraph_user (uuid, identifier, registration_state) VALUES (?, ?, ?);")
-                                        .bind(&user_uuid)
+                                        .bind(&user_uuid_string)
                                         .bind(&identifier)
                                         .bind(&reg_state);
                                     match sql_ds.pool.clone() {

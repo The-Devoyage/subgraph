@@ -1,15 +1,14 @@
+use std::fmt::Display;
+
 use async_graphql::dynamic::{Object, Scalar, Schema, SchemaBuilder};
-use base64::{
-    alphabet,
-    engine::{self, general_purpose},
-    Engine as _,
-};
-use biscuit_auth::{KeyPair, PrivateKey, PublicKey};
+use base64::{engine::general_purpose, Engine as _};
+use biscuit_auth::{KeyPair, PrivateKey};
 use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 
 use crate::{configuration::subgraph::SubGraphConfig, data_sources::DataSources};
 
+pub mod create_auth_service;
 pub mod create_entities;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
@@ -20,6 +19,19 @@ pub enum ResolverType {
     UpdateOne,
     UpdateMany,
     InternalType,
+}
+
+impl Display for ResolverType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ResolverType::FindOne => write!(f, "FindOne"),
+            ResolverType::FindMany => write!(f, "FindMany"),
+            ResolverType::CreateOne => write!(f, "CreateOne"),
+            ResolverType::UpdateOne => write!(f, "UpdateOne"),
+            ResolverType::UpdateMany => write!(f, "UpdateMany"),
+            ResolverType::InternalType => write!(f, "InternalType"),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -48,6 +60,8 @@ impl ServiceSchemaBuilder {
 
         let key_pair;
         if subgraph_config.service.auth.is_some() {
+            //info message with an unicode icon
+            info!("🔐 Auth Enabled!");
             let auth = subgraph_config.service.auth.clone().unwrap();
             let b64_private_key = auth.private_key;
 
@@ -85,6 +99,10 @@ impl ServiceSchemaBuilder {
         let object_id = Scalar::new("ObjectID");
 
         self = self.create_entities();
+
+        if self.subgraph_config.service.auth.is_some() {
+            self = self.create_auth_service();
+        }
 
         let schema = self
             .schema_builder

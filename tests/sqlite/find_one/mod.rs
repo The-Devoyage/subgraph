@@ -1,5 +1,3 @@
-use log::debug;
-
 use crate::execute;
 
 #[tokio::test]
@@ -7,7 +5,7 @@ async fn find_one() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_coffee(get_coffee_input: { name: "Katz", price: 15, available: true }) {
+            get_coffee(get_coffee_input: { query: { name: "Katz", price: 15, available: true } }) {
                 id
             }
         }
@@ -23,7 +21,7 @@ async fn find_one_by_string() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_coffee(get_coffee_input: { name: "Katz" }) {
+            get_coffee(get_coffee_input: { query: { name: "Katz" } }) {
                 id
             }
         }
@@ -39,7 +37,7 @@ async fn find_one_by_int() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_coffee(get_coffee_input: { price: 15 }) {
+            get_coffee(get_coffee_input: { query: { price: 15 } }) {
                 id
             }
         }
@@ -55,7 +53,7 @@ async fn find_one_by_bool() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_coffee(get_coffee_input: { available: true }) {
+            get_coffee(get_coffee_input: { query: { available: true } }) {
                 id
             }
         }
@@ -71,7 +69,7 @@ async fn returns_correct_scalars() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_coffee(get_coffee_input: { name: "Katz" }) {
+            get_coffee(get_coffee_input: { query: { name: "Katz" } }) {
                 id
                 name
                 price
@@ -96,7 +94,7 @@ async fn join_sqlite_to_mongo() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_user(get_user_input: {}) {
+            get_user(get_user_input: { query: {} }) {
                 _id 
             }
         }
@@ -111,10 +109,12 @@ async fn join_sqlite_to_mongo() {
         r#"
             mutation {{
                 create_coffee(create_coffee_input: {{
-                    name: "KatzWithUser",
-                    price: 15,
-                    available: true,
-                    created_by: {}
+                    values: {{
+                        name: "KatzWithUser",
+                        price: 15,
+                        available: true,
+                        created_by: {}
+                    }}
                 }}) {{
                     id
                 }}
@@ -122,8 +122,6 @@ async fn join_sqlite_to_mongo() {
         "#,
         user_id
     );
-    println!("Query: {}", graphql_query);
-
     //Insert new coffee, with valid created_by
     let request = async_graphql::Request::new(graphql_query);
     let response = execute(request, None).await;
@@ -133,12 +131,12 @@ async fn join_sqlite_to_mongo() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_coffee(get_coffee_input: { name: "KatzWithUser" }) {
+            get_coffee(get_coffee_input: { query: { name: "KatzWithUser" } }) {
                 id
                 name
                 price
                 available
-                created_by(created_by: {}) {
+                created_by(created_by: { query: {} }) {
                     _id
                 }
             }
@@ -154,4 +152,36 @@ async fn join_sqlite_to_mongo() {
         coffee.get("created_by").unwrap().get("_id").unwrap(),
         user_id
     );
+}
+
+#[tokio::test]
+async fn find_one_with_and_filter() {
+    let request = async_graphql::Request::new(
+        r#"
+        query {
+            get_coffee(get_coffee_input: { query: { AND: [{ name: "Katz" }, { price: 15 }] } }) {
+                id
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
+    assert!(response.is_ok());
+}
+
+#[tokio::test]
+async fn find_one_with_or_filter() {
+    let request = async_graphql::Request::new(
+        r#"
+        query {
+            get_coffee(get_coffee_input: { query: { OR: [{ name: "Katz" }, { price: 15 }] } }) {
+                id
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
+    assert!(response.is_ok());
 }

@@ -1,6 +1,6 @@
 use async_graphql::dynamic::{FieldFuture, ResolverContext};
 use http::HeaderMap;
-use log::debug;
+use log::{debug, warn};
 
 use crate::data_sources::DataSources;
 
@@ -43,9 +43,16 @@ impl ServiceResolver {
                 let input_document =
                     ServiceResolver::get_resolver_input(&ctx, &as_field, &resolver_type)?;
 
+                // If as_field is Some, it is assumed to be a Internal Join.
+                // Require input_document to be non-empty.
+                if input_document.is_none() {
+                    warn!("Input Document is empty for Internal Resolver");
+                    return Ok(None);
+                }
+
                 ServiceResolver::guard_resolver(
                     &ctx,
-                    &input_document,
+                    &input_document.clone().unwrap(),
                     &entity,
                     service_guards.clone(),
                     &resolver_type,
@@ -55,9 +62,13 @@ impl ServiceResolver {
 
                 let operation_type = ServiceResolver::get_operation_type(&resolver_type, &as_field);
 
-                let results =
-                    DataSources::execute(&data_sources, input_document, entity, operation_type)
-                        .await?;
+                let results = DataSources::execute(
+                    &data_sources,
+                    input_document.unwrap(),
+                    entity,
+                    operation_type,
+                )
+                .await?;
 
                 Ok(Some(results))
             })

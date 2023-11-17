@@ -2,14 +2,14 @@ use async_graphql::{dynamic::ResolverContext, SelectionField};
 use bson::Document;
 use evalexpr::HashMapContext;
 use http::HeaderMap;
-use log::{debug, warn};
+use log::debug;
 
 use crate::{
     configuration::subgraph::{
         entities::{service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig},
         guard::Guard,
     },
-    graphql::schema::{create_entities::create_auth_service::TokenData, ResolverType},
+    graphql::schema::{create_auth_service::TokenData, ResolverType},
 };
 
 use super::ServiceResolver;
@@ -26,8 +26,12 @@ impl ServiceResolver {
     ) -> Result<(), async_graphql::Error> {
         debug!("Guard Resolver Function");
 
-        let guard_context =
-            Guard::create_guard_context(headers, token_data, input_document.clone())?;
+        let guard_context = Guard::create_guard_context(
+            headers,
+            token_data,
+            input_document.clone(),
+            resolver_type.to_string(),
+        )?;
         let resolver_guards =
             match ServiceEntityConfig::get_resolver(&entity, resolver_type.clone()) {
                 Some(resolver) => {
@@ -37,17 +41,11 @@ impl ServiceResolver {
                     );
                     resolver.guards
                 }
-                None => {
-                    warn!("No resolver guard found for entity: {}", entity.name);
-                    None
-                }
+                None => None,
             };
         match entity.guards.clone() {
             Some(guards) => Guard::check(&guards, &mut guard_context.clone())?,
-            None => {
-                warn!("No entity guard found for entity: {}", entity.name);
-                ()
-            }
+            None => (),
         };
 
         if service_guards.is_some() {
