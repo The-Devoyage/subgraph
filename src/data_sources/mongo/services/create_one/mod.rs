@@ -1,6 +1,6 @@
 use async_graphql::{Error, ErrorExtensions, Result};
-use bson::{doc, to_document, Document};
-use log::{debug, error, info};
+use bson::{doc, Document};
+use log::{debug, info};
 use mongodb::Database;
 
 use super::Services;

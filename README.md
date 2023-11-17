@@ -700,6 +700,7 @@ Additional guard functions that may be used within the `if_expr` syntax. Current
 | headers                    | Extracts a header value from request headers.           | "headers(\"authoriation\") == \"1234\""              |
 | input                      | Extracts a value from the user input.                   | "input(\"query\", \"comments.user.id\") != \"23\""   |
 | token_data                 | Extracts data from auth token, identifier and user_uuid | "token_data(\"user_uuid\") != input(\"created_by\")" |
+| resolver_type              | Shows the type of resolver in guard function            | "resolver_type() == \"FindOne\""                     |
 
 **Input Function**
 
