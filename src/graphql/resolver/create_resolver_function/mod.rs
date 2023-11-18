@@ -1,6 +1,6 @@
 use async_graphql::dynamic::{FieldFuture, ResolverContext};
 use http::HeaderMap;
-use log::{debug, warn};
+use log::debug;
 
 use crate::data_sources::DataSources;
 
@@ -46,7 +46,6 @@ impl ServiceResolver {
                 // If as_field is Some, it is assumed to be a Internal Join.
                 // Require input_document to be non-empty.
                 if input_document.is_none() {
-                    warn!("Input Document is empty for Internal Resolver");
                     return Ok(None);
                 }
 
@@ -70,7 +69,7 @@ impl ServiceResolver {
                 )
                 .await?;
 
-                Ok(Some(results))
+                Ok(results)
             })
         })
     }

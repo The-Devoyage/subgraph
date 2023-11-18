@@ -63,7 +63,7 @@ impl HttpDataSource {
         input: Document,
         entity: ServiceEntityConfig,
         resolver_type: ResolverType,
-    ) -> Result<FieldValue<'a>, async_graphql::Error> {
+    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
         info!("Executing HTTP Data Source Operation");
 
         let data_source = match data_source {
@@ -82,31 +82,31 @@ impl HttpDataSource {
             ResolverType::FindOne => {
                 let result =
                     services::Services::find_one(data_source.client.clone(), filter).await?;
-                Ok(FieldValue::owned_any(result))
+                Ok(Some(FieldValue::owned_any(result)))
             }
             ResolverType::FindMany => {
                 let results =
                     services::Services::find_many(data_source.client.clone(), filter).await?;
-                Ok(FieldValue::list(
+                Ok(Some(FieldValue::list(
                     results.into_iter().map(|doc| FieldValue::owned_any(doc)),
-                ))
+                )))
             }
             ResolverType::CreateOne => {
                 let result =
                     services::Services::create_one(data_source.client.clone(), filter).await?;
-                Ok(FieldValue::owned_any(result))
+                Ok(Some(FieldValue::owned_any(result)))
             }
             ResolverType::UpdateOne => {
                 let result =
                     services::Services::update_one(data_source.client.clone(), filter).await?;
-                Ok(FieldValue::owned_any(result))
+                Ok(Some(FieldValue::owned_any(result)))
             }
             ResolverType::UpdateMany => {
                 let results =
                     services::Services::update_many(data_source.client.clone(), filter).await?;
-                Ok(FieldValue::list(
+                Ok(Some(FieldValue::list(
                     results.into_iter().map(|doc| FieldValue::owned_any(doc)),
-                ))
+                )))
             }
             _ => panic!("Invalid resolver type"),
         }

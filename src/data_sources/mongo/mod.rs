@@ -191,7 +191,7 @@ impl MongoDataSource {
         mut input: Document,
         entity: ServiceEntityConfig,
         resolver_type: ResolverType,
-    ) -> Result<FieldValue<'a>, async_graphql::Error> {
+    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
         debug!("Executing Operation - Mongo Data Source");
 
         input = MongoDataSource::finalize_input(input, &entity)?;
@@ -211,27 +211,42 @@ impl MongoDataSource {
         match resolver_type {
             ResolverType::FindOne => {
                 let result = services::Services::find_one(db, input, collection_name).await?;
-                Ok(FieldValue::owned_any(result))
+                if result.is_none() {
+                    return Ok(FieldValue::NONE);
+                }
+                Ok(Some(FieldValue::owned_any(result)))
             }
             ResolverType::FindMany => {
                 let results = services::Services::find_many(db, input, collection_name).await?;
-                Ok(FieldValue::list(
+                if results.is_empty() {
+                    return Ok(FieldValue::NONE);
+                }
+                Ok(Some(FieldValue::list(
                     results.into_iter().map(|doc| FieldValue::owned_any(doc)),
-                ))
+                )))
             }
             ResolverType::CreateOne => {
                 let result = services::Services::create_one(db, input, collection_name).await?;
-                Ok(FieldValue::owned_any(result))
+                if result.is_none() {
+                    return Ok(FieldValue::NONE);
+                }
+                Ok(Some(FieldValue::owned_any(result)))
             }
             ResolverType::UpdateOne => {
                 let result = services::Services::update_one(db, input, collection_name).await?;
-                Ok(FieldValue::owned_any(result))
+                if result.is_none() {
+                    return Ok(FieldValue::NONE);
+                }
+                Ok(Some(FieldValue::owned_any(result)))
             }
             ResolverType::UpdateMany => {
                 let results = services::Services::update_many(db, input, collection_name).await?;
-                Ok(FieldValue::list(
+                if results.is_empty() {
+                    return Ok(FieldValue::NONE);
+                }
+                Ok(Some(FieldValue::list(
                     results.into_iter().map(|doc| FieldValue::owned_any(doc)),
-                ))
+                )))
             }
             _ => panic!("Invalid resolver type"),
         }

@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.0.13]
+
+### Fixed
+
+- Nullable Entities Enabled
+
 ## [v0.0.12]
 
 ### Added

@@ -178,7 +178,7 @@ impl SqlDataSource {
         input: Document,
         entity: ServiceEntityConfig,
         resolver_type: ResolverType,
-    ) -> Result<FieldValue<'a>, async_graphql::Error> {
+    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
         debug!("Executing SQL Operation");
 
         let data_source = match data_source {
@@ -213,13 +213,19 @@ impl SqlDataSource {
         match resolver_type {
             ResolverType::FindOne => {
                 let result = services::Services::find_one(&data_source.pool, &query).await?;
-                Ok(FieldValue::owned_any(result))
+                if result.is_none() {
+                    return Ok(FieldValue::NONE);
+                }
+                Ok(Some(FieldValue::owned_any(result)))
             }
             ResolverType::FindMany => {
                 let results = services::Services::find_many(&data_source.pool, &query).await?;
-                Ok(FieldValue::list(
+                if results.is_empty() {
+                    return Ok(FieldValue::NONE);
+                }
+                Ok(Some(FieldValue::list(
                     results.into_iter().map(|row| FieldValue::owned_any(row)),
-                ))
+                )))
             }
             ResolverType::CreateOne => {
                 let result = services::Services::create_one(
@@ -229,7 +235,10 @@ impl SqlDataSource {
                     data_source.config.dialect.clone(),
                 )
                 .await?;
-                Ok(FieldValue::owned_any(result))
+                if result.is_none() {
+                    return Ok(FieldValue::NONE);
+                }
+                Ok(Some(FieldValue::owned_any(result)))
             }
             ResolverType::UpdateOne => {
                 let result = services::Services::update_one(
@@ -239,7 +248,10 @@ impl SqlDataSource {
                     data_source.config.dialect.clone(),
                 )
                 .await?;
-                Ok(FieldValue::owned_any(result))
+                if result.is_none() {
+                    return Ok(FieldValue::NONE);
+                }
+                Ok(Some(FieldValue::owned_any(result)))
             }
             ResolverType::UpdateMany => {
                 let results = services::Services::update_many(
@@ -249,9 +261,12 @@ impl SqlDataSource {
                     data_source.config.dialect.clone(),
                 )
                 .await?;
-                Ok(FieldValue::list(
+                if results.is_empty() {
+                    return Ok(FieldValue::NONE);
+                }
+                Ok(Some(FieldValue::list(
                     results.into_iter().map(|row| FieldValue::owned_any(row)),
-                ))
+                )))
             }
             _ => panic!("Invalid resolver type"),
         }

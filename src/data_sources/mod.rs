@@ -101,7 +101,7 @@ impl DataSources {
         input: Document,
         entity: ServiceEntityConfig,
         resolver_type: ResolverType,
-    ) -> Result<FieldValue<'a>, async_graphql::Error> {
+    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
         debug!("Executing Datasource Operation");
 
         let cloned_entity = entity.clone();
