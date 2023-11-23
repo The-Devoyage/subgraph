@@ -1,8 +1,15 @@
 [service]
 name = "subgraph_tests"
-port = 0
+port = 1234
 log_level = "debug"
 imports = ["./test_config_imports.toml"]
+
+[service.auth]
+requesting_party = "localhost" #"localhost"
+requesting_party_name = "$TRICERATASK_RPN" #"localhost_demo"
+requesting_party_origin = "$TRICERATASK_RPO" #"http://localhost:1234" #Origin of the client. http://localhost:1234
+data_source = "users_data_source"
+private_key = "$TRICERATASK_PRIVATE_KEY" # Generate a private key using cli.
 
 # Data Sources
 [[service.data_sources]]
@@ -60,9 +67,22 @@ fields = [
   ] },
   { name = "fail_guard", scalar = "Boolean", guards = [{name = "access_check", if_expr = "1 == 1", then_msg = "You do not have access to this resource" }] }
 ]
-guards = [
-  { name = "access_check", if_expr = "1 == 0", then_msg = "You do not have access to this resource" }
-]
+[[service.entities.guards]]
+name = "data_context_guard" 
+if_expr = "1 == 0" 
+then_msg = "You do not have access to this resource" 
+[service.entities.guards.context]
+entity_name = "user_access"
+query = '''
+  {
+    "get_user_accesss_input": {
+      "query": {
+        "user_id": "6510865e93142f6d61b10dd8"
+      } 
+    }
+  }
+'''
+variables = []
 
 [[service.entities]]
 name = "Coffee"

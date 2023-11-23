@@ -1,5 +1,6 @@
 use async_graphql::{futures_util::StreamExt, Error, ErrorExtensions};
 use bson::Document;
+use log::debug;
 use mongodb::Database;
 
 use super::Services;
@@ -12,6 +13,8 @@ impl Services {
     ) -> Result<Vec<Option<Document>>, async_graphql::Error> {
         let coll = db.collection::<Document>(&collection);
 
+        debug!("Find Many: {:?}", filter);
+
         let query = match filter.get("query") {
             Some(query) => query,
             None => return Err(Error::new("Query filter not found")),
@@ -19,7 +22,7 @@ impl Services {
 
         let query_doc = match query.as_document() {
             Some(query_doc) => query_doc,
-            None => return Err(Error::new("Query filter not found")),
+            None => return Err(Error::new("Failed to convert query filter to document.")),
         };
 
         let filter = Services::create_nested_find_filter(&query_doc);

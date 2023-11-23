@@ -1,17 +1,21 @@
 use async_graphql::{Error, ErrorExtensions};
 use bson::{doc, Document};
 use evalexpr::*;
+use guard_data_context::GuardDataContext;
 use http::HeaderMap;
 use log::{debug, error};
 use serde::{Deserialize, Serialize};
 
-use crate::graphql::schema::create_auth_service::TokenData;
+use crate::{graphql::schema::create_auth_service::TokenData, utils::clean_string::clean_string};
+
+pub mod guard_data_context;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Guard {
     pub name: String,
     pub if_expr: String,
     pub then_msg: String,
+    pub context: Option<GuardDataContext>,
 }
 
 impl Guard {
@@ -230,7 +234,7 @@ impl Guard {
             }),
             "headers" => Function::new(move |argument| {
                 let key = argument.as_string()?;
-                let cleaned_key = key.replace("\"", "");
+                let cleaned_key = clean_string(&key);
                 let value = headers.get(&cleaned_key);
                 if value.is_none() {
                     Err(EvalexprError::expected_string(argument.clone()))
@@ -247,16 +251,28 @@ impl Guard {
             "token_data" => Function::new(move |argument| {
                 let token_data = match &token_data {
                     Some(token_data) => token_data,
-                    None => return Err(EvalexprError::expected_string(argument.clone()))
+                    None => {
+                        error!("Token Data not found.");
+                        return Err(EvalexprError::CustomMessage("Token Data not found.".to_string()))
+                    }
                 };
                 let key = argument.as_string()?;
-                let cleaned_key = key.replace("\"", "");
-                let json = serde_json::to_value(token_data).unwrap();
+                let cleaned_key = clean_string(&key);
+                let json = match serde_json::to_value(token_data) {
+                    Ok(json) => json,
+                    Err(_) => {
+                        error!("Token Data not found.");
+                        return Err(EvalexprError::CustomMessage("Failed to serialize token data.".to_string()))
+                    }
+                };
                 let value = json.get(cleaned_key);
                     debug!("Token Data Value: {:?}", value);
                     match value {
                         Some(value) => Ok(Value::String(value.as_str().unwrap().to_string())),
-                        None => Err(EvalexprError::expected_string(argument.clone()))
+                        None => {
+                            error!("Token Data Value not found.");
+                            Err(EvalexprError::CustomMessage("Token Data Value not found.".to_string()))
+                        }
                     }
             }),
             "resolver_type" => Function::new(move |_| {
@@ -289,7 +305,55 @@ impl Guard {
         debug!("Guard Context: {:?}", context);
         match context {
             Ok(context) => Ok(context),
-            Err(e) => Err(async_graphql::Error::new(e.to_string())),
+            Err(e) => {
+                error!("Error parsing guard context: {:?}", e);
+                Err(async_graphql::Error::new(e.to_string()))
+            }
         }
+    }
+
+    /// Provided the guards from the service, entities, resolvers, and fields, this function will
+    /// return a list of all the data contexts.
+    pub fn get_guard_data_contexts(
+        service_guards: Option<Vec<Guard>>,
+        entity_guards: Option<Vec<Guard>>,
+        resolver_guards: Option<Vec<Guard>>,
+        field_guards: Option<Vec<Guard>>,
+    ) -> Vec<GuardDataContext> {
+        let mut contexts = vec![];
+
+        if let Some(service_guards) = service_guards {
+            for guard in service_guards {
+                if let Some(context) = guard.context {
+                    contexts.push(context);
+                }
+            }
+        }
+
+        if let Some(entity_guards) = entity_guards {
+            for guard in entity_guards {
+                if let Some(context) = guard.context {
+                    contexts.push(context);
+                }
+            }
+        }
+
+        if let Some(resolver_guards) = resolver_guards {
+            for guard in resolver_guards {
+                if let Some(context) = guard.context {
+                    contexts.push(context);
+                }
+            }
+        }
+
+        if let Some(field_guards) = field_guards {
+            for guard in field_guards {
+                if let Some(context) = guard.context {
+                    contexts.push(context);
+                }
+            }
+        }
+
+        contexts
     }
 }

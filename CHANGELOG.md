@@ -4,7 +4,7 @@
 
 ### Fixed
 
-- Nullable Entities Enabled
+- Nullable Entities Patched
 
 ## [v0.0.12]
 

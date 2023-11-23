@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    process::exit,
+    sync::{Arc, Mutex},
+};
 
 use clap::Parser;
 
@@ -111,7 +114,10 @@ async fn main() -> Result<(), std::io::Error> {
                             }
                         }
                     }
-                    Err(_) => error!("Error receiving message"),
+                    Err(e) => {
+                        error!("Error receiving message: {}", e.to_string());
+                        exit(1)
+                    }
                 }
             }
         }

@@ -7,11 +7,12 @@ async fn guard_success() {
         {
             get_user(get_user_input: { name: "Bongo", age: 10, married: false, email: "nickisyourfan@gmail.com" }) {
                 _id
+                fail_guard
             }
         }
         "#,
     );
 
     let response = execute(request, None).await;
-    assert!(!response.is_ok());
+    assert!(response.is_err());
 }
