@@ -38,7 +38,8 @@ async fn execute(
         watch: false,
     });
     let schema = spawn_app(args).await;
-    let headers = HeaderMap::new();
+    let mut headers = HeaderMap::new();
+    headers.insert("Authorization", "ErEBCkcKDW5pY2tpc3lvdXJmYW4KJGQ3MjgxNjg2LTdhNGMtNGE4Yi04MzY3LWFiYzJlMDUyNTNkORgDIg4KDAgKEgMYgAgSAxiBCBIkCAASIMwJxaQ8TbWNeTeIxPFkgNGHM-8V_UzvtijMTVgxwlwUGkD2EOehKSTh2ycqf2J12f9BfOghhzJZigtkIu7ZSZQUQGV_jMSigkL3OHIaEbKcXhOgfbKzJ1z76h6ww4U_1-gPIiIKIL8OSIotMVhBwLPTvLdtXyN_Dv3YnFcqXK_u0ZcfvtKm".parse().unwrap());
     let response = schema.execute(request.data(headers.clone())).await;
     println!("response: {:?}", response);
     response

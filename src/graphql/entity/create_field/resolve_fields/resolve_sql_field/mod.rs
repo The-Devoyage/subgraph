@@ -17,15 +17,84 @@ impl ServiceEntity {
 
         match scalar {
             ScalarOptions::String => {
-                ServiceEntity::resolve_sql_string_scalar(response_row, field_name)
+                let value = ServiceEntity::resolve_sql_string_scalar(response_row, field_name)?;
+                match value {
+                    Some(value) => Ok(Value::from(value.to_string())),
+                    None => Ok(Value::Null),
+                }
             }
-            ScalarOptions::Int => ServiceEntity::resolve_sql_int_scalar(response_row, field_name),
+            ScalarOptions::Int => {
+                let value = ServiceEntity::resolve_sql_int_scalar(response_row, field_name)?;
+                match value {
+                    Some(value) => Ok(Value::from(value)),
+                    None => Ok(Value::Null),
+                }
+            }
             ScalarOptions::Boolean => {
-                ServiceEntity::resolve_sql_bool_scalar(response_row, field_name)
+                let value = ServiceEntity::resolve_sql_bool_scalar(response_row, field_name)?;
+                match value {
+                    Some(value) => Ok(Value::from(value)),
+                    None => Ok(Value::Null),
+                }
             }
-            ScalarOptions::UUID => ServiceEntity::resolve_sql_uuid_scalar(response_row, field_name),
+            ScalarOptions::UUID => {
+                let value = ServiceEntity::resolve_sql_uuid_scalar(response_row, field_name)?;
+                match value {
+                    Some(value) => Ok(Value::from(value.to_string())),
+                    None => Ok(Value::Null),
+                }
+            }
             ScalarOptions::DateTime => {
-                ServiceEntity::resolve_sql_datetime_scalar(response_row, field_name)
+                let value = ServiceEntity::resolve_sql_datetime_scalar(response_row, field_name)?;
+                match value {
+                    Some(value) => Ok(Value::from(value.to_rfc3339())),
+                    None => Ok(Value::Null),
+                }
+            }
+            _ => unreachable!("Unreachable scalar type: {:?}", scalar),
+        }
+    }
+
+    pub fn resolve_sql_field_json(
+        response_row: &ResponseRow,
+        field_name: &str,
+        scalar: ScalarOptions,
+    ) -> Result<serde_json::Value, async_graphql::Error> {
+        match scalar {
+            ScalarOptions::String => {
+                let value = ServiceEntity::resolve_sql_string_scalar(response_row, field_name)?;
+                match value {
+                    Some(value) => Ok(serde_json::Value::String(value.to_string())),
+                    None => Ok(serde_json::Value::Null),
+                }
+            }
+            ScalarOptions::Int => {
+                let value = ServiceEntity::resolve_sql_int_scalar(response_row, field_name)?;
+                match value {
+                    Some(value) => Ok(serde_json::Value::Number(serde_json::Number::from(value))),
+                    None => Ok(serde_json::Value::Null),
+                }
+            }
+            ScalarOptions::Boolean => {
+                let value = ServiceEntity::resolve_sql_bool_scalar(response_row, field_name)?;
+                match value {
+                    Some(value) => Ok(serde_json::Value::Bool(value)),
+                    None => Ok(serde_json::Value::Null),
+                }
+            }
+            ScalarOptions::UUID => {
+                let value = ServiceEntity::resolve_sql_uuid_scalar(response_row, field_name)?;
+                match value {
+                    Some(value) => Ok(serde_json::Value::String(value.to_string())),
+                    None => Ok(serde_json::Value::Null),
+                }
+            }
+            ScalarOptions::DateTime => {
+                let value = ServiceEntity::resolve_sql_datetime_scalar(response_row, field_name)?;
+                match value {
+                    Some(value) => Ok(serde_json::Value::String(value.to_rfc3339())),
+                    None => Ok(serde_json::Value::Null),
+                }
             }
             _ => unreachable!("Unreachable scalar type: {:?}", scalar),
         }
@@ -34,10 +103,10 @@ impl ServiceEntity {
     pub fn resolve_sql_string_scalar(
         response_row: &ResponseRow,
         field_name: &str,
-    ) -> Result<Value, async_graphql::Error> {
+    ) -> Result<Option<String>, async_graphql::Error> {
         debug!("Resolving SQL String Scalar");
 
-        match response_row {
+        let value = match response_row {
             ResponseRow::MySql(row) => {
                 let value: Option<&str> = row.try_get(field_name).map_err(|e| {
                     error!("Error resolving String field: {:?}", e.to_string());
@@ -46,10 +115,7 @@ impl ServiceEntity {
                         e.to_string()
                     ))
                 })?;
-                match value {
-                    Some(value) => Ok(Value::from(value.to_string())),
-                    None => Ok(Value::Null),
-                }
+                value.map(|s| s.to_string())
             }
             ResponseRow::SqLite(row) => {
                 let value: Option<&str> = row.try_get(field_name).map_err(|e| {
@@ -59,10 +125,7 @@ impl ServiceEntity {
                         e.to_string()
                     ))
                 })?;
-                match value {
-                    Some(value) => Ok(Value::from(value.to_string())),
-                    None => Ok(Value::Null),
-                }
+                value.map(|s| s.to_string())
             }
             ResponseRow::Postgres(row) => {
                 let value: Option<&str> = row.try_get(field_name).map_err(|e| {
@@ -72,28 +135,26 @@ impl ServiceEntity {
                         e.to_string()
                     ))
                 })?;
-                match value {
-                    Some(value) => Ok(Value::from(value.to_string())),
-                    None => Ok(Value::Null),
-                }
+                value.map(|s| s.to_string())
             }
+        };
+
+        match value {
+            Some(value) => Ok(Some(value)),
+            None => Ok(None),
         }
     }
 
     pub fn resolve_sql_int_scalar(
         response_row: &ResponseRow,
         field_name: &str,
-    ) -> Result<Value, async_graphql::Error> {
+    ) -> Result<Option<i32>, async_graphql::Error> {
         debug!("Resolving SQL Int Scalar");
 
-        match response_row {
+        let value = match response_row {
             ResponseRow::MySql(row) => {
-                let value = row.try_get_unchecked::<Option<i32>, _>(field_name);
-                match value {
-                    Ok(value) => match value {
-                        Some(value) => Ok(Value::from(value)),
-                        None => Ok(Value::Null),
-                    },
+                let value = match row.try_get_unchecked::<Option<i32>, _>(field_name) {
+                    Ok(value) => value,
                     Err(_) => {
                         let value: Option<i64> = row.try_get(field_name).map_err(|e| {
                             error!("Error resolving Int field: {:?}", e.to_string());
@@ -102,12 +163,10 @@ impl ServiceEntity {
                                 e.to_string()
                             ))
                         })?;
-                        match value {
-                            Some(value) => Ok(Value::from(value)),
-                            None => Ok(Value::Null),
-                        }
+                        value.map(|v| v as i32)
                     }
-                }
+                };
+                value
             }
             ResponseRow::SqLite(row) => {
                 let value: Option<i32> = row.try_get(field_name).map_err(|e| {
@@ -117,10 +176,7 @@ impl ServiceEntity {
                         e.to_string()
                     ))
                 })?;
-                match value {
-                    Some(value) => Ok(Value::from(value)),
-                    None => Ok(Value::Null),
-                }
+                value
             }
             ResponseRow::Postgres(row) => {
                 let value: Option<i32> = row.try_get(field_name).map_err(|e| {
@@ -130,21 +186,23 @@ impl ServiceEntity {
                         e.to_string()
                     ))
                 })?;
-                match value {
-                    Some(value) => Ok(Value::from(value)),
-                    None => Ok(Value::Null),
-                }
+                value
             }
+        };
+
+        match value {
+            Some(value) => Ok(Some(value)),
+            None => Ok(None),
         }
     }
 
     pub fn resolve_sql_bool_scalar(
         response_row: &ResponseRow,
         field_name: &str,
-    ) -> Result<Value, async_graphql::Error> {
+    ) -> Result<Option<bool>, async_graphql::Error> {
         debug!("Resolving SQL Bool Scalar");
 
-        match response_row {
+        let value = match response_row {
             ResponseRow::MySql(row) => {
                 let value: Option<bool> = row.try_get(field_name).map_err(|e| {
                     error!("Error resolving Bool field: {:?}", e.to_string());
@@ -153,10 +211,7 @@ impl ServiceEntity {
                         e.to_string()
                     ))
                 })?;
-                match value {
-                    Some(value) => Ok(Value::from(value)),
-                    None => Ok(Value::Null),
-                }
+                value
             }
             ResponseRow::SqLite(row) => {
                 let value: Option<bool> = row.try_get(field_name).map_err(|e| {
@@ -166,10 +221,7 @@ impl ServiceEntity {
                         e.to_string()
                     ))
                 })?;
-                match value {
-                    Some(value) => Ok(Value::from(value)),
-                    None => Ok(Value::Null),
-                }
+                value
             }
             ResponseRow::Postgres(row) => {
                 let value: Option<bool> = row.try_get(field_name).map_err(|e| {
@@ -179,21 +231,23 @@ impl ServiceEntity {
                         e.to_string()
                     ))
                 })?;
-                match value {
-                    Some(value) => Ok(Value::from(value)),
-                    None => Ok(Value::Null),
-                }
+                value
             }
+        };
+
+        match value {
+            Some(value) => Ok(Some(value)),
+            None => Ok(None),
         }
     }
 
     pub fn resolve_sql_uuid_scalar(
         response_row: &ResponseRow,
         field_name: &str,
-    ) -> Result<Value, async_graphql::Error> {
+    ) -> Result<Option<uuid::Uuid>, async_graphql::Error> {
         debug!("Resolving SQL UUID Scalar");
 
-        match response_row {
+        let value = match response_row {
             ResponseRow::MySql(row) => {
                 let value: Option<&str> = row.try_get(field_name).map_err(|e| {
                     error!("Error resolving UUID field: {:?}", e.to_string());
@@ -203,8 +257,14 @@ impl ServiceEntity {
                     ))
                 })?;
                 match value {
-                    Some(value) => Ok(Value::from(value.to_string())),
-                    None => Ok(Value::Null),
+                    Some(value) => Some(uuid::Uuid::parse_str(value).map_err(|e| {
+                        error!("Error resolving UUID field: {:?}", e.to_string());
+                        async_graphql::Error::new(format!(
+                            "Error resolving UUID field: {:?}",
+                            e.to_string()
+                        ))
+                    })?),
+                    None => None,
                 }
             }
             ResponseRow::SqLite(row) => {
@@ -216,8 +276,14 @@ impl ServiceEntity {
                     ))
                 })?;
                 match value {
-                    Some(value) => Ok(Value::from(value.to_string())),
-                    None => Ok(Value::Null),
+                    Some(value) => Some(uuid::Uuid::parse_str(value).map_err(|e| {
+                        error!("Error resolving UUID field: {:?}", e.to_string());
+                        async_graphql::Error::new(format!(
+                            "Error resolving UUID field: {:?}",
+                            e.to_string()
+                        ))
+                    })?),
+                    None => None,
                 }
             }
             ResponseRow::Postgres(row) => {
@@ -232,20 +298,31 @@ impl ServiceEntity {
                         ))
                     })?;
                 match value {
-                    Some(value) => Ok(Value::from(value)),
-                    None => Ok(Value::Null),
+                    Some(value) => Some(uuid::Uuid::parse_str(&value).map_err(|e| {
+                        error!("Error resolving UUID field: {:?}", e.to_string());
+                        async_graphql::Error::new(format!(
+                            "Error resolving UUID field: {:?}",
+                            e.to_string()
+                        ))
+                    })?),
+                    None => None,
                 }
             }
+        };
+
+        match value {
+            Some(value) => Ok(Some(value)),
+            None => Ok(None),
         }
     }
 
     pub fn resolve_sql_datetime_scalar(
         response_row: &ResponseRow,
         field_name: &str,
-    ) -> Result<Value, async_graphql::Error> {
+    ) -> Result<Option<chrono::DateTime<chrono::Utc>>, async_graphql::Error> {
         debug!("Resolving SQL DateTime Scalar");
 
-        match response_row {
+        let value = match response_row {
             ResponseRow::MySql(row) => {
                 let value: Option<chrono::DateTime<chrono::Utc>> =
                     row.try_get(field_name).map_err(|e| {
@@ -255,23 +332,33 @@ impl ServiceEntity {
                             e.to_string()
                         ))
                     })?;
-                match value {
-                    Some(value) => Ok(Value::from(value.to_rfc3339())),
-                    None => Ok(Value::Null),
-                }
+                value
             }
             ResponseRow::SqLite(row) => {
-                let value: Option<&str> = row.try_get(field_name).map_err(|e| {
-                    error!("Error resolving DateTime field: {:?}", e.to_string());
-                    async_graphql::Error::new(format!(
-                        "Error resolving DateTime field: {:?}",
-                        e.to_string()
-                    ))
-                })?;
-                match value {
-                    Some(value) => Ok(Value::from(value.to_string())),
-                    None => Ok(Value::Null),
-                }
+                let value = row
+                    .try_get(field_name)
+                    .map(|value: Option<&str>| match value {
+                        Some(value) => {
+                            let date = chrono::DateTime::parse_from_rfc3339(value)
+                                .map(|value| value.with_timezone(&chrono::Utc));
+                            match date {
+                                Ok(date) => Some(date),
+                                Err(e) => {
+                                    error!("Error resolving DateTime field: {:?}", e.to_string());
+                                    None
+                                }
+                            }
+                        }
+                        None => None,
+                    })
+                    .map_err(|e| {
+                        error!("Error resolving DateTime field: {:?}", e.to_string());
+                        async_graphql::Error::new(format!(
+                            "Error resolving DateTime field: {:?}",
+                            e.to_string()
+                        ))
+                    })?;
+                value
             }
             ResponseRow::Postgres(row) => {
                 let value: Option<chrono::DateTime<chrono::Utc>> =
@@ -282,11 +369,13 @@ impl ServiceEntity {
                             e.to_string()
                         ))
                     })?;
-                match value {
-                    Some(value) => Ok(Value::from(value.to_rfc3339())),
-                    None => Ok(Value::Null),
-                }
+                value
             }
+        };
+
+        match value {
+            Some(value) => Ok(Some(value)),
+            None => Ok(None),
         }
     }
 }

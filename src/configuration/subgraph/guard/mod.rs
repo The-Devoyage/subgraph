@@ -6,7 +6,14 @@ use http::HeaderMap;
 use log::{debug, error};
 use serde::{Deserialize, Serialize};
 
-use crate::{graphql::schema::create_auth_service::TokenData, utils::clean_string::clean_string};
+use crate::{
+    configuration::subgraph::{
+        entities::{ScalarOptions, ServiceEntityConfig},
+        SubGraphConfig,
+    },
+    graphql::schema::create_auth_service::TokenData,
+    utils::clean_string::clean_string,
+};
 
 pub mod guard_data_context;
 
@@ -156,6 +163,8 @@ impl Guard {
         token_data: Option<TokenData>,
         input_document: Document,
         resolver_type: String,
+        data_context: Option<serde_json::Value>,
+        subgraph_config: SubGraphConfig,
     ) -> Result<HashMapContext, async_graphql::Error> {
         debug!("Creating Guard Context");
 
@@ -231,6 +240,111 @@ impl Guard {
                     error!("Arguments [0] incorrect.");
                     Err(EvalexprError::expected_string(arguments[0].clone()))
                 }
+            }),
+            "context" => Function::new(move |argument| {
+                debug!("Context Argument: {:?}", argument);
+                let mut values_tuple = vec![];
+                let data_context = match &data_context {
+                    Some(data_context) => data_context,
+                    None => {
+                        error!("Data Context not found.");
+                        return Err(EvalexprError::CustomMessage("Data Context not found.".to_string()))
+                    }
+                };
+                let key = argument.as_string()?;
+                let cleaned_key = clean_string(&key);
+
+                let root_key = cleaned_key.split(".").collect::<Vec<&str>>()[0];
+                let root_value = data_context.get(root_key);
+
+
+                if root_value.is_none() {
+                    return Ok(Value::Empty);
+                }
+
+                let entity = SubGraphConfig::get_entity(subgraph_config.clone(), root_key);
+                if entity.is_none() {
+                    return Err(EvalexprError::CustomMessage("Entity not found.".to_string()))
+                }
+                let entity = entity.unwrap();
+
+                // Root value should be a vector of entities, loop through each one and extract the
+                // value. Add the value to the values_tuple.
+                if root_value.unwrap().is_array() {
+                    // remove the first key/root key from the cleaned key.
+                    let cleaned_key = cleaned_key.split(".").collect::<Vec<&str>>()[1..].join(".");
+                    let is_nested = cleaned_key.contains(".");
+
+                    // For each value of the array, extract the key's value from the entity.
+                    for value in root_value.unwrap().as_array().unwrap() {
+                        if is_nested {
+                            debug!("Nested Context Key: {:?}", cleaned_key);
+                            let keys: Vec<&str> = cleaned_key.split(".").collect();
+                            let mut value = &value[keys[0]];
+                            for key in keys.iter().skip(1) {
+                                value = &value[key];
+                            }
+
+                            if value.is_null() {
+                                return Ok(Value::Empty);
+                            }
+
+                            let value = Value::String(value.as_str().unwrap().to_string());
+                            debug!("Context Value: {:?}", value);
+
+                            values_tuple.push(value);
+                        } else {
+                            debug!("Context Key: {:?}", cleaned_key.clone());
+                            let value = value.get(cleaned_key.clone());
+                            let field = match ServiceEntityConfig::get_field(entity.clone(), cleaned_key.clone()) {
+                                Ok(field) => field,
+                                Err(e)=> {
+                                    error!("Field not found: {:?}", e);
+                                    return Err(EvalexprError::CustomMessage("Field not found.".to_string()))
+                                }
+                            };
+
+                            debug!("Context Value: {:?}", value);
+                            let value = match value {
+                                Some(value) => {
+                                    if value.is_null() {
+                                        return Ok(Value::Empty);
+                                    }
+                                    match field.scalar {
+                                        ScalarOptions::String => Value::String(value.to_string()),
+                                        ScalarOptions::Int => Value::Int(value.as_i64().unwrap()),
+                                        ScalarOptions::Boolean => Value::Boolean(value.as_bool().unwrap()),
+                                        ScalarOptions::DateTime => Value::String(value.to_string()),
+                                        ScalarOptions::UUID => Value::String(value.to_string()),
+                                        ScalarOptions::ObjectID => {
+                                            let object_id = value.get("$oid");
+                                            if object_id.is_none() {
+                                                return Err(EvalexprError::CustomMessage("ObjectID not found.".to_string()))
+                                            }
+                                            let object_id = object_id.unwrap().as_str().unwrap();
+                                            Value::String(object_id.to_string())
+                                        },
+                                        _ => return Err(EvalexprError::CustomMessage("Scalar is not supported in context.".to_string()))
+                                    }
+
+                                },
+                                None => Value::Empty,
+                            };
+                            debug!("Context Value: {:?}", value);
+
+                            values_tuple.push(value);
+                        }
+                    }
+
+                } else {
+                    return Err(EvalexprError::CustomMessage("Context must be an array.".to_string()))
+                }
+
+
+                // Return a tuple of the found values so that they be used in guard checks.
+                let values = Value::from(values_tuple);
+                debug!("Context Value Tuples: {:?}", values);
+                Ok(values)
             }),
             "headers" => Function::new(move |argument| {
                 let key = argument.as_string()?;

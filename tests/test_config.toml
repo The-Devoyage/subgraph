@@ -1,6 +1,6 @@
 [service]
 name = "subgraph_tests"
-port = 1234
+port = 0
 log_level = "debug"
 imports = ["./test_config_imports.toml"]
 
@@ -69,7 +69,7 @@ fields = [
 ]
 [[service.entities.guards]]
 name = "data_context_guard" 
-if_expr = "1 == 0" 
+if_expr = "every(context(\"user_access.user_id\"), \"6510865e93142f6d61b10dd2\")" 
 then_msg = "You do not have access to this resource" 
 [service.entities.guards.context]
 entity_name = "user_access"
