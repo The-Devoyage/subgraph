@@ -60,7 +60,8 @@ impl ServiceEntity {
         field_name: &str,
         scalar: ScalarOptions,
     ) -> Result<serde_json::Value, async_graphql::Error> {
-        match scalar {
+        debug!("Resolving SQL Field");
+        let field_value = match scalar {
             ScalarOptions::String => {
                 let value = ServiceEntity::resolve_sql_string_scalar(response_row, field_name)?;
                 match value {
@@ -97,7 +98,9 @@ impl ServiceEntity {
                 }
             }
             _ => unreachable!("Unreachable scalar type: {:?}", scalar),
-        }
+        };
+        debug!("Resolved SQL Field: {:?}", field_value);
+        field_value
     }
 
     pub fn resolve_sql_string_scalar(
@@ -335,30 +338,11 @@ impl ServiceEntity {
                 value
             }
             ResponseRow::SqLite(row) => {
-                let value = row
-                    .try_get(field_name)
-                    .map(|value: Option<&str>| match value {
-                        Some(value) => {
-                            let date = chrono::DateTime::parse_from_rfc3339(value)
-                                .map(|value| value.with_timezone(&chrono::Utc));
-                            match date {
-                                Ok(date) => Some(date),
-                                Err(e) => {
-                                    error!("Error resolving DateTime field: {:?}", e.to_string());
-                                    None
-                                }
-                            }
-                        }
-                        None => None,
-                    })
-                    .map_err(|e| {
-                        error!("Error resolving DateTime field: {:?}", e.to_string());
-                        async_graphql::Error::new(format!(
-                            "Error resolving DateTime field: {:?}",
-                            e.to_string()
-                        ))
-                    })?;
-                value
+                let value = row.try_get(field_name);
+                match value {
+                    Ok(value) => Some(value),
+                    Err(_) => None,
+                }
             }
             ResponseRow::Postgres(row) => {
                 let value: Option<chrono::DateTime<chrono::Utc>> =

@@ -220,9 +220,6 @@ impl SqlDataSource {
             }
             ResolverType::FindMany => {
                 let results = services::Services::find_many(&data_source.pool, &query).await?;
-                if results.is_empty() {
-                    return Ok(FieldValue::NONE);
-                }
                 Ok(Some(FieldValue::list(
                     results.into_iter().map(|row| FieldValue::owned_any(row)),
                 )))

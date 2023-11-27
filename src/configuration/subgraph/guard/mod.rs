@@ -22,7 +22,7 @@ pub struct Guard {
     pub name: String,
     pub if_expr: String,
     pub then_msg: String,
-    pub context: Option<GuardDataContext>,
+    pub context: Option<Vec<GuardDataContext>>,
 }
 
 impl Guard {
@@ -257,9 +257,8 @@ impl Guard {
                 let root_key = cleaned_key.split(".").collect::<Vec<&str>>()[0];
                 let root_value = data_context.get(root_key);
 
-
                 if root_value.is_none() {
-                    return Ok(Value::Empty);
+                    return Ok(Value::Tuple(vec![]));
                 }
 
                 let entity = SubGraphConfig::get_entity(subgraph_config.clone(), root_key);
@@ -286,7 +285,7 @@ impl Guard {
                             }
 
                             if value.is_null() {
-                                return Ok(Value::Empty);
+                                return Ok(Value::Tuple(vec![]));
                             }
 
                             let value = Value::String(value.as_str().unwrap().to_string());
@@ -434,12 +433,15 @@ impl Guard {
         resolver_guards: Option<Vec<Guard>>,
         field_guards: Option<Vec<Guard>>,
     ) -> Vec<GuardDataContext> {
+        debug!("Getting Guard Data Contexts");
         let mut contexts = vec![];
 
         if let Some(service_guards) = service_guards {
             for guard in service_guards {
                 if let Some(context) = guard.context {
-                    contexts.push(context);
+                    for context in context {
+                        contexts.push(context);
+                    }
                 }
             }
         }
@@ -447,7 +449,9 @@ impl Guard {
         if let Some(entity_guards) = entity_guards {
             for guard in entity_guards {
                 if let Some(context) = guard.context {
-                    contexts.push(context);
+                    for context in context {
+                        contexts.push(context);
+                    }
                 }
             }
         }
@@ -455,7 +459,9 @@ impl Guard {
         if let Some(resolver_guards) = resolver_guards {
             for guard in resolver_guards {
                 if let Some(context) = guard.context {
-                    contexts.push(context);
+                    for context in context {
+                        contexts.push(context);
+                    }
                 }
             }
         }
@@ -463,11 +469,14 @@ impl Guard {
         if let Some(field_guards) = field_guards {
             for guard in field_guards {
                 if let Some(context) = guard.context {
-                    contexts.push(context);
+                    for context in context {
+                        contexts.push(context);
+                    }
                 }
             }
         }
 
+        debug!("Guard Data Contexts: {:?}", contexts);
         contexts
     }
 }

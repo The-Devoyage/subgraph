@@ -71,7 +71,10 @@ impl ServiceResolver {
             guard_data_contexts,
             data_sources,
             subgraph_config,
-            &mut guard_context,
+            guard_context,
+            headers.clone(),
+            token_data.clone(),
+            resolver_type,
         )
         .await?;
 
@@ -144,9 +147,12 @@ impl ServiceResolver {
         guard_data_contexts: Vec<GuardDataContext>,
         data_sources: &DataSources,
         subgraph_config: &SubGraphConfig,
-        guard_context: &mut HashMapContext,
+        mut guard_context: HashMapContext,
+        headers: HeaderMap,
+        token_data: Option<TokenData>,
+        resolver_type: &ResolverType,
     ) -> Result<Value, async_graphql::Error> {
-        debug!("Execute Data Context");
+        debug!("Execute Data Contexts: {:?}", guard_data_contexts.len());
         let mut data_context = serde_json::json!({});
         for guard_data_context in guard_data_contexts {
             let input_name = format!("get_{}s_input", guard_data_context.entity_name);
@@ -172,7 +178,7 @@ impl ServiceResolver {
                 let key = variable.0;
                 let value = variable.1;
 
-                let value = eval_with_context_mut(&value, guard_context)?;
+                let value = eval_with_context_mut(&value, &mut guard_context)?;
 
                 // If value is a tuple, map it to json array.
                 // Else simply replace.
@@ -194,10 +200,19 @@ impl ServiceResolver {
                         let tuple_value = tuple.as_string();
 
                         if tuple_value.is_err() {
-                            return Err(async_graphql::Error::new(
-                                "Can't parse the guard data context query. Failed to parse tuple."
+                            let tuple_value = tuple.as_int();
+
+                            if !tuple_value.is_err() {
+                                json_object[key.clone().replace("{{", "").replace("}}", "")] =
+                                    serde_json::json!(tuple_value.unwrap());
+                                json_array.as_array_mut().unwrap().push(json_object);
+                                continue;
+                            } else {
+                                return Err(async_graphql::Error::new(
+                                    "Can't parse the guard data context query. Failed to parse tuple."
                                     .to_string(),
-                            ));
+                                ));
+                            }
                         }
                         let tuple_value = tuple_value.unwrap();
 
@@ -256,6 +271,7 @@ impl ServiceResolver {
             .await?;
 
             if results.is_none() {
+                debug!("No results found for data context query.");
                 return Ok(data_context);
             }
 
@@ -280,6 +296,9 @@ impl ServiceResolver {
             for result in results_list {
                 let downcasted = result.try_downcast_ref::<Option<Document>>();
                 if downcasted.is_err() {
+                    debug!(
+                        "Attempting to downcast result to Option<Document> failed. Attempting SQL Downcast.",
+                    );
                     let downcasted = result.try_downcast_ref::<Option<ResponseRow>>();
                     if downcasted.is_err() {
                         error!(
@@ -293,6 +312,7 @@ impl ServiceResolver {
                     }
                     let result = downcasted.unwrap();
                     if result.is_none() {
+                        debug!("Data Context Result is none.");
                         continue;
                     }
                     let response_row = result.as_ref().unwrap();
@@ -300,6 +320,9 @@ impl ServiceResolver {
                     let mut json_obj = serde_json::json!({});
 
                     for field in entity.fields.iter() {
+                        if field.as_type.is_some() && field.join_from.is_some() {
+                            continue;
+                        }
                         let json_value = ServiceEntity::resolve_sql_field_json(
                             response_row,
                             &field.name.clone(),
@@ -338,6 +361,25 @@ impl ServiceResolver {
                     .push(serde_json::from_str(&json).unwrap());
             }
             data_context[guard_data_context.entity_name.clone()] = results_json;
+
+            // Recreate the context to include the data context for subsequent guards.
+            let updated_guard_context =
+                match Guard::create_guard_context(
+                    headers.clone(),
+                    token_data.clone(),
+                    input_document.clone(),
+                    resolver_type.to_string().clone(),
+                    Some(data_context.clone()),
+                    subgraph_config.clone(),
+                ) {
+                    Ok(guard_context) => guard_context,
+                    Err(_) => return Err(async_graphql::Error::new(
+                        "Can't parse the guard data context query. Failed to create guard context."
+                            .to_string(),
+                    )),
+                };
+            // replace the guard context with the updated one.
+            guard_context = updated_guard_context;
         }
 
         debug!("Data Context: {:?}", data_context);

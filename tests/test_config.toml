@@ -71,7 +71,7 @@ fields = [
 name = "data_context_guard" 
 if_expr = "every(context(\"user_access.user_id\"), \"6510865e93142f6d61b10dd2\")" 
 then_msg = "You do not have access to this resource" 
-[service.entities.guards.context]
+[[service.entities.guards.context]]
 entity_name = "user_access"
 query = '''
   {
