@@ -1,6 +1,9 @@
-use async_graphql::dynamic::{FieldFuture, ResolverContext};
+use async_graphql::{
+    dynamic::{FieldFuture, ResolverContext},
+    SelectionField,
+};
 use http::HeaderMap;
-use log::{debug, warn};
+use log::debug;
 
 use crate::data_sources::DataSources;
 
@@ -21,6 +24,7 @@ impl ServiceResolver {
         let resolver_type = self.resolver_type.clone();
         let service_guards = self.subgraph_config.service.guards.clone();
         let is_auth = self.subgraph_config.service.auth.is_some();
+        let subgraph_config = self.subgraph_config.clone();
 
         Box::new(move |ctx: ResolverContext| {
             debug!("Resolving Field: {}", ctx.field().name());
@@ -29,6 +33,7 @@ impl ServiceResolver {
             let resolver_type = resolver_type.clone();
             let service_guards = service_guards.clone();
             let is_auth = is_auth.clone();
+            let subgraph_config = subgraph_config.clone();
 
             FieldFuture::new(async move {
                 debug!("Start Resolving");
@@ -46,19 +51,28 @@ impl ServiceResolver {
                 // If as_field is Some, it is assumed to be a Internal Join.
                 // Require input_document to be non-empty.
                 if input_document.is_none() {
-                    warn!("Input Document is empty for Internal Resolver");
                     return Ok(None);
                 }
 
-                ServiceResolver::guard_resolver(
-                    &ctx,
+                let selection_fields = ctx
+                    .field()
+                    .selection_set()
+                    .into_iter()
+                    .map(|f| f)
+                    .collect::<Vec<SelectionField>>();
+
+                ServiceResolver::guard_resolver_function(
+                    selection_fields,
                     &input_document.clone().unwrap(),
                     &entity,
                     service_guards.clone(),
                     &resolver_type,
                     headers,
                     token_data,
-                )?;
+                    &data_sources,
+                    &subgraph_config,
+                )
+                .await?;
 
                 let operation_type = ServiceResolver::get_operation_type(&resolver_type, &as_field);
 
@@ -70,7 +84,7 @@ impl ServiceResolver {
                 )
                 .await?;
 
-                Ok(Some(results))
+                Ok(results)
             })
         })
     }

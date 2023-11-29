@@ -1,17 +1,28 @@
 use async_graphql::{Error, ErrorExtensions};
 use bson::{doc, Document};
 use evalexpr::*;
+use guard_data_context::GuardDataContext;
 use http::HeaderMap;
 use log::{debug, error};
 use serde::{Deserialize, Serialize};
 
-use crate::graphql::schema::create_auth_service::TokenData;
+use crate::{
+    configuration::subgraph::{
+        entities::{ScalarOptions, ServiceEntityConfig},
+        SubGraphConfig,
+    },
+    graphql::schema::create_auth_service::TokenData,
+    utils::clean_string::clean_string,
+};
+
+pub mod guard_data_context;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Guard {
     pub name: String,
     pub if_expr: String,
     pub then_msg: String,
+    pub context: Option<Vec<GuardDataContext>>,
 }
 
 impl Guard {
@@ -152,6 +163,8 @@ impl Guard {
         token_data: Option<TokenData>,
         input_document: Document,
         resolver_type: String,
+        data_context: Option<serde_json::Value>,
+        subgraph_config: SubGraphConfig,
     ) -> Result<HashMapContext, async_graphql::Error> {
         debug!("Creating Guard Context");
 
@@ -228,9 +241,113 @@ impl Guard {
                     Err(EvalexprError::expected_string(arguments[0].clone()))
                 }
             }),
+            "context" => Function::new(move |argument| {
+                debug!("Context Argument: {:?}", argument);
+                let mut values_tuple = vec![];
+                let data_context = match &data_context {
+                    Some(data_context) => data_context,
+                    None => {
+                        error!("Data Context not found.");
+                        return Err(EvalexprError::CustomMessage("Data Context not found.".to_string()))
+                    }
+                };
+                let key = argument.as_string()?;
+                let cleaned_key = clean_string(&key);
+
+                let root_key = cleaned_key.split(".").collect::<Vec<&str>>()[0];
+                let root_value = data_context.get(root_key);
+
+                if root_value.is_none() {
+                    return Ok(Value::Tuple(vec![]));
+                }
+
+                let entity = SubGraphConfig::get_entity(subgraph_config.clone(), root_key);
+                if entity.is_none() {
+                    return Err(EvalexprError::CustomMessage("Entity not found.".to_string()))
+                }
+                let entity = entity.unwrap();
+
+                // Root value should be a vector of entities, loop through each one and extract the
+                // value. Add the value to the values_tuple.
+                if root_value.unwrap().is_array() {
+                    // remove the first key/root key from the cleaned key.
+                    let cleaned_key = cleaned_key.split(".").collect::<Vec<&str>>()[1..].join(".");
+                    let is_nested = cleaned_key.contains(".");
+
+                    // For each value of the array, extract the key's value from the entity.
+                    for value in root_value.unwrap().as_array().unwrap() {
+                        if is_nested {
+                            debug!("Nested Context Key: {:?}", cleaned_key);
+                            let keys: Vec<&str> = cleaned_key.split(".").collect();
+                            let mut value = &value[keys[0]];
+                            for key in keys.iter().skip(1) {
+                                value = &value[key];
+                            }
+
+                            if value.is_null() {
+                                return Ok(Value::Tuple(vec![]));
+                            }
+
+                            let value = Value::String(value.as_str().unwrap().to_string());
+                            debug!("Context Value: {:?}", value);
+
+                            values_tuple.push(value);
+                        } else {
+                            debug!("Context Key: {:?}", cleaned_key.clone());
+                            let value = value.get(cleaned_key.clone());
+                            let field = match ServiceEntityConfig::get_field(entity.clone(), cleaned_key.clone()) {
+                                Ok(field) => field,
+                                Err(e)=> {
+                                    error!("Field not found: {:?}", e);
+                                    return Err(EvalexprError::CustomMessage("Field not found.".to_string()))
+                                }
+                            };
+
+                            debug!("Context Value: {:?}", value);
+                            let value = match value {
+                                Some(value) => {
+                                    if value.is_null() {
+                                        return Ok(Value::Empty);
+                                    }
+                                    match field.scalar {
+                                        ScalarOptions::String => Value::String(value.to_string()),
+                                        ScalarOptions::Int => Value::Int(value.as_i64().unwrap()),
+                                        ScalarOptions::Boolean => Value::Boolean(value.as_bool().unwrap()),
+                                        ScalarOptions::DateTime => Value::String(value.to_string()),
+                                        ScalarOptions::UUID => Value::String(value.to_string()),
+                                        ScalarOptions::ObjectID => {
+                                            let object_id = value.get("$oid");
+                                            if object_id.is_none() {
+                                                return Err(EvalexprError::CustomMessage("ObjectID not found.".to_string()))
+                                            }
+                                            let object_id = object_id.unwrap().as_str().unwrap();
+                                            Value::String(object_id.to_string())
+                                        },
+                                        _ => return Err(EvalexprError::CustomMessage("Scalar is not supported in context.".to_string()))
+                                    }
+
+                                },
+                                None => Value::Empty,
+                            };
+                            debug!("Context Value: {:?}", value);
+
+                            values_tuple.push(value);
+                        }
+                    }
+
+                } else {
+                    return Err(EvalexprError::CustomMessage("Context must be an array.".to_string()))
+                }
+
+
+                // Return a tuple of the found values so that they be used in guard checks.
+                let values = Value::from(values_tuple);
+                debug!("Context Value Tuples: {:?}", values);
+                Ok(values)
+            }),
             "headers" => Function::new(move |argument| {
                 let key = argument.as_string()?;
-                let cleaned_key = key.replace("\"", "");
+                let cleaned_key = clean_string(&key);
                 let value = headers.get(&cleaned_key);
                 if value.is_none() {
                     Err(EvalexprError::expected_string(argument.clone()))
@@ -247,16 +364,28 @@ impl Guard {
             "token_data" => Function::new(move |argument| {
                 let token_data = match &token_data {
                     Some(token_data) => token_data,
-                    None => return Err(EvalexprError::expected_string(argument.clone()))
+                    None => {
+                        error!("Token Data not found.");
+                        return Err(EvalexprError::CustomMessage("Token Data not found.".to_string()))
+                    }
                 };
                 let key = argument.as_string()?;
-                let cleaned_key = key.replace("\"", "");
-                let json = serde_json::to_value(token_data).unwrap();
+                let cleaned_key = clean_string(&key);
+                let json = match serde_json::to_value(token_data) {
+                    Ok(json) => json,
+                    Err(_) => {
+                        error!("Token Data not found.");
+                        return Err(EvalexprError::CustomMessage("Failed to serialize token data.".to_string()))
+                    }
+                };
                 let value = json.get(cleaned_key);
                     debug!("Token Data Value: {:?}", value);
                     match value {
                         Some(value) => Ok(Value::String(value.as_str().unwrap().to_string())),
-                        None => Err(EvalexprError::expected_string(argument.clone()))
+                        None => {
+                            error!("Token Data Value not found.");
+                            Err(EvalexprError::CustomMessage("Token Data Value not found.".to_string()))
+                        }
                     }
             }),
             "resolver_type" => Function::new(move |_| {
@@ -289,7 +418,65 @@ impl Guard {
         debug!("Guard Context: {:?}", context);
         match context {
             Ok(context) => Ok(context),
-            Err(e) => Err(async_graphql::Error::new(e.to_string())),
+            Err(e) => {
+                error!("Error parsing guard context: {:?}", e);
+                Err(async_graphql::Error::new(e.to_string()))
+            }
         }
+    }
+
+    /// Provided the guards from the service, entities, resolvers, and fields, this function will
+    /// return a list of all the data contexts.
+    pub fn get_guard_data_contexts(
+        service_guards: Option<Vec<Guard>>,
+        entity_guards: Option<Vec<Guard>>,
+        resolver_guards: Option<Vec<Guard>>,
+        field_guards: Option<Vec<Guard>>,
+    ) -> Vec<GuardDataContext> {
+        debug!("Getting Guard Data Contexts");
+        let mut contexts = vec![];
+
+        if let Some(service_guards) = service_guards {
+            for guard in service_guards {
+                if let Some(context) = guard.context {
+                    for context in context {
+                        contexts.push(context);
+                    }
+                }
+            }
+        }
+
+        if let Some(entity_guards) = entity_guards {
+            for guard in entity_guards {
+                if let Some(context) = guard.context {
+                    for context in context {
+                        contexts.push(context);
+                    }
+                }
+            }
+        }
+
+        if let Some(resolver_guards) = resolver_guards {
+            for guard in resolver_guards {
+                if let Some(context) = guard.context {
+                    for context in context {
+                        contexts.push(context);
+                    }
+                }
+            }
+        }
+
+        if let Some(field_guards) = field_guards {
+            for guard in field_guards {
+                if let Some(context) = guard.context {
+                    for context in context {
+                        contexts.push(context);
+                    }
+                }
+            }
+        }
+
+        debug!("Guard Data Contexts: {:?}", contexts);
+        contexts
     }
 }

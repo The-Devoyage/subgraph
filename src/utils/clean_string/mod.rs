@@ -1,3 +1,3 @@
 pub fn clean_string(v: &String) -> String {
-    v.replace("\"", "")
+    v.replace("\n", "").replace("\"", "")
 }

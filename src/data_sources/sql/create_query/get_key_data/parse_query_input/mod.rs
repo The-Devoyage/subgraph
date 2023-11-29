@@ -91,7 +91,7 @@ impl SqlDataSource {
                             ));
                         }
                     }
-                } else if value[0].as_i32().is_some() {
+                } else if value[0].as_i32().is_some() || value[0].as_i64().is_some() {
                     let values = value.iter().map(|x| x.as_i32().unwrap()).collect();
                     where_values.push(SqlValueEnum::IntList(values));
                 } else if value[0].as_bool().is_some() {
@@ -128,6 +128,9 @@ impl SqlDataSource {
                     }
                 } else if value.as_i32().is_some() {
                     where_values.push(SqlValueEnum::Int(value.as_i32().unwrap()));
+                } else if value.as_i64().is_some() {
+                    // HACK: Should support Int and BitInt
+                    where_values.push(SqlValueEnum::Int(value.as_i64().unwrap() as i32));
                 } else if value.as_bool().is_some() {
                     where_values.push(SqlValueEnum::Bool(value.as_bool().unwrap()));
                 } else if value.as_datetime().is_some() {

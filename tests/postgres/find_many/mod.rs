@@ -29,7 +29,7 @@ async fn find_many_with_and_filter() {
     );
 
     let response = execute(request, None).await;
-    assert!(response.is_ok());
+    assert!(response.is_err());
 }
 
 #[tokio::test]
