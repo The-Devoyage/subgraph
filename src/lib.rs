@@ -15,6 +15,7 @@ mod data_sources;
 mod graphql;
 pub mod utils;
 
+/// Starts the Subgraph Service. Initializes the DataSources and builds the GraphQL Schema.
 pub async fn run(
     args: cli_args::CliArgs,
     subgraph_config: SubGraphConfig,
@@ -29,12 +30,15 @@ pub async fn run(
     info!("⛵ Starting Subgraph Service ⛵");
     debug!("Service Arguments: {:?}", args);
 
+    // Initialize DataSources
     let data_sources =
         data_sources::DataSources::init(subgraph_config.service.data_sources.clone(), &args).await;
 
+    // Build GraphQL Schema
     let schema =
         graphql::schema::ServiceSchemaBuilder::new(subgraph_config.clone(), data_sources).build();
 
+    // GraphQL Endpoint
     let graphql_post = async_graphql_warp::graphql(schema.clone())
         .and(warp::header::headers_cloned())
         .and_then(
@@ -45,12 +49,15 @@ pub async fn run(
             },
         );
 
+    // GraphQL Playground Endpoint
     let graphql_playground = warp::path::end().and(warp::get()).map(|| {
         HttpResponse::builder().body(playground_source(GraphQLPlaygroundConfig::new("/graphql")))
     });
 
+    // CORS Config
     let cors = configuration::cors_config::CorsConfig::create_cors(subgraph_config.clone());
 
+    // Routes - Combine GraphQL and GraphQL Playground
     let routes =
         graphql_playground
             .or(graphql_post)
@@ -69,6 +76,7 @@ pub async fn run(
                 ))
             });
 
+    // Get Port from CLI Arguments or Subgraph Config
     let port = match args.port.clone() {
         Some(port) => port,
         None => match subgraph_config.clone().service.port {
@@ -77,17 +85,16 @@ pub async fn run(
         },
     };
 
-    // use emoji/icon in info below
     info!("❇️  Subgraph Service Started ❇️");
-
     info!("🛝 Playgorund: http://localhost:{:?} 🛝", port);
 
+    // Create Graceful Shutdown Channel
     let (tx, rx) = tokio::sync::oneshot::channel::<()>();
 
+    // Return Server, Schema and Graceful Shutdown Channel
     let (_addr, server) =
         warp::serve(routes).bind_with_graceful_shutdown(([127, 0, 0, 1], port), async {
             rx.await.ok();
         });
-
     Ok((server, schema, tx))
 }
