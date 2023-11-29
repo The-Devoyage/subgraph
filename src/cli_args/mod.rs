@@ -5,6 +5,7 @@ use clap::{builder::PossibleValuesParser, Parser, ValueHint};
 
 mod generate_keypair;
 
+/// Command line arguments for the Subgraph Service.
 #[derive(Parser, Debug, Serialize, Clone)]
 #[command(author, version, about, long_about = None)]
 pub struct CliArgs {
@@ -36,7 +37,9 @@ pub struct CliArgs {
 }
 
 impl CliArgs {
-    pub fn handle_flags(&self) {
-        self.generate_keypair();
+    /// Execute functions based on the flags passed to the service.
+    pub fn handle_flags(&self) -> Result<(), Box<dyn std::error::Error>> {
+        self.generate_keypair()?;
+        Ok(())
     }
 }

@@ -22,7 +22,15 @@ async fn main() -> Result<(), std::io::Error> {
 
     // Handle functionality that does not require a subgraph config
     // Migrations, etc.
-    args.handle_flags();
+    match args.handle_flags() {
+        Ok(_) => {}
+        Err(e) => {
+            error!("Error handling flags: {}", e);
+            exit(1);
+        }
+    };
+
+    // If no config is provided, exit
     if args.config.is_none() {
         println!("No config provided, exiting...");
         return Ok(());
