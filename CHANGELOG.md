@@ -2,6 +2,10 @@
 
 ## [v0.0.13]
 
+### Added
+
+- Guard Data Context - use data within the data sources to validate guards.
+
 ### Fixed
 
 - Nullable Entities Patched
