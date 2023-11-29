@@ -1,6 +1,7 @@
 use env_logger::Env;
 use log::Level;
 use serde::{Deserialize, Serialize};
+use std::io::Write;
 use std::{fmt, str::FromStr};
 
 use crate::{cli_args::CliArgs, configuration::subgraph::SubGraphConfig};
@@ -64,6 +65,30 @@ impl Logger {
         };
 
         env_logger::Builder::from_env(Env::default().default_filter_or(log_level.to_string()))
+            .format(|buf, record| {
+                // Define color codes
+                let color = match record.level() {
+                    log::Level::Error => "\x1b[31m", // Red
+                    log::Level::Warn => "\x1b[33m",  // Yellow
+                    log::Level::Info => "\x1b[32m",  // Green
+                    log::Level::Debug => "\x1b[34m", // Blue
+                    log::Level::Trace => "\x1b[36m", // Cyan
+                };
+
+                // Reset color at the end
+                let reset_color = "\x1b[0m";
+
+                // Write the log message with color
+                writeln!(
+                    buf,
+                    "{}[{}]{} {}{}",
+                    color,
+                    record.level(),
+                    reset_color,
+                    record.args(),
+                    reset_color
+                )
+            })
             .init();
     }
 }

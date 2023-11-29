@@ -27,7 +27,7 @@ pub async fn run(
     std::io::Error,
 > {
     info!("⛵ Starting Subgraph Service ⛵");
-    debug!("Using Args: {:?}", args);
+    debug!("Service Arguments: {:?}", args);
 
     let data_sources =
         data_sources::DataSources::init(subgraph_config.service.data_sources.clone(), &args).await;
@@ -77,7 +77,10 @@ pub async fn run(
         },
     };
 
-    info!("Playground: http://localhost:{:?}", port);
+    // use emoji/icon in info below
+    info!("❇️  Subgraph Service Started ❇️");
+
+    info!("🛝 Playgorund: http://localhost:{:?} 🛝", port);
 
     let (tx, rx) = tokio::sync::oneshot::channel::<()>();
 
