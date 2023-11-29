@@ -115,7 +115,7 @@ async fn start_server_with_watcher(
         notify::Config::default(),
     ) {
         Ok(watcher) => {
-            info!("👀 Watching for changes... 👀");
+            info!("👀 Watching for changes...");
             watcher
         }
         Err(error) => {

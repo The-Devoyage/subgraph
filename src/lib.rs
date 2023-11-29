@@ -27,7 +27,7 @@ pub async fn run(
     ),
     std::io::Error,
 > {
-    info!("⛵ Starting Subgraph Service ⛵");
+    info!("⛵ Starting Subgraph Service");
     debug!("Service Arguments: {:?}", args);
 
     // Initialize DataSources
@@ -85,8 +85,8 @@ pub async fn run(
         },
     };
 
-    info!("❇️  Subgraph Service Started ❇️");
-    info!("🛝 Playgorund: http://localhost:{:?} 🛝", port);
+    info!("❇️  Subgraph Service Started");
+    info!("🛝 Playgorund: http://localhost:{:?}", port);
 
     // Create Graceful Shutdown Channel
     let (tx, rx) = tokio::sync::oneshot::channel::<()>();
