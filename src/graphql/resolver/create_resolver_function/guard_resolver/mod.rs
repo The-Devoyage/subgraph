@@ -31,7 +31,7 @@ impl ServiceResolver {
         token_data: Option<TokenData>,
         data_sources: &DataSources,
         subgraph_config: &SubGraphConfig,
-    ) -> Result<(), async_graphql::Error> {
+    ) -> Result<HashMapContext, async_graphql::Error> {
         debug!("Guard Resolver Function");
 
         // Get the guards
@@ -103,7 +103,7 @@ impl ServiceResolver {
             Guard::check(&field_guards, &mut guard_context.clone())?;
         }
 
-        Ok(())
+        Ok(guard_context)
     }
 
     /// Get entity field guards, recursively.

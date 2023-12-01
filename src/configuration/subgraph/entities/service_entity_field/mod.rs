@@ -18,6 +18,7 @@ pub struct ServiceEntityFieldConfig {
     pub as_type: Option<String>,
     pub join_on: Option<String>,
     pub join_from: Option<String>,
+    pub default_value: Option<String>,
 }
 
 impl ServiceEntityFieldConfig {

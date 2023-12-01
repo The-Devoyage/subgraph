@@ -277,7 +277,7 @@ impl ServiceResolver {
             }
         };
         let scalar = as_type_field.scalar.clone();
-        let list = as_type_field.list.unwrap_or(false);
+        let list = false;
 
         //Get the query input, then modify it to include the parent value(s)
         let mut query_input = field_input

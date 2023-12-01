@@ -6,6 +6,7 @@ use log::{debug, error};
 use crate::{configuration::subgraph::entities::ScalarOptions, graphql::resolver::ServiceResolver};
 
 impl ServiceResolver {
+    //NOTE: Possibly deprecated and not currently in use.
     pub fn combine_list_values(
         parent_value: &Document,
         field_input: &mut Document,
@@ -15,13 +16,17 @@ impl ServiceResolver {
     ) -> Result<Document, async_graphql::Error> {
         debug!("Combining List Values With Input");
         debug!("Join On: {}", join_on);
+        debug!("Parent Value: {:?}", parent_value);
+
         let join_on_value = parent_value.get_array(&field_name);
         let join_on_value = match join_on_value {
             Ok(join_on_value) => join_on_value,
             Err(_) => {
+                debug!("Field {} not found. Skipping.", field_name);
                 return Ok(field_input.clone());
             }
         };
+
         match scalar {
             ScalarOptions::String | ScalarOptions::UUID | ScalarOptions::DateTime => {
                 let join_on_value = join_on_value

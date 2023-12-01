@@ -24,7 +24,7 @@ impl ServiceResolver {
                 }
             }
             ScalarOptions::Int => {
-                let join_on_value = parent_value.get_i32(&field_name);
+                let join_on_value = parent_value.get_i64(&field_name);
                 if join_on_value.is_ok() {
                     let join_on_value = join_on_value.unwrap();
                     field_input_query.insert(join_on, join_on_value);

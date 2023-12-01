@@ -13,6 +13,7 @@ mod get_operation_type;
 mod get_resolver_input;
 mod get_token_data;
 mod guard_resolver;
+mod handle_default_values;
 
 impl ServiceResolver {
     pub fn create_resolver_function(
@@ -61,7 +62,7 @@ impl ServiceResolver {
                     .map(|f| f)
                     .collect::<Vec<SelectionField>>();
 
-                ServiceResolver::guard_resolver_function(
+                let guard_context = ServiceResolver::guard_resolver_function(
                     selection_fields,
                     &input_document.clone().unwrap(),
                     &entity,
@@ -74,15 +75,19 @@ impl ServiceResolver {
                 )
                 .await?;
 
+                // Handle default values
+                let input_document = ServiceResolver::handle_default_values(
+                    &input_document.unwrap(),
+                    &entity,
+                    &resolver_type,
+                    guard_context,
+                )?;
+
                 let operation_type = ServiceResolver::get_operation_type(&resolver_type, &as_field);
 
-                let results = DataSources::execute(
-                    &data_sources,
-                    input_document.unwrap(),
-                    entity,
-                    operation_type,
-                )
-                .await?;
+                let results =
+                    DataSources::execute(&data_sources, input_document, entity, operation_type)
+                        .await?;
 
                 Ok(results)
             })
