@@ -1,8 +1,10 @@
 use bson::doc;
-use log::debug;
+use log::{debug, error};
 
 use crate::{
-    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
+    configuration::subgraph::{
+        data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
+    },
     data_sources::sql::{PoolEnum, SqlDataSource, SqlQuery, SqlValueEnum},
 };
 
@@ -14,6 +16,7 @@ impl Services {
         pool_enum: &PoolEnum,
         sql_query: &SqlQuery,
         dialect: DialectEnum,
+        subgraph_config: &SubGraphConfig,
     ) -> Result<Option<ResponseRow>, async_graphql::Error> {
         debug!("Executing Create One Query: {:?}", sql_query);
 
@@ -79,6 +82,8 @@ impl Services {
                     &sql_query.table,
                     &dialect,
                     &input_document,
+                    subgraph_config,
+                    None,
                 )?;
 
                 let result = sqlx::query(&find_one_query)
@@ -188,7 +193,14 @@ impl Services {
                     }
                 }
 
-                let last_inserted_rowid = query.execute(pool).await?.last_insert_rowid();
+                let last_inserted_rowid = query
+                    .execute(pool)
+                    .await
+                    .map_err(|e| {
+                        error!("Error executing sqlite create statement: {}", e);
+                        e
+                    })?
+                    .last_insert_rowid();
 
                 let input_document = doc! {
                     "query": {
@@ -201,12 +213,18 @@ impl Services {
                     &sql_query.table,
                     &dialect,
                     &input_document,
+                    subgraph_config,
+                    None,
                 )?;
 
                 let result = sqlx::query(&find_one_query)
                     .bind(last_inserted_rowid)
                     .fetch_one(pool)
-                    .await?;
+                    .await
+                    .map_err(|e| {
+                        error!("Error refetching result: {}", e);
+                        e
+                    })?;
 
                 Ok(Some(ResponseRow::SqLite(result)))
             }

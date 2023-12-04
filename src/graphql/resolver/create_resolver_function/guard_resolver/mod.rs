@@ -8,7 +8,10 @@ use serde_json::Value;
 use crate::{
     configuration::subgraph::{
         entities::{service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig},
-        guard::{guard_data_context::GuardDataContext, Guard},
+        guard::{
+            guard_data_context::{GuardDataContext, VariablePair},
+            Guard,
+        },
         SubGraphConfig,
     },
     data_sources::{sql::services::ResponseRow, DataSources},
@@ -16,6 +19,7 @@ use crate::{
         entity::ServiceEntity,
         schema::{create_auth_service::TokenData, ResolverType},
     },
+    utils::clean_string::clean_string,
 };
 
 use super::ServiceResolver;
@@ -63,18 +67,20 @@ impl ServiceResolver {
             input_document.clone(),
             resolver_type.to_string(),
             None,
+            Some(guard_data_contexts.clone()),
             subgraph_config.clone(),
         )?;
 
         // Fetch the data from the data source and return it as json
         let data_context = ServiceResolver::execute_data_context(
-            guard_data_contexts,
+            guard_data_contexts.clone(),
             data_sources,
             subgraph_config,
             guard_context,
             headers.clone(),
             token_data.clone(),
             resolver_type,
+            input_document.clone(),
         )
         .await?;
 
@@ -85,6 +91,7 @@ impl ServiceResolver {
             input_document.clone(),
             resolver_type.to_string(),
             Some(data_context),
+            Some(guard_data_contexts),
             subgraph_config.clone(),
         )?;
 
@@ -151,10 +158,20 @@ impl ServiceResolver {
         headers: HeaderMap,
         token_data: Option<TokenData>,
         resolver_type: &ResolverType,
+        input: Document,
     ) -> Result<Value, async_graphql::Error> {
-        debug!("Execute Data Contexts: {:?}", guard_data_contexts.len());
+        debug!(
+            "Execute Data Contexts: {:?}",
+            guard_data_contexts.iter().map(|g| {
+                if g.name.is_some() {
+                    g.name.clone().unwrap()
+                } else {
+                    g.entity_name.clone()
+                }
+            })
+        );
         let mut data_context = serde_json::json!({});
-        for guard_data_context in guard_data_contexts {
+        for guard_data_context in guard_data_contexts.clone() {
             let input_name = format!("get_{}s_input", guard_data_context.entity_name);
 
             // Get the entity to determine data_source.
@@ -173,69 +190,28 @@ impl ServiceResolver {
             let mut query = guard_data_context.query.clone();
             let variables = guard_data_context.variables;
 
-            // for each key/value in each variable, parse and replace in query
-            for variable in variables {
-                let key = variable.0;
-                let value = variable.1;
-
-                let value = eval_with_context_mut(&value, &mut guard_context)?;
-
-                // If value is a tuple, map it to json array.
-                // Else simply replace.
-                if value.is_string() || value.is_number() {
-                    let str_value = value.as_string();
-                    if str_value.is_err() {
-                        return Err(async_graphql::Error::new(
-                            "Can't parse the guard data context query. Failed to parse string/int."
-                                .to_string(),
-                        ));
-                    }
-                    query = query.replace(&key, &str_value.unwrap());
-                }
-                if value.is_tuple() {
-                    let mut json_array = serde_json::json!([]);
-                    // For each tuple, we need to push it into the json array as an object.
-                    for tuple in value.as_tuple().unwrap() {
-                        let mut json_object = serde_json::json!({});
-                        let tuple_value = tuple.as_string();
-
-                        if tuple_value.is_err() {
-                            let tuple_value = tuple.as_int();
-
-                            if !tuple_value.is_err() {
-                                json_object[key.clone().replace("{{", "").replace("}}", "")] =
-                                    serde_json::json!(tuple_value.unwrap());
-                                json_array.as_array_mut().unwrap().push(json_object);
-                                continue;
-                            } else {
-                                return Err(async_graphql::Error::new(
-                                    "Can't parse the guard data context query. Failed to parse tuple."
-                                    .to_string(),
-                                ));
-                            }
-                        }
-                        let tuple_value = tuple_value.unwrap();
-
-                        json_object[key.clone().replace("{{", "").replace("}}", "")] =
-                            serde_json::json!(tuple_value);
-                        json_array.as_array_mut().unwrap().push(json_object);
-                    }
-                    query = query.replace(&key, &json_array.to_string());
-                }
-            }
+            query = ServiceResolver::replace_variables_in_query(query, variables, guard_context)?;
 
             let json: Value = match serde_json::from_str(&query) {
                 Ok(json) => json,
                 Err(error) => {
+                    error!(
+                        "Can't parse the guard data context query. Failed to parse JSON: {:?}",
+                        error
+                    );
                     return Err(async_graphql::Error::new(
                         "Can't parse the guard data context query. Failed to parse JSON."
                             .to_string(),
                     )
-                    .extend_with(|_, e| e.set("error", error.to_string())))
+                    .extend_with(|_, e| e.set("error", error.to_string())));
                 }
             };
 
             let input_document = to_document(&json).map_err(|error| {
+                error!(
+                    "Can't parse the guard data context query. Failed to convert to document: {:?}",
+                    error
+                );
                 async_graphql::Error::new(
                     "Can't parse the guard data context query. Failed to convert to document."
                         .to_string(),
@@ -246,6 +222,7 @@ impl ServiceResolver {
             let input_query = input_document.get(&input_name);
 
             if input_query.is_none() {
+                error!("Can't parse the guard data context query. Failed to get input query.");
                 return Err(async_graphql::Error::new(
                     "Can't parse the guard data context query. Failed to get input query."
                         .to_string(),
@@ -267,6 +244,7 @@ impl ServiceResolver {
                 input_query_document.unwrap().to_owned(),
                 entity.clone(),
                 ResolverType::FindMany,
+                subgraph_config,
             )
             .await?;
 
@@ -360,16 +338,42 @@ impl ServiceResolver {
                     .unwrap()
                     .push(serde_json::from_str(&json).unwrap());
             }
-            data_context[guard_data_context.entity_name.clone()] = results_json;
+
+            // If provded with `name`, use this as the key in the data context.
+            // Otherwise, use the entity name.
+            let key_name = if let Some(key_name) = guard_data_context.name {
+                key_name
+            } else {
+                guard_data_context.entity_name.clone()
+            };
+            data_context[key_name] = results_json;
+
+            let query_input = input_document.get(&input_name);
+
+            if query_input.is_none() {
+                return Err(async_graphql::Error::new(
+                    "Can't parse the guard data context query. Failed to get input query."
+                        .to_string(),
+                ));
+            }
+
+            let query_input = query_input.unwrap().as_document();
+            if query_input.is_none() {
+                return Err(async_graphql::Error::new(
+                    "Can't parse the guard data context query. Failed to get input query document."
+                        .to_string(),
+                ));
+            }
 
             // Recreate the context to include the data context for subsequent guards.
             let updated_guard_context =
                 match Guard::create_guard_context(
                     headers.clone(),
                     token_data.clone(),
-                    input_document.clone(),
+                    input.clone(),
                     resolver_type.to_string().clone(),
                     Some(data_context.clone()),
+                    Some(guard_data_contexts.clone()),
                     subgraph_config.clone(),
                 ) {
                     Ok(guard_context) => guard_context,
@@ -384,5 +388,56 @@ impl ServiceResolver {
 
         debug!("Data Context: {:?}", data_context);
         Ok(data_context)
+    }
+
+    /// Replaces the variables in a query string with the values from the data context.
+    pub fn replace_variables_in_query(
+        mut query: String,
+        variables: Vec<VariablePair>,
+        mut guard_context: HashMapContext,
+    ) -> Result<String, async_graphql::Error> {
+        debug!("Creating query string for data context: {:?}", query);
+        for variable in variables {
+            let key = variable.0;
+            let value = variable.1;
+
+            let value = eval_with_context_mut(&value, &mut guard_context)?;
+
+            if value.is_empty() {
+                return Err(async_graphql::Error::new(
+                    "Can't parse the guard data context query. Failed to parse empty value."
+                        .to_string(),
+                ));
+            }
+
+            // If value is a tuple, map it to json array.
+            // Else simply replace.
+            if value.is_string() || value.is_number() {
+                let str_value = value.to_string();
+                query = query.replace(&key, &str_value);
+            }
+            if value.is_tuple() {
+                if value.as_tuple().unwrap().len() == 0 {
+                    error!("Replace Variables In Query: Tuple length is 0.");
+                    return Err(async_graphql::Error::new(format!(
+                        "Can't parse the guard data context query. Variable `{key}` not provided.",
+                    ))
+                    .extend_with(|_, e| e.set("query", query.clone())));
+                }
+                let mut json_array = serde_json::json!([]);
+                // For each tuple, we need to push it into the json array as an object.
+                for tuple in value.as_tuple().unwrap() {
+                    let mut json_object = serde_json::json!({});
+                    let tuple_value = tuple.to_string();
+
+                    json_object[key.clone().replace("{{", "").replace("}}", "")] =
+                        serde_json::json!(clean_string(&tuple_value));
+                    json_array.as_array_mut().unwrap().push(json_object);
+                }
+                query = query.replace(&key, &json_array.to_string());
+            }
+        }
+        debug!("Query String with Variables Replaced: {:?}", query);
+        Ok(query)
     }
 }

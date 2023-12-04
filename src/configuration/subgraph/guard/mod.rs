@@ -49,7 +49,8 @@ impl Guard {
 
         if errors.len() > 0 {
             debug!("Errors: {:?}", errors);
-            let mut error_response = Error::new("Access Denied");
+            // Use the first error message as the main error message.
+            let mut error_response = Error::new(errors[0].1.clone());
 
             for (name, message) in errors {
                 error_response = error_response.extend_with(|_err, e| e.set(name, message));
@@ -110,9 +111,9 @@ impl Guard {
         let query_document = match input_document.get("query") {
             Some(q) => q,
             None => {
-                error!("Can't find query in document.");
+                error!("Can't find property `query` when parsing query in input guard.");
                 return Err(EvalexprError::CustomMessage(
-                    "Can't find property `query`.".to_string(),
+                    "Can't find property `query` when parsing query in input guard.".to_string(),
                 ));
             }
         };
@@ -164,6 +165,7 @@ impl Guard {
         input_document: Document,
         resolver_type: String,
         data_context: Option<serde_json::Value>,
+        data_contexts: Option<Vec<GuardDataContext>>,
         subgraph_config: SubGraphConfig,
     ) -> Result<HashMapContext, async_graphql::Error> {
         debug!("Creating Guard Context");
@@ -212,7 +214,9 @@ impl Guard {
                                     return Ok(Value::Empty);
                                 }
 
-                                let value = Value::String(value.as_str().unwrap().to_string());
+                                let value = value.to_string();
+
+                                let value = Value::String(value);
 
                                 values_tuple.push(value);
                             } else { // Else extract the value directly.
@@ -221,7 +225,7 @@ impl Guard {
                                 }
                                 let value = json.get(key.clone());
                                 let value = match value {
-                                    Some(value) => Value::String(value.as_str().unwrap().to_string()),
+                                    Some(value) => Value::String(clean_string(&value.to_string())),
                                     None => continue,
                                 };
                                 values_tuple.push(value);
@@ -261,7 +265,29 @@ impl Guard {
                     return Ok(Value::Tuple(vec![]));
                 }
 
-                let entity = SubGraphConfig::get_entity(subgraph_config.clone(), root_key);
+                let data_contexts = match &data_contexts {
+                    Some(data_contexts) => data_contexts,
+                    None => {
+                        error!("Data Contexts not found.");
+                        return Err(EvalexprError::CustomMessage("Data Contexts not found.".to_string()))
+                    }
+                };
+
+                let guard_data_context = &data_contexts.iter().find(|data_context| {
+                    if data_context.name.is_some() {
+                        return data_context.name.clone().unwrap() == root_key.to_string()
+                    } else {
+                        return data_context.entity_name == root_key.to_string()
+                    }
+                });
+
+                if guard_data_context.is_none() {
+                    return Err(EvalexprError::CustomMessage("Data Context not found.".to_string()))
+                }
+
+                let entity_name = guard_data_context.unwrap().entity_name.clone();
+
+                let entity = SubGraphConfig::get_entity(subgraph_config.clone(), &entity_name);
                 if entity.is_none() {
                     return Err(EvalexprError::CustomMessage("Entity not found.".to_string()))
                 }
@@ -288,8 +314,11 @@ impl Guard {
                                 return Ok(Value::Tuple(vec![]));
                             }
 
-                            let value = Value::String(value.as_str().unwrap().to_string());
-                            debug!("Context Value: {:?}", value);
+                            let value = value.to_string();
+
+                            let value = Value::String(value);
+                            let cleaned = clean_string(&value.to_string());
+                            debug!("Context Value: {:?}", cleaned);
 
                             values_tuple.push(value);
                         } else {
@@ -310,11 +339,11 @@ impl Guard {
                                         return Ok(Value::Empty);
                                     }
                                     match field.scalar {
-                                        ScalarOptions::String => Value::String(value.to_string()),
+                                        ScalarOptions::String => Value::String(clean_string(&value.to_string())),
                                         ScalarOptions::Int => Value::Int(value.as_i64().unwrap()),
                                         ScalarOptions::Boolean => Value::Boolean(value.as_bool().unwrap()),
                                         ScalarOptions::DateTime => Value::String(value.to_string()),
-                                        ScalarOptions::UUID => Value::String(value.to_string()),
+                                        ScalarOptions::UUID => Value::String(clean_string(&value.to_string())),
                                         ScalarOptions::ObjectID => {
                                             let object_id = value.get("$oid");
                                             if object_id.is_none() {
@@ -392,6 +421,7 @@ impl Guard {
                 Ok(Value::String(resolver_type.clone()))
             }),
             "every" => Function::new(move |argument| {
+                debug!("Guard Function - Every: {:?}", argument);
                 let arguments = argument.as_fixed_len_tuple(2)?;
                 if let (Value::Tuple(a), b) = (&arguments[0].clone(), &arguments[1].clone()) {
                     if let Value::String(_) | Value::Int(_) | Value::Float(_) | Value::Boolean(_) = b {
@@ -400,6 +430,7 @@ impl Guard {
                         }
                         Ok(a.iter().all(|x| x == b).into())
                     } else {
+                        error!("Invalid type.");
                         Err(EvalexprError::type_error(
                             b.clone(),
                             vec![
@@ -411,7 +442,7 @@ impl Guard {
                         ))
                     }
                 } else {
-                    Err(EvalexprError::expected_tuple(arguments[0].clone()))
+                    Ok(Value::Boolean(false))
                 }
             })
         };

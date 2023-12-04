@@ -3,7 +3,9 @@ use log::debug;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
+    configuration::subgraph::{
+        data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
+    },
     data_sources::sql::{SqlDataSource, SqlValueEnum},
     graphql::schema::ResolverType,
 };
@@ -25,6 +27,7 @@ impl SqlDataSource {
         filter_by_operator: FilterOperator,
         has_more: bool,
         pg_param_offset: Option<i32>,
+        subgraph_config: &SubGraphConfig,
     ) -> Result<(Option<String>, Vec<SqlValueEnum>), async_graphql::Error> {
         debug!("Creating Recursive Nested Query From: {:?}", inputs);
         let mut nested_query = String::new();
@@ -69,6 +72,7 @@ impl SqlDataSource {
                 entity,
                 &ResolverType::FindOne,
                 &dialect,
+                &subgraph_config,
             )?;
 
             combined_where_values.extend(where_values.clone());
@@ -88,14 +92,20 @@ impl SqlDataSource {
 
             if and_filters.is_some() {
                 let and_filters = and_filters.unwrap().as_array().unwrap();
+                let has_more = if let Some(or_filters) = or_filters {
+                    or_filters.as_array().unwrap().len() > 0
+                } else {
+                    false
+                };
                 let (and_query, and_where_values) = SqlDataSource::create_nested_query_recursive(
                     is_first,
                     and_filters,
                     entity,
                     dialect,
                     FilterOperator::And,
-                    or_filters.is_some(),
+                    has_more,
                     pg_param_offset,
+                    subgraph_config,
                 )?;
 
                 combined_where_values.extend(and_where_values.clone());
@@ -115,6 +125,7 @@ impl SqlDataSource {
                     FilterOperator::Or,
                     false,
                     pg_param_offset,
+                    subgraph_config,
                 )?;
 
                 combined_where_values.extend(or_where_values.clone());
@@ -123,6 +134,8 @@ impl SqlDataSource {
                     nested_query.push_str(&or_query);
                 };
             }
+
+            debug!("I: {}, inputs: {}", i, inputs.len());
 
             if i != inputs.len() - 1 {
                 match filter_by_operator {

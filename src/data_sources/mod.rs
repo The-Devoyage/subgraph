@@ -5,7 +5,7 @@ use log::debug;
 use crate::{
     cli_args::CliArgs,
     configuration::subgraph::{
-        data_sources::ServiceDataSourceConfig, entities::ServiceEntityConfig,
+        data_sources::ServiceDataSourceConfig, entities::ServiceEntityConfig, SubGraphConfig,
     },
     graphql::schema::ResolverType,
 };
@@ -24,6 +24,7 @@ pub enum DataSource {
 #[derive(Debug, Clone)]
 pub struct DataSources {
     sources: Vec<DataSource>,
+    subgraph_config: SubGraphConfig,
 }
 
 impl DataSources {
@@ -31,6 +32,7 @@ impl DataSources {
     pub async fn init(
         service_data_source_configs: Vec<ServiceDataSourceConfig>,
         args: &CliArgs,
+        subgraph_config: &SubGraphConfig,
     ) -> DataSources {
         debug!("Initializing Data Sources");
         let mut data_sources = vec![];
@@ -43,13 +45,15 @@ impl DataSources {
                     data_sources.push(http::HttpDataSource::init(&conf).await);
                 }
                 ServiceDataSourceConfig::SQL(conf) => {
-                    data_sources.push(sql::SqlDataSource::init(&conf, args).await);
+                    data_sources
+                        .push(sql::SqlDataSource::init(&conf, args, subgraph_config.clone()).await);
                 }
             };
         }
 
         DataSources {
             sources: data_sources,
+            subgraph_config: subgraph_config.clone(),
         }
     }
 
@@ -101,6 +105,7 @@ impl DataSources {
         input: Document,
         entity: ServiceEntityConfig,
         resolver_type: ResolverType,
+        subgraph_config: &SubGraphConfig,
     ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
         debug!("Executing Datasource Operation");
 
@@ -128,6 +133,7 @@ impl DataSources {
                 input,
                 cloned_entity,
                 resolver_type,
+                subgraph_config,
             )
             .await?),
         }

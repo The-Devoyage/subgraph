@@ -31,8 +31,12 @@ pub async fn run(
     debug!("Service Arguments: {:?}", args);
 
     // Initialize DataSources
-    let data_sources =
-        data_sources::DataSources::init(subgraph_config.service.data_sources.clone(), &args).await;
+    let data_sources = data_sources::DataSources::init(
+        subgraph_config.service.data_sources.clone(),
+        &args,
+        &subgraph_config,
+    )
+    .await;
 
     // Build GraphQL Schema
     let schema =

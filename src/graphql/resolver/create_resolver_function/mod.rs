@@ -85,9 +85,14 @@ impl ServiceResolver {
 
                 let operation_type = ServiceResolver::get_operation_type(&resolver_type, &as_field);
 
-                let results =
-                    DataSources::execute(&data_sources, input_document, entity, operation_type)
-                        .await?;
+                let results = DataSources::execute(
+                    &data_sources,
+                    input_document,
+                    entity,
+                    operation_type,
+                    &subgraph_config,
+                )
+                .await?;
 
                 Ok(results)
             })

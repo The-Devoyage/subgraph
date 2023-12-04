@@ -2,7 +2,9 @@ use bson::Document;
 use log::debug;
 
 use crate::{
-    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
+    configuration::subgraph::{
+        data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
+    },
     data_sources::sql::{SqlDataSource, SqlValueEnum},
 };
 
@@ -15,6 +17,7 @@ impl SqlDataSource {
         value_keys: &Vec<String>,
         dialect: &DialectEnum,
         input: &Document,
+        subgraph_config: &SubGraphConfig,
     ) -> Result<(String, Vec<SqlValueEnum>), async_graphql::Error> {
         debug!("Creating Update One Query");
 
@@ -46,6 +49,7 @@ impl SqlDataSource {
             FilterOperator::And,
             false,
             offset,
+            subgraph_config,
         )?;
 
         if let Some(nested_query) = nested_query {

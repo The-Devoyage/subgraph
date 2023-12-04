@@ -6,7 +6,6 @@ use log::{debug, error};
 use crate::{configuration::subgraph::entities::ScalarOptions, graphql::resolver::ServiceResolver};
 
 impl ServiceResolver {
-    //NOTE: Possibly deprecated and not currently in use.
     pub fn combine_list_values(
         parent_value: &Document,
         field_input: &mut Document,
@@ -22,8 +21,11 @@ impl ServiceResolver {
         let join_on_value = match join_on_value {
             Ok(join_on_value) => join_on_value,
             Err(_) => {
-                debug!("Field {} not found. Skipping.", field_name);
-                return Ok(field_input.clone());
+                error!("Field {} not an array.", field_name);
+                return Err(async_graphql::Error::new(format!(
+                    "Field {} not an array.",
+                    field_name
+                )));
             }
         };
 

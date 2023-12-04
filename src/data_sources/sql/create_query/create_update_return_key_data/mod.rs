@@ -16,7 +16,13 @@ impl SqlDataSource {
         let mut where_values = Vec::new();
 
         for key in sql_query_where_keys {
-            where_keys.push(key.clone());
+            if key.contains(".") {
+                let split_key: Vec<&str> = key.split(".").collect();
+                let key = split_key[1].to_string();
+                where_keys.push(key.clone());
+            } else {
+                where_keys.push(key.clone());
+            }
 
             let index = sql_query_value_keys
                 .iter()

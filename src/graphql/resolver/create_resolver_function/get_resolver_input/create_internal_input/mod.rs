@@ -54,7 +54,7 @@ impl ServiceResolver {
                                 let mut document = Document::new();
 
                                 // If the config does not provide a value to join on, then allow
-                                // them to search with any criteria
+                                // search with any criteria
                                 if as_type_field.join_on.is_none() {
                                     return Ok(Some(document));
                                 }
@@ -277,7 +277,6 @@ impl ServiceResolver {
             }
         };
         let scalar = as_type_field.scalar.clone();
-        let list = false;
 
         //Get the query input, then modify it to include the parent value(s)
         let mut query_input = field_input
@@ -286,6 +285,11 @@ impl ServiceResolver {
             .as_document()
             .unwrap()
             .clone();
+
+        let list = match parent_value.get_array(&field_name) {
+            Ok(_) => true,
+            Err(_) => false,
+        };
 
         match list {
             true => {

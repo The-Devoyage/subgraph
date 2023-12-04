@@ -2,7 +2,9 @@ use bson::Document;
 use log::debug;
 
 use crate::{
-    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
+    configuration::subgraph::{
+        data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
+    },
     graphql::schema::ResolverType,
 };
 
@@ -19,6 +21,9 @@ pub mod create_where_clause;
 pub mod get_key_data;
 pub mod get_placeholder;
 
+#[derive(Debug, Clone)]
+pub struct JoinClauses(pub Vec<String>);
+
 impl SqlDataSource {
     pub fn create_query(
         input: Document,
@@ -26,23 +31,42 @@ impl SqlDataSource {
         table_name: &str,
         dialect: DialectEnum,
         entity: &ServiceEntityConfig,
+        subgraph_config: &SubGraphConfig,
     ) -> Result<SqlQuery, async_graphql::Error> {
         debug!("Creating SQL Query");
 
-        let (where_keys, mut where_values, value_keys, values) =
-            SqlDataSource::get_key_data(&input, entity, &resolver_type, &dialect)?;
+        let (where_keys, mut where_values, value_keys, values, join_clauses) =
+            SqlDataSource::get_key_data(
+                &input,
+                entity,
+                &resolver_type,
+                &dialect,
+                &subgraph_config,
+            )?;
 
         // Generate the query string and get the where values.
         let query = match resolver_type {
             ResolverType::FindOne => {
-                let (query_string, combined_where_values) =
-                    SqlDataSource::create_find_one_query(&entity, table_name, &dialect, &input)?;
+                let (query_string, combined_where_values) = SqlDataSource::create_find_one_query(
+                    &entity,
+                    table_name,
+                    &dialect,
+                    &input,
+                    subgraph_config,
+                    Some(join_clauses),
+                )?;
                 where_values = combined_where_values;
                 query_string
             }
             ResolverType::FindMany => {
-                let (query_string, combined_where_values) =
-                    SqlDataSource::create_find_many_query(&entity, table_name, &dialect, &input)?;
+                let (query_string, combined_where_values) = SqlDataSource::create_find_many_query(
+                    &entity,
+                    table_name,
+                    &dialect,
+                    &input,
+                    subgraph_config,
+                    Some(join_clauses),
+                )?;
                 where_values = combined_where_values;
                 query_string
             }
@@ -56,6 +80,7 @@ impl SqlDataSource {
                     &value_keys,
                     &dialect,
                     &input,
+                    subgraph_config,
                 )?;
                 where_values = combined_where_value;
                 query_string
@@ -67,6 +92,7 @@ impl SqlDataSource {
                     &value_keys,
                     &dialect,
                     &input,
+                    subgraph_config,
                 )?;
                 where_values = combined_where_value;
                 query_string

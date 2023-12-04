@@ -41,10 +41,11 @@ impl ServiceInput {
 
         // Create the main input object.
         let mut input = InputObject::new(&self.input_name);
-        let mut excluded_count = 0;
+        let mut excluded_count = 0; // Track excluded count, if all excluded, don't create input.
 
         // For each field in the entity, create an input field.
         for field in &self.fields {
+            debug!("FIELDFIELD, {:?}", field);
             let is_excluded = ServiceEntityFieldConfig::is_excluded_input_field(
                 field,
                 self.exclude_from_input.clone(),

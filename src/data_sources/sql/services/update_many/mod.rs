@@ -2,7 +2,9 @@ use bson::{doc, Document};
 use log::{debug, error};
 
 use crate::{
-    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
+    configuration::subgraph::{
+        data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
+    },
     data_sources::sql::{PoolEnum, SqlDataSource, SqlQuery, SqlValueEnum},
     utils::clean_string::clean_string,
 };
@@ -15,6 +17,7 @@ impl Services {
         pool_enum: &PoolEnum,
         sql_query: &SqlQuery,
         dialect: DialectEnum,
+        subgraph_config: &SubGraphConfig,
     ) -> Result<Vec<Option<ResponseRow>>, async_graphql::Error> {
         debug!("Update Many SQL Data Source");
 
@@ -144,6 +147,8 @@ impl Services {
                     &sql_query.table,
                     &dialect,
                     &query_input,
+                    subgraph_config,
+                    None,
                 )?;
 
                 let mut find_many_query = sqlx::query(&find_many_query_string);
@@ -454,6 +459,8 @@ impl Services {
                     &sql_query.table,
                     &dialect,
                     &query_doc,
+                    subgraph_config,
+                    None,
                 )?;
 
                 let mut find_many_query = sqlx::query(&find_many_query_string);

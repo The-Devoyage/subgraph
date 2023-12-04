@@ -2,10 +2,14 @@ use bson::Document;
 use log::debug;
 
 use crate::{
-    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
+    configuration::subgraph::{
+        data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
+    },
     data_sources::sql::{SqlDataSource, SqlValueEnum},
     graphql::schema::ResolverType,
 };
+
+use super::JoinClauses;
 
 mod parse_query_input;
 mod parse_values_input;
@@ -19,18 +23,25 @@ impl SqlDataSource {
         entity: &ServiceEntityConfig,
         resolver_type: &ResolverType,
         dialect: &DialectEnum,
+        subgraph_config: &SubGraphConfig,
     ) -> Result<
         (
             Vec<String>,
             Vec<SqlValueEnum>,
             Vec<String>,
             Vec<SqlValueEnum>,
+            JoinClauses,
         ),
         async_graphql::Error,
     > {
         debug!("Getting Key Data From Input: {:?}", input_object);
-        let (mut where_keys, mut where_values, mut value_keys, mut values) =
-            (Vec::new(), Vec::new(), Vec::new(), Vec::new());
+        let (mut where_keys, mut where_values, mut value_keys, mut values, mut join_clauses) = (
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            JoinClauses(Vec::new()),
+        );
 
         for (key, value) in input_object.iter() {
             if key == "values" {
@@ -45,8 +56,14 @@ impl SqlDataSource {
                     dialect,
                 )?;
             } else if key == "query" {
-                (where_keys, where_values) =
-                    SqlDataSource::parse_query_input(value, where_keys, where_values, dialect)?;
+                (where_keys, where_values, join_clauses) = SqlDataSource::parse_query_input(
+                    value,
+                    where_keys,
+                    where_values,
+                    dialect,
+                    entity,
+                    subgraph_config,
+                )?;
             }
         }
 
@@ -54,7 +71,8 @@ impl SqlDataSource {
         debug!("Where Values: {:?}", where_values);
         debug!("Value Keys: {:?}", value_keys);
         debug!("Values: {:?}", values);
+        debug!("Join Clauses: {:?}", join_clauses);
 
-        Ok((where_keys, where_values, value_keys, values))
+        Ok((where_keys, where_values, value_keys, values, join_clauses))
     }
 }

@@ -10,6 +10,7 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::{DialectEnum, SqlDataSourceConfig},
         entities::ServiceEntityConfig,
+        SubGraphConfig,
     },
     graphql::schema::ResolverType,
 };
@@ -23,6 +24,7 @@ pub mod services;
 pub struct SqlDataSource {
     pub pool: PoolEnum,
     pub config: SqlDataSourceConfig,
+    pub subgraph_config: SubGraphConfig,
 }
 
 #[derive(Debug, Clone)]
@@ -64,7 +66,11 @@ pub struct SqlQuery {
 }
 
 impl SqlDataSource {
-    pub async fn init(sql_data_source_config: &SqlDataSourceConfig, args: &CliArgs) -> DataSource {
+    pub async fn init(
+        sql_data_source_config: &SqlDataSourceConfig,
+        args: &CliArgs,
+        subgraph_config: SubGraphConfig,
+    ) -> DataSource {
         debug!("Initializing SQL Data Source");
 
         // Create the pool
@@ -170,6 +176,7 @@ impl SqlDataSource {
         DataSource::SQL(SqlDataSource {
             pool,
             config: sql_data_source_config.clone(),
+            subgraph_config,
         })
     }
 
@@ -178,6 +185,7 @@ impl SqlDataSource {
         input: Document,
         entity: ServiceEntityConfig,
         resolver_type: ResolverType,
+        subgraph_config: &SubGraphConfig,
     ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
         debug!("Executing SQL Operation");
 
@@ -207,6 +215,7 @@ impl SqlDataSource {
             &table,
             data_source.config.dialect.clone(),
             &entity,
+            &subgraph_config,
         )?;
 
         // Return the result from the database as a FieldValue
@@ -230,6 +239,7 @@ impl SqlDataSource {
                     &data_source.pool,
                     &query,
                     data_source.config.dialect.clone(),
+                    &subgraph_config,
                 )
                 .await?;
                 if result.is_none() {
@@ -243,6 +253,7 @@ impl SqlDataSource {
                     &data_source.pool,
                     &query,
                     data_source.config.dialect.clone(),
+                    &subgraph_config,
                 )
                 .await?;
                 if result.is_none() {
@@ -256,6 +267,7 @@ impl SqlDataSource {
                     &data_source.pool,
                     &query,
                     data_source.config.dialect.clone(),
+                    &subgraph_config,
                 )
                 .await?;
                 if results.is_empty() {

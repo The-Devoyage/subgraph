@@ -1,5 +1,7 @@
 use crate::{
-    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
+    configuration::subgraph::{
+        data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
+    },
     data_sources::sql::{
         create_query::create_nested_query_recursive::FilterOperator, SqlDataSource, SqlValueEnum,
     },
@@ -14,6 +16,7 @@ impl SqlDataSource {
         value_keys: &Vec<String>,
         dialect: &DialectEnum,
         input: &Document,
+        subgraph_config: &SubGraphConfig,
     ) -> Result<(String, Vec<SqlValueEnum>), async_graphql::Error> {
         debug!("Creating Update Many Query");
 
@@ -44,6 +47,7 @@ impl SqlDataSource {
             FilterOperator::And,
             false,
             offset,
+            subgraph_config,
         )?;
 
         if let Some(nested_query) = nested_query {
