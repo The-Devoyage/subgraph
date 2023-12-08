@@ -12,6 +12,9 @@ use super::ServiceResolver;
 mod create_internal_input;
 
 impl ServiceResolver {
+    /// Gets the resolver input. This is the input that will be used to query the database.
+    /// If the resolver is an internal type, then the input will be created from the parent value
+    /// combined with the input provided from the client.
     pub fn get_resolver_input(
         ctx: &ResolverContext,
         as_type_field: &Option<ServiceEntityFieldConfig>,

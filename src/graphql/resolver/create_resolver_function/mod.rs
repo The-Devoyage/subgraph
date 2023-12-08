@@ -49,8 +49,9 @@ impl ServiceResolver {
                 let input_document =
                     ServiceResolver::get_resolver_input(&ctx, &as_field, &resolver_type)?;
 
-                // If as_field is Some, it is assumed to be a Internal Join.
-                // Require input_document to be non-empty.
+                // If input document is none, then return none.
+                // This is the case when peforming internal joins without any provided input from
+                // the ds or the client and is not an error, but should not be resolved.
                 if input_document.is_none() {
                     return Ok(None);
                 }

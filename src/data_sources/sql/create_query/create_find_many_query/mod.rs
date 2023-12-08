@@ -1,4 +1,5 @@
 use bson::Document;
+use log::debug;
 
 use crate::{
     configuration::subgraph::{
@@ -18,6 +19,8 @@ impl SqlDataSource {
         subgraph_config: &SubGraphConfig,
         join_clauses: Option<JoinClauses>,
     ) -> Result<(String, Vec<SqlValueEnum>), async_graphql::Error> {
+        debug!("Creating Find Many Query");
+
         let mut query = String::new();
         let entity_table_name = if let Some(entity_ds) = entity.data_source.clone() {
             if entity_ds.table.is_some() {
@@ -32,23 +35,23 @@ impl SqlDataSource {
         query.push_str(&select_statement);
         query.push_str(table_name);
 
-        if let Some(join_clauses) = join_clauses {
-            for join_clause in join_clauses.0 {
-                query.push_str(&join_clause);
-            }
-        }
-
         let query_input = input.get("query").unwrap();
-        let (nested_query, combined_where_values) = SqlDataSource::create_nested_query_recursive(
-            true,
-            &vec![query_input.clone()],
-            entity,
-            dialect,
-            FilterOperator::And,
-            false,
-            None,
-            subgraph_config,
-        )?;
+        let (nested_query, combined_where_values, combined_join_clauses) =
+            SqlDataSource::create_nested_query_recursive(
+                true,
+                &vec![query_input.clone()],
+                entity,
+                dialect,
+                FilterOperator::And,
+                false,
+                None,
+                subgraph_config,
+                join_clauses,
+            )?;
+
+        for join_clause in combined_join_clauses.0 {
+            query.push_str(&join_clause);
+        }
 
         query.push_str(" WHERE ");
 

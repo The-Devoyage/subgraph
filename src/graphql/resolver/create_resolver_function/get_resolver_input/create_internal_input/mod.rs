@@ -6,8 +6,7 @@ use crate::configuration::subgraph::entities::service_entity_field::ServiceEntit
 
 use super::ServiceResolver;
 
-mod combine_list_values;
-mod combine_primitive_value;
+mod combine_input_value;
 mod get_parent_value;
 
 impl ServiceResolver {
@@ -20,7 +19,6 @@ impl ServiceResolver {
         debug!("Creating Internal Input: {:?}", ctx.field().name());
         debug!("As Type Field: {:?}", as_type_field);
 
-        // Variables
         let field_name = if let Some(join_from) = as_type_field.join_from.clone() {
             join_from // Use the join_from field name if provided.
         } else {
@@ -45,7 +43,6 @@ impl ServiceResolver {
         };
         let scalar = as_type_field.scalar.clone();
 
-        // Logic
         // Get parent value, which may come from various data sources. May or may not exists.
         let parent_value = ServiceResolver::get_parent_value(ctx, &field_name, &as_type_field)
             .map(|parent_value| {
@@ -64,39 +61,17 @@ impl ServiceResolver {
             .as_document()
             .unwrap()
             .clone();
-        debug!("Current Query Input: {:?}", query_input);
 
-        // Is the parent value is a list, an array from mongo for example.
-        let is_array = match parent_value.get_array(&field_name) {
-            Ok(_) => true,
-            Err(_) => false,
-        };
-
-        match is_array {
-            true => {
-                query_input = ServiceResolver::combine_list_values(
-                    &parent_value,
-                    &mut query_input,
-                    &field_name,
-                    &scalar,
-                    &join_on,
-                )?
-            }
-            false => {
-                query_input = ServiceResolver::combine_primitive_value(
-                    &parent_value,
-                    &mut query_input,
-                    &field_name,
-                    &scalar,
-                    &join_on,
-                )?
-            }
-        };
-
-        debug!("Query Input: {:?}", query_input);
+        query_input = ServiceResolver::combine_input_value(
+            &parent_value,
+            &mut query_input,
+            &field_name,
+            &scalar,
+            &join_on,
+        )?;
 
         if query_input.is_empty() {
-            debug!("Query input is empty. Returning None.");
+            debug!("Empty Internal Query Input.");
             return Ok(None);
         }
 

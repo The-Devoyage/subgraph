@@ -1,5 +1,5 @@
 use bson::Document;
-use log::{debug, error};
+use log::{debug, error, trace};
 use sqlx::{mysql::MySqlRow, postgres::PgRow, sqlite::SqliteRow, Row};
 use uuid::Uuid;
 
@@ -18,11 +18,13 @@ impl ServiceResolver {
         field_name: &str,
     ) -> Result<Document, async_graphql::Error> {
         debug!("Converting Sqlite Row to Document");
+        trace!("Field Name: {}", field_name);
         let mut document = Document::new();
 
         // If the config does not provide a value to join on, then allow
         // search with any criteria
         if as_type_field.join_on.is_none() {
+            trace!("No Join On Value Provided");
             return Ok(document);
         }
 
@@ -31,6 +33,7 @@ impl ServiceResolver {
             | ScalarOptions::ObjectID
             | ScalarOptions::UUID
             | ScalarOptions::DateTime => {
+                trace!("Getting String Column Value");
                 let column_value: Option<&str> = sqlite_row.try_get(field_name).map_err(|e| {
                     error!("Error getting string column value: {}", e);
                     async_graphql::Error::new(format!("Error getting column value: {}", e))
@@ -40,6 +43,7 @@ impl ServiceResolver {
                 }
             }
             ScalarOptions::Int => {
+                trace!("Getting Int Column Value");
                 let column_value: Option<i64> = sqlite_row.try_get(field_name).map_err(|e| {
                     error!("Error getting int column value: {}", e);
                     async_graphql::Error::new(format!("Error getting column value: {}", e))
@@ -49,6 +53,7 @@ impl ServiceResolver {
                 }
             }
             ScalarOptions::Boolean => {
+                trace!("Getting Boolean Column Value");
                 let column_value: Option<bool> = sqlite_row.try_get(field_name).map_err(|e| {
                     error!("Error getting boolean column value: {}", e);
                     async_graphql::Error::new(format!("Error getting column value: {}", e))
@@ -62,7 +67,7 @@ impl ServiceResolver {
                 as_type_field.scalar
             )))?,
         }
-        debug!("Sqlite Row Converted to Document: {:?}", document);
+        trace!("Sqlite Row Converted to Document: {:?}", document);
         Ok(document)
     }
 

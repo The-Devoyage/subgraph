@@ -1,4 +1,4 @@
-use log::{debug, warn};
+use log::{debug, trace, warn};
 
 use crate::data_sources::sql::{PoolEnum, SqlQuery, SqlValueEnum};
 
@@ -182,7 +182,7 @@ impl Services {
                     warn!("No row found: {:?}", sql_query);
                     return Ok(None);
                 }
-
+                trace!("Row Found: {:?}", row.is_some());
                 Ok(Some(ResponseRow::SqLite(row.unwrap())))
             }
         }

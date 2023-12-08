@@ -10,6 +10,8 @@ use crate::{
     graphql::schema::ResolverType,
 };
 
+use super::JoinClauses;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum FilterOperator {
     #[serde(rename = "AND")]
@@ -28,10 +30,13 @@ impl SqlDataSource {
         has_more: bool,
         pg_param_offset: Option<i32>,
         subgraph_config: &SubGraphConfig,
-    ) -> Result<(Option<String>, Vec<SqlValueEnum>), async_graphql::Error> {
+        join_clauses: Option<JoinClauses>,
+    ) -> Result<(Option<String>, Vec<SqlValueEnum>, JoinClauses), async_graphql::Error> {
         debug!("Creating Recursive Nested Query From: {:?}", inputs);
+        debug!("Initial Join Clauses: {:?}", join_clauses);
         let mut nested_query = String::new();
         let mut combined_where_values = vec![];
+        let mut combined_join_clauses = join_clauses.unwrap_or(JoinClauses(Vec::new()));
 
         // Possibly need this for postgres.
         if is_first {
@@ -67,14 +72,16 @@ impl SqlDataSource {
             // Nest inside a "query" property for recursive calls.
             let query_input = doc! { "query": initial_input };
 
-            let (where_keys, where_values, ..) = SqlDataSource::get_key_data(
-                &query_input,
-                entity,
-                &ResolverType::FindOne,
-                &dialect,
-                &subgraph_config,
-            )?;
+            let (where_keys, where_values, _value_keys, _values, join_clauses) =
+                SqlDataSource::get_key_data(
+                    &query_input,
+                    entity,
+                    &ResolverType::FindOne,
+                    &dialect,
+                    &subgraph_config,
+                )?;
 
+            combined_join_clauses.0.extend(join_clauses.0);
             combined_where_values.extend(where_values.clone());
 
             let (parameterized_query, offset) = SqlDataSource::create_where_clause(
@@ -97,18 +104,21 @@ impl SqlDataSource {
                 } else {
                     false
                 };
-                let (and_query, and_where_values) = SqlDataSource::create_nested_query_recursive(
-                    is_first,
-                    and_filters,
-                    entity,
-                    dialect,
-                    FilterOperator::And,
-                    has_more,
-                    pg_param_offset,
-                    subgraph_config,
-                )?;
+                let (and_query, and_where_values, and_join_clauses) =
+                    SqlDataSource::create_nested_query_recursive(
+                        is_first,
+                        and_filters,
+                        entity,
+                        dialect,
+                        FilterOperator::And,
+                        has_more,
+                        pg_param_offset,
+                        subgraph_config,
+                        Some(combined_join_clauses.clone()),
+                    )?;
 
                 combined_where_values.extend(and_where_values.clone());
+                combined_join_clauses.clone().0.extend(and_join_clauses.0);
 
                 if let Some(and_query) = and_query {
                     nested_query.push_str(&and_query);
@@ -117,25 +127,26 @@ impl SqlDataSource {
 
             if or_filters.is_some() {
                 let or_filters = or_filters.unwrap().as_array().unwrap();
-                let (or_query, or_where_values) = SqlDataSource::create_nested_query_recursive(
-                    is_first,
-                    or_filters,
-                    entity,
-                    dialect,
-                    FilterOperator::Or,
-                    false,
-                    pg_param_offset,
-                    subgraph_config,
-                )?;
+                let (or_query, or_where_values, or_join_clauses) =
+                    SqlDataSource::create_nested_query_recursive(
+                        is_first,
+                        or_filters,
+                        entity,
+                        dialect,
+                        FilterOperator::Or,
+                        false,
+                        pg_param_offset,
+                        subgraph_config,
+                        Some(combined_join_clauses.clone()),
+                    )?;
 
                 combined_where_values.extend(or_where_values.clone());
+                combined_join_clauses.0.extend(or_join_clauses.0);
 
                 if let Some(or_query) = or_query {
                     nested_query.push_str(&or_query);
                 };
             }
-
-            debug!("I: {}, inputs: {}", i, inputs.len());
 
             if i != inputs.len() - 1 {
                 match filter_by_operator {
@@ -151,13 +162,24 @@ impl SqlDataSource {
             nested_query.push_str(" AND ");
         }
 
-        if nested_query == " ()" || nested_query.is_empty() || nested_query == " And ()" {
-            return Ok((None, combined_where_values));
+        let is_empty = nested_query.contains("()");
+        let is_empty_and = nested_query.contains("AND") && nested_query.contains("()");
+        if is_empty || nested_query.is_empty() || is_empty_and {
+            return Ok((None, combined_where_values, combined_join_clauses));
         }
+
+        // Filter duplicates from the join clauses.
+        combined_join_clauses.0.sort();
+        combined_join_clauses.0.dedup();
 
         debug!("Nested query: {}", nested_query);
         debug!("Combined Where Values: {:?}", combined_where_values);
+        debug!("Combined Join Clauses: {:?}", combined_join_clauses);
 
-        Ok((Some(nested_query), combined_where_values))
+        Ok((
+            Some(nested_query),
+            combined_where_values,
+            combined_join_clauses,
+        ))
     }
 }

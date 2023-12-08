@@ -15,7 +15,7 @@ pub struct CliArgs {
 
     /// Service log level.
     #[serde(rename = "log-level")]
-    #[arg(short, long, value_parser = PossibleValuesParser::new(["info", "debug", "info", "warn", "error"]))]
+    #[arg(short, long, value_parser = PossibleValuesParser::new(["info", "debug", "info", "warn", "error", "trace"]))]
     pub log_level: Option<String>,
 
     /// The port this service runs on.

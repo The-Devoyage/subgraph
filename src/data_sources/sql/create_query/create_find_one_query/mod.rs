@@ -41,22 +41,22 @@ impl SqlDataSource {
             }
         };
 
-        if let Some(join_clauses) = join_clauses {
-            for join_clause in join_clauses.0 {
-                query.push_str(&join_clause);
-            }
-        }
+        let (nested_query, combined_where_values, combined_join_clauses) =
+            SqlDataSource::create_nested_query_recursive(
+                true,
+                &vec![query_input.clone()],
+                entity,
+                dialect,
+                FilterOperator::And,
+                false,
+                None,
+                subgraph_config,
+                join_clauses,
+            )?;
 
-        let (nested_query, combined_where_values) = SqlDataSource::create_nested_query_recursive(
-            true,
-            &vec![query_input.clone()],
-            entity,
-            dialect,
-            FilterOperator::And,
-            false,
-            None,
-            subgraph_config,
-        )?;
+        for join_clause in combined_join_clauses.0 {
+            query.push_str(&join_clause);
+        }
 
         query.push_str(" WHERE ");
 
