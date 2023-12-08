@@ -219,6 +219,7 @@ impl SqlDataSource {
             }
         };
 
+        trace!("Completed Get Query Where Values");
         trace!("Where Values: {:?}", where_values);
         trace!("Where Keys: {:?}", where_keys);
         trace!("Join Clauses: {:?}", join_clauses);

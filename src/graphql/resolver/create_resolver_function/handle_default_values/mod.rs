@@ -51,6 +51,13 @@ impl ServiceResolver {
                                     default_value_expr
                                 )));
                             }
+
+                            if default_value.len() == 0 {
+                                return Err(async_graphql::Error::new(format!(
+                                    "Invalid Default Value Expression, results in no result: {}",
+                                    default_value_expr
+                                )));
+                            }
                             default_value[0].clone()
                         } else {
                             default_value

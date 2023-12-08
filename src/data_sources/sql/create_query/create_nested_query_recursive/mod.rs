@@ -118,7 +118,7 @@ impl SqlDataSource {
                     )?;
 
                 combined_where_values.extend(and_where_values.clone());
-                combined_join_clauses.clone().0.extend(and_join_clauses.0);
+                combined_join_clauses.0.extend(and_join_clauses.0);
 
                 if let Some(and_query) = and_query {
                     nested_query.push_str(&and_query);

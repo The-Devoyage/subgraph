@@ -14,14 +14,22 @@ impl ServiceResolver {
         debug!("Removing Virtual Fields");
         let mut output_document = input_document.clone();
 
-        let values = output_document.get_document("values");
-        // let query = output_document.get_document("query");
+        let query = input_document.get_document("query");
+        let values = input_document.get_document("values");
 
         if values.is_ok() {
             let values = values.unwrap();
             let values = ServiceResolver::handle_remove_from_doc(values, fields);
             output_document.remove("values");
             output_document.insert("values", values);
+        }
+
+        if query.is_ok() {
+            let query = query.unwrap();
+            let query = ServiceResolver::handle_remove_from_doc(query, fields);
+
+            output_document.remove("query");
+            output_document.insert("query", query);
         }
 
         trace!("Output Document: {:?}", output_document);
@@ -34,7 +42,10 @@ impl ServiceResolver {
     ) -> Document {
         debug!("Removing Fields from Document");
         let mut output_document = document.clone();
+        let and_filters = document.get_array("AND");
+        let or_filters = document.get_array("OR");
 
+        // Remove virtual fields from root document filter.
         for field in fields {
             if field.is_virtual.unwrap_or(false) {
                 trace!("Removing Field: {:?}", field.name);
@@ -53,6 +64,32 @@ impl ServiceResolver {
                     output_document.insert(field.name.clone(), nested_document);
                 }
             }
+        }
+
+        // Remove virtual fields from AND filters.
+        if and_filters.is_ok() {
+            let and_filters = and_filters.unwrap();
+            let mut new_and_filters = Vec::new();
+            for filter in and_filters {
+                let filter = filter.as_document().unwrap();
+                let filter = ServiceResolver::handle_remove_from_doc(filter, fields);
+                new_and_filters.push(filter);
+            }
+            output_document.remove("AND");
+            output_document.insert("AND", new_and_filters);
+        }
+
+        // Remove virtual fields from OR filters.
+        if or_filters.is_ok() {
+            let or_filters = or_filters.unwrap();
+            let mut new_or_filters = Vec::new();
+            for filter in or_filters {
+                let filter = filter.as_document().unwrap();
+                let filter = ServiceResolver::handle_remove_from_doc(filter, fields);
+                new_or_filters.push(filter);
+            }
+            output_document.remove("OR");
+            output_document.insert("OR", new_or_filters);
         }
 
         trace!("Output Document: {:?}", output_document);

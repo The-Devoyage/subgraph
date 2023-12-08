@@ -301,6 +301,9 @@ impl ServiceResolver {
                         if field.as_type.is_some() && field.join_from.is_some() {
                             continue;
                         }
+                        if field.is_virtual.unwrap_or(false) {
+                            continue;
+                        }
                         let json_value = ServiceEntity::resolve_sql_field_json(
                             response_row,
                             &field.name.clone(),
@@ -428,10 +431,21 @@ impl ServiceResolver {
                 // For each tuple, we need to push it into the json array as an object.
                 for tuple in value.as_tuple().unwrap() {
                     let mut json_object = serde_json::json!({});
-                    let tuple_value = tuple.to_string();
 
-                    json_object[key.clone().replace("{{", "").replace("}}", "")] =
-                        serde_json::json!(clean_string(&tuple_value));
+                    if tuple.is_string() {
+                        let tuple_value = tuple.to_string();
+                        json_object[key.clone().replace("{{", "").replace("}}", "")] =
+                            serde_json::json!(clean_string(&tuple_value));
+                    } else if tuple.is_boolean() {
+                        let tuple_value = tuple.as_boolean();
+                        json_object[key.clone().replace("{{", "").replace("}}", "")] =
+                            serde_json::json!(tuple_value.unwrap());
+                    } else if tuple.is_int() {
+                        let tuple_value = tuple.as_int();
+                        json_object[key.clone().replace("{{", "").replace("}}", "")] =
+                            serde_json::json!(tuple_value.unwrap());
+                    }
+
                     json_array.as_array_mut().unwrap().push(json_object);
                 }
                 query = query.replace(&key, &json_array.to_string());

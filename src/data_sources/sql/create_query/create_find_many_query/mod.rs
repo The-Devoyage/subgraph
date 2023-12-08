@@ -1,5 +1,5 @@
 use bson::Document;
-use log::debug;
+use log::{debug, trace};
 
 use crate::{
     configuration::subgraph::{
@@ -50,6 +50,7 @@ impl SqlDataSource {
             )?;
 
         for join_clause in combined_join_clauses.0 {
+            trace!("Adding Join Clause: {}", join_clause);
             query.push_str(&join_clause);
         }
 

@@ -1,5 +1,5 @@
 use bson::Bson;
-use log::{debug, error, trace};
+use log::{debug, error, trace, warn};
 
 use crate::{
     configuration::subgraph::{
@@ -61,7 +61,8 @@ impl SqlDataSource {
                 let eager_input = match value.as_document() {
                     Some(v) => Some(v),
                     None => {
-                        continue;
+                        error!("Invalid Eager Loaded Field: {:?}", value);
+                        return Err(async_graphql::Error::new("Invalid Eager Loaded Field"));
                     }
                 };
                 let as_type = field.as_type;

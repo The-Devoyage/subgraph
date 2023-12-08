@@ -1,5 +1,5 @@
 use bson::Document;
-use log::debug;
+use log::{debug, trace};
 
 use crate::{
     configuration::subgraph::{
@@ -67,11 +67,12 @@ impl SqlDataSource {
             }
         }
 
-        debug!("Where Keys: {:?}", where_keys);
-        debug!("Where Values: {:?}", where_values);
-        debug!("Value Keys: {:?}", value_keys);
-        debug!("Values: {:?}", values);
-        debug!("Join Clauses: {:?}", join_clauses);
+        trace!("Completed Parsing Input Key Data");
+        trace!("Where Keys: {:?}", where_keys);
+        trace!("Where Values: {:?}", where_values);
+        trace!("Value Keys: {:?}", value_keys);
+        trace!("Values: {:?}", values);
+        trace!("Join Clauses: {:?}", join_clauses);
 
         Ok((where_keys, where_values, value_keys, values, join_clauses))
     }
