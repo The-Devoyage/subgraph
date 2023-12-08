@@ -328,7 +328,7 @@ impl Guard {
                                 Ok(field) => field,
                                 Err(e)=> {
                                     error!("Field not found: {:?}", e);
-                                    return Err(EvalexprError::CustomMessage("Field not found.".to_string()))
+                                    return Err(EvalexprError::CustomMessage("Failed to parse context: Field not found.".to_string()))
                                 }
                             };
 

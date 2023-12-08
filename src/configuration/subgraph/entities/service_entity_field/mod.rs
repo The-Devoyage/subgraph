@@ -20,6 +20,7 @@ pub struct ServiceEntityFieldConfig {
     pub join_from: Option<String>,
     pub default_value: Option<String>,
     pub eager: Option<bool>,
+    pub is_virtual: Option<bool>,
 }
 
 impl ServiceEntityFieldConfig {

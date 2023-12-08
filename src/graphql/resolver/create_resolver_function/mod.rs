@@ -14,6 +14,7 @@ mod get_resolver_input;
 mod get_token_data;
 mod guard_resolver;
 mod handle_default_values;
+mod remove_virtual_fields;
 
 impl ServiceResolver {
     pub fn create_resolver_function(
@@ -83,6 +84,9 @@ impl ServiceResolver {
                     &resolver_type,
                     guard_context,
                 )?;
+
+                let input_document =
+                    ServiceResolver::remove_virtual_fields(&input_document, &entity.fields);
 
                 let operation_type = ServiceResolver::get_operation_type(&resolver_type, &as_field);
 

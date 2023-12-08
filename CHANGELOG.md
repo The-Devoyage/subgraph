@@ -7,6 +7,7 @@
 - Guard Data Context - use data within the data sources to validate guards.
 - Default values on a field config allow you to use dynamic values from request, context, or token data (similar to guards).
 - Eager loading enabled on SQL data sources which allows you to query with relation to referenced entities.
+- Virtual Fields allow you to specify input fields that do not ever touch the database.
 
 ### Fixed
 
