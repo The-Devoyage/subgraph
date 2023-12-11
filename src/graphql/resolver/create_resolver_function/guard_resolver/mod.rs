@@ -421,7 +421,10 @@ impl ServiceResolver {
             }
             if value.is_tuple() {
                 if value.as_tuple().unwrap().len() == 0 {
-                    error!("Replace Variables In Query: Tuple length is 0.");
+                    error!(
+                        "Replace Variables In Query: Tuple length is 0. Query: {:?}",
+                        query
+                    );
                     return Err(async_graphql::Error::new(format!(
                         "Can't parse the guard data context query. Variable `{key}` not provided.",
                     ))

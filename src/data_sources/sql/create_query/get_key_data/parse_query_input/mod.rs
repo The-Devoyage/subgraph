@@ -1,5 +1,5 @@
 use bson::Bson;
-use log::{debug, error, trace, warn};
+use log::{debug, error, trace};
 
 use crate::{
     configuration::subgraph::{
@@ -47,17 +47,19 @@ impl SqlDataSource {
             let where_key_prefix =
                 SqlDataSource::get_where_key_prefix(&field, &entity, &subgraph_config)?;
 
-            // Get the join clause and push it to the join clauses vector
-            let join_clause = SqlDataSource::get_join_clause(&field, &entity, subgraph_config)?;
-            if join_clause.is_some() {
-                join_clauses.0.push(join_clause.unwrap());
-            }
-
             // If the field is eager loaded, we can assume it is a object with many fields. Iterate
             // over the fields and return the keys.
             // Else, just return the key as is.
             if field.eager.is_some() {
                 trace!("Parsing Eager Loaded Field");
+
+                // Get the join clause and push it to the join clauses vector
+                let join_clause =
+                    SqlDataSource::get_join_clause(&field, &entity, subgraph_config, None)?;
+                if join_clause.is_some() {
+                    join_clauses.0.push(join_clause.unwrap());
+                }
+
                 let eager_input = match value.as_document() {
                     Some(v) => Some(v),
                     None => {
@@ -65,6 +67,7 @@ impl SqlDataSource {
                         return Err(async_graphql::Error::new("Invalid Eager Loaded Field"));
                     }
                 };
+
                 let as_type = field.as_type;
                 for (key, nested_value) in eager_input.unwrap().iter() {
                     let (wk, wv, jc) = SqlDataSource::get_query_where_values(
@@ -73,6 +76,7 @@ impl SqlDataSource {
                         key,
                         as_type.clone(),
                         subgraph_config,
+                        Some(where_key_prefix.clone()), // as parent alias to be used in join clause
                     )?;
                     for value in wv.into_iter() {
                         where_values.push(value);
@@ -82,6 +86,7 @@ impl SqlDataSource {
                             where_keys.push(key);
                             continue;
                         }
+                        trace!("Adding Where Key: {:?}", key);
                         let where_key = format!("{}.{}", where_key_prefix, key.to_string());
                         where_keys.push(where_key);
                     }
@@ -97,6 +102,7 @@ impl SqlDataSource {
                         key,
                         None,
                         subgraph_config,
+                        None,
                     )?;
                 for key in parsed_where_keys {
                     let key = format!("{}.{}", where_key_prefix, key.to_string());
@@ -122,10 +128,11 @@ impl SqlDataSource {
         field: &ServiceEntityFieldConfig,
         parent_entity: &ServiceEntityConfig,
         subgraph_config: &SubGraphConfig,
+        parent_alias: Option<String>,
     ) -> Result<Option<String>, async_graphql::Error> {
         debug!("Get Join Clause");
         trace!("Field: {:?}", field);
-        trace!("Entity: {:?}", parent_entity);
+        trace!("Parent Entity: {:?}", parent_entity);
 
         let join_clause = if field.eager.is_some() {
             if field.as_type.is_none() {
@@ -161,11 +168,12 @@ impl SqlDataSource {
 
             // Create the join clauses, to be used later.
             let join_clause = format!(
-                " JOIN {} ON {}.{} = {}.{} ",
+                " JOIN {} {} ON {}.{} = {}.{} ",
                 table_name,
-                table_name.clone(),
+                format!("{}_{}", table_name, field.name.clone()),
+                format!("{}_{}", table_name, field.name.clone()),
                 field.join_on.clone().unwrap(),
-                parent_entity.name.clone(),
+                parent_alias.unwrap_or(parent_entity.name.clone(),),
                 field.join_from.clone().unwrap_or(field.name.clone())
             );
             Some(join_clause)
@@ -192,10 +200,10 @@ impl SqlDataSource {
             if ds.table.is_some() {
                 ds.table.unwrap()
             } else {
-                entity.clone().name
+                entity.name.clone()
             }
         } else {
-            entity.clone().name
+            entity.name.clone()
         };
 
         // If the field is a eager loaded field, get the correct prefix
@@ -229,7 +237,7 @@ impl SqlDataSource {
             } else {
                 child_entity.name.clone()
             };
-            where_key_prefix = table_name;
+            where_key_prefix = format!("{}_{}", table_name, field.name.clone());
         }
         trace!("Where Key Prefix: {:?}", where_key_prefix);
         Ok(where_key_prefix)

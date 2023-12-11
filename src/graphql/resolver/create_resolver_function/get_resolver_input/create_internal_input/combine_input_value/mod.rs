@@ -12,10 +12,12 @@ impl ServiceResolver {
         join_on: &str,
     ) -> Result<Document, async_graphql::Error> {
         debug!("Combining Primitive Value With Input");
-        debug!("Parent Value: {:?}", parent_value);
-        debug!(
+        trace!("Parent Value: {:?}", parent_value);
+        trace!(
             "Join On: {} as {:?} with field name: {}",
-            join_on, scalar, field_name
+            join_on,
+            scalar,
+            field_name
         );
 
         // Declare the new query input.
@@ -155,7 +157,7 @@ impl ServiceResolver {
             query_input.remove("AND");
         }
 
-        debug!("Joined Query: {:?}", query_input);
+        trace!("Joined Query: {:?}", query_input);
         Ok(query_input.clone())
     }
 

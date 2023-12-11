@@ -39,8 +39,10 @@ impl ServiceInput {
         let is_eager = entity_field.eager.unwrap_or(false);
 
         // If the field is eager, we don't need to create an input for it.
-        // We will just use the field name as the input.
-        if is_eager {
+        // Just use the field name as the input.
+        if is_eager
+            && (resolver_type == &ResolverType::FindMany || resolver_type == &ResolverType::FindOne)
+        {
             let as_type_name = entity_field.as_type.clone();
             if as_type_name.is_none() {
                 panic!(

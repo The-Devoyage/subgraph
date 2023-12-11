@@ -45,7 +45,6 @@ impl ServiceInput {
 
         // For each field in the entity, create an input field.
         for field in &self.fields {
-            debug!("FIELDFIELD, {:?}", field);
             let is_excluded = ServiceEntityFieldConfig::is_excluded_input_field(
                 field,
                 self.exclude_from_input.clone(),
@@ -79,9 +78,7 @@ impl ServiceInput {
         }
 
         // Only add filter inputs for specific resolvers.
-        let include_filters = include_filters.unwrap_or(false)
-            && (self.resolver_type == ResolverType::FindOne
-                || self.resolver_type == ResolverType::FindMany);
+        let include_filters = include_filters.unwrap_or(false);
 
         // Only add filter inputs for specific DataSources.
         let include_filters = match self.entity_data_source {

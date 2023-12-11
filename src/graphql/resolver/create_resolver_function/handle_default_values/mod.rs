@@ -17,7 +17,11 @@ impl ServiceResolver {
         debug!("Handling Default Values");
         let mut input = input.clone();
 
-        if resolver_type != &ResolverType::CreateOne {
+        let default_value_enabled = match resolver_type {
+            ResolverType::CreateOne | ResolverType::UpdateOne | ResolverType::UpdateMany => true,
+            _ => false,
+        };
+        if !default_value_enabled {
             return Ok(input.clone());
         }
 

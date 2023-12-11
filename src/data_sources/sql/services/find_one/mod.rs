@@ -1,4 +1,4 @@
-use log::{debug, trace, warn};
+use log::{debug, error, trace, warn};
 
 use crate::data_sources::sql::{PoolEnum, SqlQuery, SqlValueEnum};
 
@@ -176,7 +176,10 @@ impl Services {
                     }
                 }
 
-                let row = query.fetch_optional(pool).await?;
+                let row = query.fetch_optional(pool).await.map_err(|e| {
+                    error!("Sqlite Find One Error: {:?}", e);
+                    async_graphql::Error::new(format!("Error finding one"))
+                })?;
 
                 if row.is_none() {
                     warn!("No row found: {:?}", sql_query);

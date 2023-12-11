@@ -23,21 +23,8 @@ impl SqlDataSource {
         let mut query = String::new();
         query.push_str("UPDATE ");
         query.push_str(table_name);
-        query.push_str(" SET ");
-
-        for i in 0..value_keys.len() {
-            query.push_str(&value_keys[i]);
-            query.push_str(" = ");
-            query.push_str(SqlDataSource::get_placeholder(dialect, Some(i as i32)).as_str());
-            if i != value_keys.len() - 1 {
-                query.push_str(", ");
-            }
-        }
 
         let offset = Some(value_keys.len() as i32);
-
-        query.push_str(" WHERE ");
-
         let query_input = input.get("query").unwrap();
         let (nested_query, combined_where_values, _combined_join_values) =
             SqlDataSource::create_nested_query_recursive(
@@ -51,6 +38,19 @@ impl SqlDataSource {
                 subgraph_config,
                 None,
             )?;
+
+        query.push_str(" SET ");
+
+        for i in 0..value_keys.len() {
+            query.push_str(&value_keys[i]);
+            query.push_str(" = ");
+            query.push_str(SqlDataSource::get_placeholder(dialect, Some(i as i32)).as_str());
+            if i != value_keys.len() - 1 {
+                query.push_str(", ");
+            }
+        }
+
+        query.push_str(" WHERE ");
 
         if let Some(nested_query) = nested_query {
             query.push_str(nested_query.as_str());

@@ -21,6 +21,7 @@ impl SqlDataSource {
         as_type: Option<String>, // Passing the `as_type` allows the nested eager loaded  association
         // to be matched.
         subgraph_config: &SubGraphConfig,
+        parent_alias: Option<String>,
     ) -> Result<(Vec<String>, Vec<SqlValueEnum>, JoinClauses), async_graphql::Error> {
         debug!("Getting Query Where Values");
         trace!("From Value: {:?}", value);
@@ -42,6 +43,7 @@ impl SqlDataSource {
                         k,
                         None,
                         subgraph_config,
+                        parent_alias.clone(),
                     )?;
                     for value in wv {
                         where_values.push(value);
@@ -144,7 +146,12 @@ impl SqlDataSource {
             let field = ServiceEntityConfig::get_field(entity.clone(), parent_key.to_string())?;
             let where_key_prefix =
                 SqlDataSource::get_where_key_prefix(&field, &entity, &subgraph_config)?;
-            let join_clause = SqlDataSource::get_join_clause(&field, &entity, subgraph_config)?;
+            let join_clause = SqlDataSource::get_join_clause(
+                &field,
+                &entity,
+                subgraph_config,
+                parent_alias.clone(),
+            )?;
             if join_clause.is_some() {
                 join_clauses.0.push(join_clause.unwrap());
             }
@@ -156,11 +163,13 @@ impl SqlDataSource {
                         k,
                         field.as_type.clone(),
                         subgraph_config,
+                        parent_alias.clone(),
                     )?;
                 for value in where_value {
                     where_values.push(value);
                 }
                 for key in where_key {
+                    trace!("Additional Where Key: {:?}", key);
                     let key = format!("{}.{}", where_key_prefix, key);
                     where_keys.push(key);
                 }
