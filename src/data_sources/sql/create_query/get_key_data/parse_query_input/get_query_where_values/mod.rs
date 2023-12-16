@@ -22,6 +22,7 @@ impl SqlDataSource {
         // to be matched.
         subgraph_config: &SubGraphConfig,
         parent_alias: Option<String>,
+        disable_eager_loading: bool,
     ) -> Result<(Vec<String>, Vec<SqlValueEnum>, JoinClauses), async_graphql::Error> {
         debug!("Getting Query Where Values");
         trace!("From Value: {:?}", value);
@@ -44,6 +45,7 @@ impl SqlDataSource {
                         None,
                         subgraph_config,
                         parent_alias.clone(),
+                        disable_eager_loading,
                     )?;
                     for value in wv {
                         where_values.push(value);
@@ -144,8 +146,12 @@ impl SqlDataSource {
                 }
             };
             let field = ServiceEntityConfig::get_field(entity.clone(), parent_key.to_string())?;
-            let where_key_prefix =
-                SqlDataSource::get_where_key_prefix(&field, &entity, &subgraph_config)?;
+            let where_key_prefix = SqlDataSource::get_where_key_prefix(
+                &field,
+                &entity,
+                &subgraph_config,
+                disable_eager_loading,
+            )?;
             let join_clause = SqlDataSource::get_join_clause(
                 &field,
                 &entity,
@@ -156,22 +162,27 @@ impl SqlDataSource {
                 join_clauses.0.push(join_clause.unwrap());
             }
             for (k, value) in value.iter() {
-                let (where_key, where_value, combined_join_clauses) =
+                let (combined_where_keys, combined_where_value, combined_join_clauses) =
                     SqlDataSource::get_query_where_values(
                         value,
                         dialect,
                         k,
                         field.as_type.clone(),
                         subgraph_config,
-                        parent_alias.clone(),
+                        Some(where_key_prefix.clone()),
+                        disable_eager_loading,
                     )?;
-                for value in where_value {
+                for value in combined_where_value {
                     where_values.push(value);
                 }
-                for key in where_key {
+                for key in combined_where_keys {
                     trace!("Additional Where Key: {:?}", key);
-                    let key = format!("{}.{}", where_key_prefix, key);
-                    where_keys.push(key);
+                    if key.contains(".") {
+                        where_keys.push(key);
+                    } else {
+                        let key = format!("{}.{}", where_key_prefix, key);
+                        where_keys.push(key);
+                    }
                 }
                 for clause in combined_join_clauses.0 {
                     join_clauses.0.push(clause);

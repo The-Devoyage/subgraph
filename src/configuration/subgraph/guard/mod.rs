@@ -3,7 +3,7 @@ use bson::{doc, Document};
 use evalexpr::*;
 use guard_data_context::GuardDataContext;
 use http::HeaderMap;
-use log::{debug, error};
+use log::{debug, error, trace};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -37,8 +37,11 @@ impl Guard {
             debug!("Should Guard: {:?}", should_guard);
             if should_guard.is_err() {
                 error!("Guard Creation Error, {:?}", should_guard);
-                return Err(Error::new("Guard Creation Error").extend_with(|_err, e| {
-                    e.set(guard.name.clone(), should_guard.err().unwrap().to_string())
+                return Err(Error::new(guard.then_msg.clone()).extend_with(|_err, e| {
+                    e.set(
+                        "guard_creation_error",
+                        should_guard.err().unwrap().to_string(),
+                    );
                 }));
             }
             if should_guard.unwrap() {
@@ -204,6 +207,7 @@ impl Guard {
                                 let keys: Vec<&str> = key.split(".").collect();
                                 let mut value = &json[keys[0]];
                                 for key in keys.iter().skip(1) {
+                                    trace!("Input Nested Key: {:?}", key);
                                     if excluded_keys.contains(key) {
                                         continue;
                                     }
@@ -216,7 +220,7 @@ impl Guard {
 
                                 let value = value.to_string();
 
-                                let value = Value::String(value);
+                                let value = Value::String(clean_string(&value));
 
                                 values_tuple.push(value);
                             } else { // Else extract the value directly.

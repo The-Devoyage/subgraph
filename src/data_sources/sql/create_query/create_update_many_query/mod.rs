@@ -37,6 +37,7 @@ impl SqlDataSource {
                 offset,
                 subgraph_config,
                 None,
+                false,
             )?;
 
         query.push_str(" SET ");

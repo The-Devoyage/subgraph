@@ -13,6 +13,10 @@
 
 - Nullable Entities Patched
 
+### Changed
+
+- Guard Creation Errors - `then_msg` now returned as main error message. Guard creation error now provided as an error extension with the guard creation error message.
+
 ## [v0.0.12]
 
 ### Added

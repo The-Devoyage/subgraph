@@ -42,6 +42,7 @@ impl SqlDataSource {
                 &resolver_type,
                 &dialect,
                 &subgraph_config,
+                false,
             )?;
 
         // Generate the query string and get the where values.
@@ -66,6 +67,7 @@ impl SqlDataSource {
                     &input,
                     subgraph_config,
                     Some(join_clauses),
+                    false,
                 )?;
                 where_values = combined_where_values;
                 query_string

@@ -52,6 +52,7 @@ impl SqlDataSource {
                 offset,
                 subgraph_config,
                 None,
+                false,
             )?;
 
         if let Some(nested_query) = nested_query {

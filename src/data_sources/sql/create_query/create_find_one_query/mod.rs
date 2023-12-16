@@ -52,6 +52,7 @@ impl SqlDataSource {
                 None,
                 subgraph_config,
                 join_clauses,
+                false,
             )?;
 
         for join_clause in combined_join_clauses.0 {

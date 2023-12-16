@@ -18,6 +18,7 @@ impl SqlDataSource {
         input: &Document,
         subgraph_config: &SubGraphConfig,
         join_clauses: Option<JoinClauses>,
+        disable_eager_loading: bool,
     ) -> Result<(String, Vec<SqlValueEnum>), async_graphql::Error> {
         debug!("Creating Find Many Query");
 
@@ -47,6 +48,7 @@ impl SqlDataSource {
                 None,
                 subgraph_config,
                 join_clauses,
+                disable_eager_loading,
             )?;
 
         for join_clause in combined_join_clauses.0 {

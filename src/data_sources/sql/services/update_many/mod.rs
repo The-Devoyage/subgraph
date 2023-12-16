@@ -149,6 +149,7 @@ impl Services {
                     &query_input,
                     subgraph_config,
                     None,
+                    true,
                 )?;
 
                 let mut find_many_query = sqlx::query(&find_many_query_string);
@@ -461,6 +462,7 @@ impl Services {
                     &query_doc,
                     subgraph_config,
                     None,
+                    true,
                 )?;
 
                 let mut find_many_query = sqlx::query(&find_many_query_string);

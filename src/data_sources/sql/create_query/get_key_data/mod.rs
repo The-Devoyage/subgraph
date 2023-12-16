@@ -24,6 +24,7 @@ impl SqlDataSource {
         resolver_type: &ResolverType,
         dialect: &DialectEnum,
         subgraph_config: &SubGraphConfig,
+        disable_eager_loading: bool,
     ) -> Result<
         (
             Vec<String>,
@@ -63,6 +64,7 @@ impl SqlDataSource {
                     dialect,
                     entity,
                     subgraph_config,
+                    disable_eager_loading,
                 )?;
             }
         }

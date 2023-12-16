@@ -21,6 +21,7 @@ impl SqlDataSource {
         dialect: &DialectEnum,
         entity: &ServiceEntityConfig,
         subgraph_config: &SubGraphConfig,
+        disable_eager_loading: bool,
     ) -> Result<(Vec<String>, Vec<SqlValueEnum>, JoinClauses), async_graphql::Error> {
         debug!("Parse Query Input");
         trace!("Input: {:?}", value);
@@ -44,13 +45,17 @@ impl SqlDataSource {
             let field = ServiceEntityConfig::get_field(entity.clone(), key.to_string())?;
 
             // Get the where key prefix
-            let where_key_prefix =
-                SqlDataSource::get_where_key_prefix(&field, &entity, &subgraph_config)?;
+            let where_key_prefix = SqlDataSource::get_where_key_prefix(
+                &field,
+                &entity,
+                &subgraph_config,
+                disable_eager_loading,
+            )?;
 
             // If the field is eager loaded, we can assume it is a object with many fields. Iterate
             // over the fields and return the keys.
             // Else, just return the key as is.
-            if field.eager.is_some() {
+            if field.eager.is_some() && !disable_eager_loading {
                 trace!("Parsing Eager Loaded Field");
 
                 // Get the join clause and push it to the join clauses vector
@@ -77,6 +82,7 @@ impl SqlDataSource {
                         as_type.clone(),
                         subgraph_config,
                         Some(where_key_prefix.clone()), // as parent alias to be used in join clause
+                        disable_eager_loading,
                     )?;
                     for value in wv.into_iter() {
                         where_values.push(value);
@@ -103,8 +109,13 @@ impl SqlDataSource {
                         None,
                         subgraph_config,
                         None,
+                        true,
                     )?;
                 for key in parsed_where_keys {
+                    if key.contains(".") {
+                        where_keys.push(key);
+                        continue;
+                    }
                     let key = format!("{}.{}", where_key_prefix, key.to_string());
                     where_keys.push(key);
                 }
@@ -170,10 +181,20 @@ impl SqlDataSource {
             let join_clause = format!(
                 " JOIN {} {} ON {}.{} = {}.{} ",
                 table_name,
-                format!("{}_{}", table_name, field.name.clone()),
-                format!("{}_{}", table_name, field.name.clone()),
+                format!(
+                    "\"{}.{}.{}\"",
+                    table_name,
+                    parent_entity.name.clone(),
+                    field.name.clone()
+                ),
+                format!(
+                    "\"{}.{}.{}\"",
+                    table_name,
+                    parent_entity.name.clone(),
+                    field.name.clone()
+                ),
                 field.join_on.clone().unwrap(),
-                parent_alias.unwrap_or(parent_entity.name.clone(),),
+                parent_alias.unwrap_or(parent_entity.name.clone()),
                 field.join_from.clone().unwrap_or(field.name.clone())
             );
             Some(join_clause)
@@ -192,6 +213,7 @@ impl SqlDataSource {
         field: &ServiceEntityFieldConfig,
         entity: &ServiceEntityConfig,
         subgraph_config: &SubGraphConfig,
+        disable_eager_loading: bool,
     ) -> Result<String, async_graphql::Error> {
         debug!("Get Where Key Prefix");
 
@@ -207,7 +229,7 @@ impl SqlDataSource {
         };
 
         // If the field is a eager loaded field, get the correct prefix
-        if field.eager.is_some() {
+        if field.eager.is_some() && !disable_eager_loading {
             if field.as_type.is_none() {
                 error!("As type required for eager loading: {:?}", field);
                 return Err(async_graphql::Error::new(format!(
@@ -237,7 +259,12 @@ impl SqlDataSource {
             } else {
                 child_entity.name.clone()
             };
-            where_key_prefix = format!("{}_{}", table_name, field.name.clone());
+            where_key_prefix = format!(
+                "\"{}.{}.{}\"",
+                table_name,
+                entity.name.clone(),
+                field.name.clone()
+            );
         }
         trace!("Where Key Prefix: {:?}", where_key_prefix);
         Ok(where_key_prefix)

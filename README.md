@@ -602,14 +602,15 @@ Currently this only supports importing an entity from each file defined.
 
 ### Config File Options
 
-| Service\*    | Description                                              | Type          |
-| ------------ | -------------------------------------------------------- | ------------- |
-| name         | The name of this service.                                | String        |
-| data_sources | Where the data is located.                               | Data Source[] |
-| entities\*   | The data to be defined.                                  | Entity[]      |
-| cors         | Cors options for the GraphQL Server.                     | Cors Config   |
-| guards       | Guards applied at the sservice level.                    | Guard[]       |
-| imports      | An array of paths to import entities from separate files | String[]      |
+| Service\*      | Description                                               | Type          |
+| -------------- | --------------------------------------------------------- | ------------- |
+| name\*         | The name of this service.                                 | String        |
+| data_sources\* | Where the data is located.                                | Data Source[] |
+| entities\*     | The data to be defined.                                   | Entity[]      |
+| cors           | Cors options for the GraphQL Server.                      | Cors Config   |
+| guards         | Guards applied at the sservice level.                     | Guard[]       |
+| imports        | An array of paths to import entities from separate files. | String[]      |
+| port           | The port of which to run the service.                     | Int           |
 
 #### Data Sources
 

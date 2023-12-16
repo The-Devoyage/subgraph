@@ -31,6 +31,7 @@ impl SqlDataSource {
         pg_param_offset: Option<i32>,
         subgraph_config: &SubGraphConfig,
         join_clauses: Option<JoinClauses>,
+        disable_eager_loading: bool,
     ) -> Result<(Option<String>, Vec<SqlValueEnum>, JoinClauses), async_graphql::Error> {
         debug!("Creating Recursive Nested Query From: {:?}", inputs);
         debug!("Initial Join Clauses: {:?}", join_clauses);
@@ -79,6 +80,7 @@ impl SqlDataSource {
                     &ResolverType::FindOne,
                     &dialect,
                     &subgraph_config,
+                    disable_eager_loading,
                 )?;
 
             combined_join_clauses.0.extend(join_clauses.0);
@@ -115,6 +117,7 @@ impl SqlDataSource {
                         pg_param_offset,
                         subgraph_config,
                         Some(combined_join_clauses.clone()),
+                        disable_eager_loading,
                     )?;
 
                 combined_where_values.extend(and_where_values.clone());
@@ -138,6 +141,7 @@ impl SqlDataSource {
                         pg_param_offset,
                         subgraph_config,
                         Some(combined_join_clauses.clone()),
+                        disable_eager_loading,
                     )?;
 
                 combined_where_values.extend(or_where_values.clone());
