@@ -16,6 +16,7 @@
 ### Changed
 
 - Guard Creation Errors - `then_msg` now returned as main error message. Guard creation error now provided as an error extension with the guard creation error message.
+- No longer removes line breaks when saving strings to a SQL DB.
 
 ## [v0.0.12]
 

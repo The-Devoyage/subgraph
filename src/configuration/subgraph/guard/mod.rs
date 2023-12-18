@@ -220,7 +220,7 @@ impl Guard {
 
                                 let value = value.to_string();
 
-                                let value = Value::String(clean_string(&value));
+                                let value = Value::String(clean_string(&value, None));
 
                                 values_tuple.push(value);
                             } else { // Else extract the value directly.
@@ -229,7 +229,7 @@ impl Guard {
                                 }
                                 let value = json.get(key.clone());
                                 let value = match value {
-                                    Some(value) => Value::String(clean_string(&value.to_string())),
+                                    Some(value) => Value::String(clean_string(&value.to_string(), None)),
                                     None => continue,
                                 };
                                 values_tuple.push(value);
@@ -260,7 +260,7 @@ impl Guard {
                     }
                 };
                 let key = argument.as_string()?;
-                let cleaned_key = clean_string(&key);
+                let cleaned_key = clean_string(&key, None);
 
                 let root_key = cleaned_key.split(".").collect::<Vec<&str>>()[0];
                 let root_value = data_context.get(root_key);
@@ -321,7 +321,7 @@ impl Guard {
                             let value = value.to_string();
 
                             let value = Value::String(value);
-                            let cleaned = clean_string(&value.to_string());
+                            let cleaned = clean_string(&value.to_string(), None);
                             debug!("Context Value: {:?}", cleaned);
 
                             values_tuple.push(value);
@@ -343,11 +343,11 @@ impl Guard {
                                         return Ok(Value::Empty);
                                     }
                                     match field.scalar {
-                                        ScalarOptions::String => Value::String(clean_string(&value.to_string())),
+                                        ScalarOptions::String => Value::String(clean_string(&value.to_string(), None)),
                                         ScalarOptions::Int => Value::Int(value.as_i64().unwrap()),
                                         ScalarOptions::Boolean => Value::Boolean(value.as_bool().unwrap()),
                                         ScalarOptions::DateTime => Value::String(value.to_string()),
-                                        ScalarOptions::UUID => Value::String(clean_string(&value.to_string())),
+                                        ScalarOptions::UUID => Value::String(clean_string(&value.to_string(), None)),
                                         ScalarOptions::ObjectID => {
                                             let object_id = value.get("$oid");
                                             if object_id.is_none() {
@@ -380,7 +380,7 @@ impl Guard {
             }),
             "headers" => Function::new(move |argument| {
                 let key = argument.as_string()?;
-                let cleaned_key = clean_string(&key);
+                let cleaned_key = clean_string(&key, None);
                 let value = headers.get(&cleaned_key);
                 if value.is_none() {
                     Err(EvalexprError::expected_string(argument.clone()))
@@ -403,7 +403,7 @@ impl Guard {
                     }
                 };
                 let key = argument.as_string()?;
-                let cleaned_key = clean_string(&key);
+                let cleaned_key = clean_string(&key, None);
                 let json = match serde_json::to_value(token_data) {
                     Ok(json) => json,
                     Err(_) => {

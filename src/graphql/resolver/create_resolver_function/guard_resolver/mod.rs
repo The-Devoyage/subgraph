@@ -438,7 +438,7 @@ impl ServiceResolver {
                     if tuple.is_string() {
                         let tuple_value = tuple.to_string();
                         json_object[key.clone().replace("{{", "").replace("}}", "")] =
-                            serde_json::json!(clean_string(&tuple_value));
+                            serde_json::json!(clean_string(&tuple_value, None));
                     } else if tuple.is_boolean() {
                         let tuple_value = tuple.as_boolean();
                         json_object[key.clone().replace("{{", "").replace("}}", "")] =

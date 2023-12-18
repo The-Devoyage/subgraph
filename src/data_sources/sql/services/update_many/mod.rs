@@ -6,7 +6,7 @@ use crate::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
     data_sources::sql::{PoolEnum, SqlDataSource, SqlQuery, SqlValueEnum},
-    utils::clean_string::clean_string,
+    utils::clean_string::{clean_string, CleanOptions},
 };
 
 use super::{ResponseRow, Services};
@@ -21,13 +21,18 @@ impl Services {
     ) -> Result<Vec<Option<ResponseRow>>, async_graphql::Error> {
         debug!("Update Many SQL Data Source");
 
+        let clean_options = CleanOptions {
+            newline: Some(false),
+            quotes: Some(true),
+        };
+
         match pool_enum {
             PoolEnum::MySql(pool) => {
                 let mut update_query = sqlx::query(&sql_query.query);
                 for value in &sql_query.values {
                     match value {
                         SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
-                            let v = clean_string(v);
+                            let v = clean_string(v, Some(clean_options.clone()));
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -38,7 +43,7 @@ impl Services {
                         }
                         SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
                             for v in values {
-                                let v = clean_string(v);
+                                let v = clean_string(v, Some(clean_options.clone()));
                                 update_query = update_query.bind(v)
                             }
                         }
@@ -71,7 +76,7 @@ impl Services {
                 for value in &sql_query.where_values {
                     match value {
                         SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
-                            let v = clean_string(v);
+                            let v = clean_string(v, Some(clean_options.clone()));
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -82,7 +87,7 @@ impl Services {
                         }
                         SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
                             for v in values {
-                                let v = clean_string(v);
+                                let v = clean_string(v, Some(clean_options.clone()));
                                 update_query = update_query.bind(v)
                             }
                         }
@@ -157,7 +162,7 @@ impl Services {
                 for value in &find_many_where_values {
                     match value {
                         SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
-                            let v = clean_string(v);
+                            let v = clean_string(v, Some(clean_options.clone()));
                             find_many_query = find_many_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -168,7 +173,7 @@ impl Services {
                         }
                         SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
                             for v in values {
-                                let v = clean_string(v);
+                                let v = clean_string(v, Some(clean_options.clone()));
                                 find_many_query = find_many_query.bind(v)
                             }
                         }
@@ -216,7 +221,7 @@ impl Services {
                 for value in &sql_query.values {
                     match value {
                         SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
-                            let v = clean_string(v);
+                            let v = clean_string(v, Some(clean_options.clone()));
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -227,7 +232,7 @@ impl Services {
                         }
                         SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
                             for v in values {
-                                let v = clean_string(v);
+                                let v = clean_string(v, Some(clean_options.clone()));
                                 update_query = update_query.bind(v)
                             }
                         }
@@ -260,7 +265,7 @@ impl Services {
                 for value in &sql_query.where_values {
                     match value {
                         SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
-                            let v = clean_string(v);
+                            let v = clean_string(v, Some(clean_options.clone()));
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -271,7 +276,7 @@ impl Services {
                         }
                         SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
                             for v in values {
-                                let v = clean_string(v);
+                                let v = clean_string(v, Some(clean_options.clone()));
                                 update_query = update_query.bind(v)
                             }
                         }
@@ -320,7 +325,7 @@ impl Services {
                 for value in &sql_query.values {
                     match value {
                         SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
-                            let v = clean_string(v);
+                            let v = clean_string(v, Some(clean_options.clone()));
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -331,7 +336,7 @@ impl Services {
                         }
                         SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
                             for v in values {
-                                let v = clean_string(v);
+                                let v = clean_string(v, Some(clean_options.clone()));
                                 update_query = update_query.bind(v)
                             }
                         }
@@ -366,7 +371,7 @@ impl Services {
                 for value in &sql_query.where_values {
                     match value {
                         SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
-                            let v = clean_string(v);
+                            let v = clean_string(v, Some(clean_options.clone()));
                             update_query = update_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {
@@ -470,7 +475,7 @@ impl Services {
                 for value in &find_many_where_values {
                     match value {
                         SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
-                            let v = clean_string(v);
+                            let v = clean_string(v, Some(clean_options.clone()));
                             find_many_query = find_many_query.bind(v);
                         }
                         SqlValueEnum::Int(v) => {

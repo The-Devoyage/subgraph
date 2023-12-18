@@ -62,7 +62,7 @@ impl SqlDataSource {
                 trace!("Receiving string type");
                 // Check if all values are UUIDs
                 let is_valid = value.iter().all(|x| {
-                    let cleaned_value = clean_string(&x.to_string());
+                    let cleaned_value = clean_string(&x.to_string(), None);
                     match uuid::Uuid::parse_str(&cleaned_value) {
                         Ok(_) => true,
                         Err(_) => false,
@@ -74,7 +74,7 @@ impl SqlDataSource {
                     let values = value
                         .iter()
                         .map(|x| {
-                            let cleaned_value = clean_string(&x.to_string());
+                            let cleaned_value = clean_string(&x.to_string(), None);
                             uuid::Uuid::parse_str(&cleaned_value).unwrap()
                         })
                         .collect::<Vec<uuid::Uuid>>();
@@ -95,7 +95,7 @@ impl SqlDataSource {
                     }
                 } else {
                     let is_valid_dates = value.iter().all(|x| {
-                        let cleaned_value = clean_string(&x.to_string());
+                        let cleaned_value = clean_string(&x.to_string(), None);
                         match chrono::DateTime::<chrono::Utc>::from_str(&cleaned_value) {
                             Ok(_) => true,
                             Err(_) => false,
@@ -106,7 +106,7 @@ impl SqlDataSource {
                         let values = value
                             .iter()
                             .map(|x| {
-                                let cleaned_value = clean_string(&x.to_string());
+                                let cleaned_value = clean_string(&x.to_string(), None);
                                 chrono::DateTime::from_str(&cleaned_value).unwrap()
                             })
                             .collect();
@@ -115,7 +115,10 @@ impl SqlDataSource {
                     } else {
                         trace!("Parsing Values as Strings");
                         where_values.push(SqlValueEnum::StringList(
-                            value.iter().map(|x| clean_string(&x.to_string())).collect(),
+                            value
+                                .iter()
+                                .map(|x| clean_string(&x.to_string(), None))
+                                .collect(),
                         ));
                         where_keys.push(parent_key.to_string());
                     }
@@ -192,7 +195,7 @@ impl SqlDataSource {
             trace!("Parsing Value: {:?}", value);
             if value.as_str().is_some() {
                 trace!("Parsing String: {:?}", value);
-                let cleaned_value = clean_string(&value.to_string());
+                let cleaned_value = clean_string(&value.to_string(), None);
                 match uuid::Uuid::parse_str(&cleaned_value) {
                     Ok(uuid) => {
                         trace!("Parsed UUID: {:?}", uuid);
