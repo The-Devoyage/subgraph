@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::{configuration::subgraph::entities::ScalarOptions, graphql::resolver::ServiceResolver};
 use bson::{doc, oid::ObjectId, Bson, Document};
 use log::{debug, error, trace};
@@ -67,7 +69,9 @@ impl ServiceResolver {
                 }
             }
             ScalarOptions::Int => {
+                trace!("Combining Int Value With Input");
                 if is_list {
+                    trace!("Combining Int Value With Input - Is List");
                     let join_on_value = parent_value
                         .get_array(&field_name)
                         .unwrap() // Safe to unwrap, already checked.
@@ -199,7 +203,14 @@ impl ServiceResolver {
         field_name: &str,
     ) -> Result<Option<ObjectId>, async_graphql::Error> {
         debug!("Getting ObjectID value for field: {}", field_name);
-        let value = parent_value.get_object_id(field_name).ok();
+        let mut value = parent_value.get_object_id(field_name).ok();
+        if value.is_none() {
+            // If coming from a SQL dialect, the ObjectID may be stored as a string.
+            let string_obj_id = parent_value.get_str(field_name).ok();
+            if string_obj_id.is_some() {
+                value = ObjectId::from_str(string_obj_id.unwrap()).ok();
+            }
+        }
         trace!("ObjectID value: {:?}", value);
         Ok(value)
     }
