@@ -27,6 +27,8 @@ impl ServiceResolver {
 
         // Add the `AND` filter, which is an empty vector.
         query_input.insert::<_, Vec<Bson>>("AND", vec![]);
+        // Add the `OR` filter, which is an empty vector.
+        query_input.insert::<_, Vec<Bson>>("OR", vec![]);
 
         // Add the original parent value to the `AND` filter.
         if !query_document.is_empty() {
@@ -45,19 +47,32 @@ impl ServiceResolver {
         match scalar {
             ScalarOptions::String | ScalarOptions::UUID | ScalarOptions::DateTime => {
                 if is_list {
+                    debug!("Combining String Value With Input - Is List");
+                    // Check that all values in array are of type string.
+                    let valid_strings = parent_value
+                        .get_array(&field_name)
+                        .unwrap()
+                        .iter()
+                        .all(|v| v.as_str().is_some());
+
+                    if !valid_strings {
+                        return Err(async_graphql::Error::from(format!(
+                            "Invalid value provided for field: {}. All values are not of type `string`.",
+                            field_name
+                        )));
+                    }
+
                     let join_on_value = parent_value
                         .get_array(&field_name)
-                        .unwrap() // Safe to unwrap, already checked.
+                        .unwrap()
                         .iter()
-                        .map(|v| {
-                            ServiceResolver::get_string_value(v.as_document().unwrap(), field_name)
-                                .unwrap()
-                                .unwrap() // Assuming, safe to unwrap. Value from DB.
-                        })
+                        .map(|v| v.as_str().unwrap().to_string())
                         .collect::<Vec<String>>();
-                    let join_query = doc! { join_on: join_on_value };
-                    let bson = bson::to_bson(&join_query).unwrap();
-                    query_input.get_array_mut("AND").unwrap().push(bson);
+                    for value in join_on_value {
+                        let join_query = doc! { join_on: value };
+                        let bson = bson::to_bson(&join_query).unwrap();
+                        query_input.get_array_mut("OR").unwrap().push(bson);
+                    }
                 } else {
                     let join_on_value =
                         ServiceResolver::get_string_value(parent_value, field_name)?;
@@ -69,22 +84,35 @@ impl ServiceResolver {
                 }
             }
             ScalarOptions::Int => {
-                trace!("Combining Int Value With Input");
+                debug!("Combining Int Value With Input");
                 if is_list {
-                    trace!("Combining Int Value With Input - Is List");
+                    debug!("Combining Int Value With Input - Is List");
+                    // Check that all values in array are of type int.
+                    let valid_ints = parent_value
+                        .get_array(&field_name)
+                        .unwrap()
+                        .iter()
+                        .all(|v| v.as_i32().is_some());
+
+                    if !valid_ints {
+                        return Err(async_graphql::Error::from(format!(
+                            "Invalid value provided for field: {}. All values are not of type `int`.",
+                            field_name
+                        )));
+                    }
+
                     let join_on_value = parent_value
                         .get_array(&field_name)
-                        .unwrap() // Safe to unwrap, already checked.
+                        .unwrap()
                         .iter()
-                        .map(|v| {
-                            ServiceResolver::get_int_value(v.as_document().unwrap(), field_name)
-                                .unwrap()
-                                .unwrap() // Assuming, safe to unwrap. Value from DB.
-                        })
+                        .map(|v| v.as_i32().unwrap() as i64)
                         .collect::<Vec<i64>>();
-                    let join_query = doc! { join_on: join_on_value };
-                    let bson = bson::to_bson(&join_query).unwrap();
-                    query_input.get_array_mut("AND").unwrap().push(bson);
+
+                    for value in join_on_value {
+                        let join_query = doc! { join_on: value };
+                        let bson = bson::to_bson(&join_query).unwrap();
+                        query_input.get_array_mut("OR").unwrap().push(bson);
+                    }
                 } else {
                     let join_on_value = ServiceResolver::get_int_value(parent_value, field_name)?;
                     if join_on_value.is_some() {
@@ -95,22 +123,35 @@ impl ServiceResolver {
                 }
             }
             ScalarOptions::Boolean => {
+                debug!("Combining Boolean Value With Input");
                 if is_list {
+                    debug!("Combining Boolean Value With Input - Is List");
+                    // Check that all values in array are of type bool.
+                    let valid_bools = parent_value
+                        .get_array(&field_name)
+                        .unwrap()
+                        .iter()
+                        .all(|v| v.as_bool().is_some());
+
+                    if !valid_bools {
+                        return Err(async_graphql::Error::from(format!(
+                            "Invalid value provided for field: {}. All values are not of type `bool`.",
+                            field_name
+                        )));
+                    }
+
                     let join_on_value = parent_value
                         .get_array(&field_name)
-                        .unwrap() // Safe to unwrap, already checked.
+                        .unwrap()
                         .iter()
-                        .map(|v| {
-                            let bool_value = ServiceResolver::get_bool_value(
-                                v.as_document().unwrap(),
-                                field_name,
-                            );
-                            bool_value.unwrap().unwrap() // Assuming, safe to unwrap. Value from DB.
-                        })
+                        .map(|v| if v.as_bool().unwrap() { true } else { false })
                         .collect::<Vec<bool>>();
-                    let join_query = doc! { join_on: join_on_value };
-                    let bson = bson::to_bson(&join_query).unwrap();
-                    query_input.get_array_mut("AND").unwrap().push(bson);
+
+                    for value in join_on_value {
+                        let join_query = doc! { join_on: value };
+                        let bson = bson::to_bson(&join_query).unwrap();
+                        query_input.get_array_mut("OR").unwrap().push(bson);
+                    }
                 } else {
                     let join_on_value = ServiceResolver::get_bool_value(parent_value, field_name)?;
                     if join_on_value.is_some() {
@@ -121,23 +162,40 @@ impl ServiceResolver {
                 }
             }
             ScalarOptions::ObjectID => {
+                debug!("Combining ObjectID Value With Input");
                 if is_list {
+                    debug!("Combining ObjectID Value With Input - Is List");
+
+                    // Check that all values in array are of type ObjectID.
+                    let valid_object_ids = parent_value
+                        .get_array(&field_name)
+                        .unwrap()
+                        .iter()
+                        .all(|v| v.as_object_id().is_some());
+
+                    if !valid_object_ids {
+                        return Err(async_graphql::Error::from(format!(
+                            "Invalid value provided for field: {}. All values are not of type `ObjectID`.",
+                            field_name
+                        )));
+                    }
+
                     let join_on_value = parent_value
                         .get_array(&field_name)
                         .unwrap() // Safe to unwrap, already checked.
                         .iter()
                         .map(|v| {
-                            ServiceResolver::get_object_id_value(
-                                v.as_document().unwrap(),
-                                field_name,
-                            )
-                            .unwrap()
-                            .unwrap()
+                            v.as_object_id()
+                                .unwrap() // Safe to unwrap, already checked.
+                                .clone()
                         })
                         .collect::<Vec<ObjectId>>();
-                    let join_query = doc! { join_on: join_on_value };
-                    let bson = bson::to_bson(&join_query).unwrap();
-                    query_input.get_array_mut("AND").unwrap().push(bson);
+
+                    for value in join_on_value {
+                        let join_query = doc! { join_on: value };
+                        let bson = bson::to_bson(&join_query).unwrap();
+                        query_input.get_array_mut("OR").unwrap().push(bson);
+                    }
                 } else {
                     let join_on_value =
                         ServiceResolver::get_object_id_value(parent_value, field_name)?;
@@ -159,6 +217,9 @@ impl ServiceResolver {
         // If there are no values to join on, return empty document.
         if query_input.get_array("AND").unwrap().is_empty() {
             query_input.remove("AND");
+        }
+        if query_input.get_array("OR").unwrap().is_empty() {
+            query_input.remove("OR");
         }
 
         trace!("Joined Query: {:?}", query_input);
