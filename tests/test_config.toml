@@ -65,7 +65,8 @@ fields = [
     { name = "state", scalar = "String", required = true },
     { name = "zip", scalar = "String", required = true },
   ] },
-  { name = "fail_guard", scalar = "Boolean", guards = [{name = "access_check", if_expr = "1 == 1", then_msg = "You do not have access to this resource" }] }
+  { name = "fail_guard", scalar = "Boolean", guards = [{name = "access_check", if_expr = "1 == 1", then_msg = "You do not have access to this resource" }] },
+  { name = "user_access", scalar = "ObjectID", as_type = "user_access", join_on = "user_id", join_from = "_id", eager = true }
 ]
 [[service.entities.guards]]
 name = "data_context_guard" 

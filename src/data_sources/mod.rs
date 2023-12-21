@@ -119,6 +119,7 @@ impl DataSources {
                 input,
                 cloned_entity,
                 resolver_type,
+                subgraph_config,
             )
             .await?),
             DataSource::HTTP(_ds) => Ok(http::HttpDataSource::execute_operation(

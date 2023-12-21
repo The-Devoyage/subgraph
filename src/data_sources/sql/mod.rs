@@ -12,6 +12,7 @@ use crate::{
         entities::ServiceEntityConfig,
         SubGraphConfig,
     },
+    data_sources::sql::services::ResponseRow,
     graphql::schema::ResolverType,
 };
 
@@ -270,9 +271,6 @@ impl SqlDataSource {
                     &subgraph_config,
                 )
                 .await?;
-                if results.is_empty() {
-                    return Ok(FieldValue::NONE);
-                }
                 Ok(Some(FieldValue::list(
                     results.into_iter().map(|row| FieldValue::owned_any(row)),
                 )))

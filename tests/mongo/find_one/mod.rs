@@ -454,13 +454,19 @@ async fn find_with_nested_object() {
         {
             get_user(get_user_input: { query: { address: { line_one: "address lineone" } } }) {
                 _id
+                address {
+                  line_one
+                }
             }
         }
         "#,
     );
     let response = execute(request, None).await;
-
     assert!(response.is_ok());
+
+    let json = response.data.into_json().unwrap();
+    let address = json["get_user"]["address"].clone();
+    assert_eq!(address["line_one"], "address lineone");
 }
 
 #[tokio::test]

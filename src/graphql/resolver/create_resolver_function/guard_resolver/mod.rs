@@ -2,7 +2,7 @@ use async_graphql::{ErrorExtensions, SelectionField};
 use bson::{to_document, Document};
 use evalexpr::{eval_with_context_mut, HashMapContext};
 use http::HeaderMap;
-use log::{debug, error};
+use log::{debug, error, trace};
 use serde_json::Value;
 
 use crate::{
@@ -50,7 +50,11 @@ impl ServiceResolver {
                 }
                 None => None,
             };
-        let field_guards = ServiceResolver::get_field_guards(selection_fields, &entity)?;
+        let field_guards = ServiceResolver::get_field_guards(selection_fields, &entity, None)
+            .map_err(|e| {
+                error!("Error getting field guards: {:?}", e);
+                async_graphql::Error::new("Error getting field guards")
+            })?;
 
         // Handle guard data contexts to inject data from the graph into the eval context.
         let guard_data_contexts = Guard::get_guard_data_contexts(
@@ -69,7 +73,11 @@ impl ServiceResolver {
             None,
             Some(guard_data_contexts.clone()),
             subgraph_config.clone(),
-        )?;
+        )
+        .map_err(|e| {
+            error!("Error creating guard context: {:?}", e);
+            async_graphql::Error::new("Error creating guard context")
+        })?;
 
         // Fetch the data from the data source and return it as json
         let data_context = ServiceResolver::execute_data_context(
@@ -82,7 +90,11 @@ impl ServiceResolver {
             resolver_type,
             input_document.clone(),
         )
-        .await?;
+        .await
+        .map_err(|e| {
+            error!("Error executing data context: {:?}", e);
+            async_graphql::Error::new("Error executing data context")
+        })?;
 
         // Re-create the evalexpr context including the data context
         guard_context = Guard::create_guard_context(
@@ -117,7 +129,9 @@ impl ServiceResolver {
     pub fn get_field_guards(
         selection_fields: Vec<SelectionField>,
         entity: &ServiceEntityConfig,
+        mut prefix: Option<String>,
     ) -> Result<Vec<Guard>, async_graphql::Error> {
+        debug!("Getting field guards");
         let mut field_guards = vec![];
 
         for selection_field in selection_fields {
@@ -125,25 +139,36 @@ impl ServiceResolver {
                 continue;
             }
 
-            let field_name = selection_field.name();
+            let field_name = format!(
+                "{}{}",
+                prefix.clone().unwrap_or("".to_string()),
+                selection_field.name()
+            );
             let fields = ServiceEntityFieldConfig::get_fields_recursive(
                 entity.fields.clone(),
                 field_name.to_string(),
-            )?;
-            let field = fields
-                .iter()
-                .find(|field| field.name == field_name)
-                .unwrap();
+            )
+            .map_err(|e| {
+                error!("Error getting fields recursively: {:?}", e);
+                async_graphql::Error::new("Error getting fields recursively")
+            })?;
+
+            let field = fields.iter().last().unwrap(); // Last field found will be the one we want.
 
             if selection_field.selection_set().count() > 0 && field.as_type.is_none() {
+                prefix = Some(format!("{}.", field_name));
                 for selection_field in selection_field.selection_set().into_iter() {
                     // Call this function recursively to get the field guards.
-                    let mut nested_field_guards =
-                        ServiceResolver::get_field_guards(vec![selection_field], &entity)?;
+                    let mut nested_field_guards = ServiceResolver::get_field_guards(
+                        vec![selection_field],
+                        &entity,
+                        prefix.clone(),
+                    )?;
                     field_guards.append(&mut nested_field_guards);
                 }
             }
         }
+        trace!("Field guards: {:?}", field_guards);
         Ok(field_guards)
     }
 
