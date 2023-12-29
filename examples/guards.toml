@@ -28,7 +28,7 @@ name = "Espresso"
 
 [[service.entities.guards]]
 name = "invalid_name"
-if_expr = "input(name) == \"nick\""
+if_expr = "input(\"query\" \"name\") == \"nick\""
 then_msg = "Invalid Name - Permission Denied"
 
 [service.entities.data_source]
@@ -37,7 +37,7 @@ from = "caffeine_data_source"
 [service.entities.data_source.resolvers.find_one]
 [[service.entities.data_source.resolvers.find_one.guards]]
 name = "invalid_age"
-if_expr = "input(\"age\") < 21"
+if_expr = "input(\"query\", \"age\") < 21"
 then_msg = "Age Restriction - Permission Denied"
 
 [[service.entities.fields]]

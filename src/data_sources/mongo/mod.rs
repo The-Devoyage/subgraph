@@ -159,7 +159,26 @@ impl MongoDataSource {
                             return Err(e);
                         }
                     };
-                if let Some(eager_load_option) = eager_load_options {
+                if let Some((eager_load_option, eager_entity)) = eager_load_options {
+                    // Send through recursive function to convert the object id string to object id
+                    // for eager loaded fields.
+                    let (value, nested_eager_opts) =
+                        match MongoDataSource::convert_object_id_string_to_object_id_from_doc(
+                            value.as_document().unwrap().clone(), // If eager, this will always be a document.
+                            &eager_entity,
+                            subgraph_config,
+                        ) {
+                            Ok(nested) => nested,
+                            Err(e) => {
+                                error!(
+                                    "Failed to convert object id string to object id. Error: {:?}",
+                                    e
+                                );
+                                return Err(e);
+                            }
+                        };
+                    combined_eager_options.extend(nested_eager_opts);
+
                     // replace the key with the eager load key.
                     converted.remove(&k);
                     converted.insert(eager_load_option.as_field.clone(), value);
@@ -176,7 +195,7 @@ impl MongoDataSource {
         field: &ServiceEntityFieldConfig,
         entity: &ServiceEntityConfig,
         subgraph_config: &SubGraphConfig,
-    ) -> Result<Option<EagerLoadOptions>, async_graphql::Error> {
+    ) -> Result<Option<(EagerLoadOptions, ServiceEntityConfig)>, async_graphql::Error> {
         debug!("Handle eager fields");
         // Since searching by a single key above, the last field is guaranteed to be the field we are looking for.
         if field.eager.is_none() {
@@ -215,7 +234,7 @@ impl MongoDataSource {
         };
 
         // Check if it has a collection name.
-        let collection_name = if let Some(ds) = eager_entity.data_source {
+        let collection_name = if let Some(ds) = eager_entity.data_source.clone() {
             if ds.collection.is_some() {
                 ds.collection.unwrap().clone()
             } else {
@@ -242,7 +261,7 @@ impl MongoDataSource {
         };
 
         trace!("Eager load options: {:?}", eager_load_options);
-        Ok(Some(eager_load_options))
+        Ok(Some((eager_load_options, eager_entity)))
     }
 
     pub fn finalize_input(
@@ -282,12 +301,11 @@ impl MongoDataSource {
                 }
                 finalized.remove(key);
                 let key = if key == "AND" { "$and" } else { "$or" };
-                trace!("Key: {}", key);
                 finalized.insert(key, and_or_filters);
-                trace!("Finalized: {:?}", finalized);
             }
         }
 
+        // Parse the provided object eager options and convert them to the correct format.
         let eager_load_options;
         (finalized, eager_load_options) =
             MongoDataSource::convert_object_id_string_to_object_id_from_doc(
@@ -375,7 +393,9 @@ impl MongoDataSource {
                 Ok(Some(FieldValue::owned_any(result)))
             }
             ResolverType::FindMany => {
-                let results = services::Services::find_many(db, input, collection_name).await?;
+                let results =
+                    services::Services::find_many(db, input, collection_name, eager_load_options)
+                        .await?;
                 Ok(Some(FieldValue::list(
                     results.into_iter().map(|doc| FieldValue::owned_any(doc)),
                 )))

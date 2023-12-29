@@ -55,7 +55,11 @@ impl SubGraphConfig {
         let mut subgraph_config = match subgraph_config {
             Ok(config) => config,
             Err(error) => {
-                panic!("Provide Valid Subgraph Config: {:?}", error);
+                // panic!("Provide Valid Subgraph Config: {:?}", error);
+                return Err(async_graphql::Error::new(format!(
+                    "Provide Valid Subgraph Config: {:?}",
+                    error
+                )));
             }
         };
 

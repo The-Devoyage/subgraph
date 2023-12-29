@@ -670,7 +670,6 @@ Migrations are only executed if subgraph is run with the flag `--migrate run`
 
 | MethodOption |
 | ------------ |
-| GET          |
 | Options      |
 | Get          |
 | Post         |
@@ -704,6 +703,8 @@ Migrations are only executed if subgraph is run with the flag `--migrate run`
 | FindOne         | Configuration for the Find One Resolver   | Entity Resolver Config |
 | FindMany        | Configuration for the Find Many Resolver  | Entity Resolver Config |
 | CreateOne       | Configuration for the Create One Resolver | Entity Resolver Config |
+| UpdateOne       | Configuration for the Update One Resolver | Entity Resolver Config |
+| UpdateMany      | Configuration for the Update One Resolver | Entity Resolver Config |
 
 | Entity Resolver Config | Description                                                              | Type         |
 | ---------------------- | ------------------------------------------------------------------------ | ------------ |
@@ -714,17 +715,21 @@ Migrations are only executed if subgraph is run with the flag `--migrate run`
 
 #### Field
 
-| Field\*             | Description                                                         | Type               |
-| ------------------- | ------------------------------------------------------------------- | ------------------ |
-| name\*              | The name of the field.                                              | String             |
-| scalar\*            | The scalar type of the field.                                       | Scalar Options     |
-| required            | Whether or not the field is required. Defaults to false.            | Option<bool>       |
-| exclude_from_input  | A list of resolvers of which not to apply to the associated input.  | ExcludeFromInput[] |
-| exclude_from_output | A list of resolvers of which not to apply to the associated input.  | bool               |
-| list                | Defines the scalar as a list or a singular value.                   | Option<bool>       |
-| as_type             | Associates the field with another entity type for joining/extending | Option<String>     |
-| join_on             | The 'foreign key' of the type to be joined on.                      | Option<String>     |
-| join_from           | The source key to join from when perfoming associations.            | Option<String>     |
+| Field\*             | Description                                                                   | Type               |
+| ------------------- | ----------------------------------------------------------------------------- | ------------------ |
+| name\*              | The name of the field.                                                        | String             |
+| scalar\*            | The scalar type of the field.                                                 | Scalar Options     |
+| required            | Whether or not the field is required. Defaults to false.                      | Option<bool>       |
+| exclude_from_input  | A list of resolvers of which not to apply to the associated input.            | ExcludeFromInput[] |
+| exclude_from_output | A list of resolvers of which not to apply to the associated input.            | bool               |
+| list                | Defines the scalar as a list or a singular value.                             | Option<bool>       |
+| as_type             | Associates the field with another entity type for joining/extending           | Option<String>     |
+| join_on             | The 'foreign key' of the type to be joined on.                                | Option<String>     |
+| join_from           | The source key to join from when perfoming associations.                      | Option<String>     |
+| guards              | A list of guards to apply to a field.                                         | Option<Guard>      |
+| default_value       | An eval expr calculated value that is applied for Update and Create Resolvers | Option<String>     |
+| is_virtual          | Define properties on graphql inputs that do not exist in the database         | Option<bool>       |
+| eager               | Search for entity based on the fields of another entity                       | Option<bool>       |
 
 | Scalar Options |
 | -------------- |
@@ -769,6 +774,7 @@ Additional guard functions that may be used within the `if_expr` syntax. Current
 | input                      | Extracts a value from the user input.                   | "input(\"query\", \"comments.user.id\") != \"23\""   |
 | token_data                 | Extracts data from auth token, identifier and user_uuid | "token_data(\"user_uuid\") != input(\"created_by\")" |
 | resolver_type              | Shows the type of resolver in guard function            | "resolver_type() == \"FindOne\""                     |
+| context                    | Extracts a value from the context provided from a guard | "context(\"user.id\")"                               |
 
 **Input Function**
 

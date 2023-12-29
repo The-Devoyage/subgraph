@@ -139,7 +139,7 @@ async fn find_many_with_eager_loading() {
     let request = async_graphql::Request::new(format!(
         r#"
             {{
-                get_users(get_users_input: {{ query: {{ user_access: {{ user_id: "{}", view: true}} }} }}) {{
+                get_users(get_users_input: {{ query: {{ user_access: {{ user_id: "{}", view: true }} }} }}) {{
                     _id
                     name
                 }}

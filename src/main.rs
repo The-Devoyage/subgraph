@@ -6,7 +6,7 @@ use std::{
 
 use clap::Parser;
 
-use log::{error, info};
+use log::{debug, error, info};
 use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
 use subgraph::{
     cli_args,
@@ -102,6 +102,7 @@ async fn start_server_with_watcher(
                         *cloned_config.lock().unwrap() = subgraph_config;
                         last_received = std::time::Instant::now();
                         tx.send(true).unwrap();
+                        debug!("Testing")
                     }
                     Err(error) => {
                         error!(
@@ -170,8 +171,7 @@ async fn start_server_with_watcher(
                 }
             }
             Err(e) => {
-                error!("Watcher failed, exiting. Error Message: {}", e.to_string());
-                exit(1)
+                error!("Watcher failed. Error Message: {}", e.to_string());
             }
         }
     }

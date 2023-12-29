@@ -27,7 +27,7 @@ impl Services {
 
         // Find the new docs that match the new values
         let input = doc! {"query": input.get("values").unwrap()};
-        let documents = Services::find_many(db, input, collection).await;
+        let documents = Services::find_many(db, input, collection, vec![]).await;
 
         documents
     }
