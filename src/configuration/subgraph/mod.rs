@@ -15,6 +15,7 @@ pub mod guard;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceConfig {
     pub name: String,
+    pub license_key: Option<String>,
     pub port: Option<u16>,
     pub log_level: Option<LogLevelEnum>,
     pub auth: Option<auth::ServiceAuth>,
@@ -58,7 +59,7 @@ impl SubGraphConfig {
                 // panic!("Provide Valid Subgraph Config: {:?}", error);
                 return Err(async_graphql::Error::new(format!(
                     "Provide Valid Subgraph Config: {:?}",
-                    error
+                    error.message()
                 )));
             }
         };

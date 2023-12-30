@@ -6,7 +6,7 @@ use std::{
 
 use clap::Parser;
 
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
 use subgraph::{
     cli_args,
@@ -42,6 +42,37 @@ async fn main() -> Result<(), std::io::Error> {
 
     // Initialize the logger
     utils::logger::Logger::init(&args, &subgraph_config);
+
+    // Verify the license key
+    let license_key = subgraph_config.service.license_key.clone();
+
+    match license_key {
+        Some(key) => {
+            let license = utils::verify_license::verify_license(key).await;
+
+            match license {
+                Ok(license) => {
+                    debug!("License: {:?}", license);
+                    info!("License Validated");
+                }
+                Err(e) => {
+                    error!("License Error: {}", e.message);
+                    exit(1);
+                }
+            };
+        }
+        None => {
+            info!("No License Provided, but you are welcome to use the software for free for a limited amount of time.");
+            // Start a timer on another thread.
+            // If the timer expires, exit the process.
+            let _ = tokio::spawn(async move {
+                // set timer for 20 mins
+                tokio::time::sleep(tokio::time::Duration::from_secs(60 * 20)).await;
+                warn!("Demo License Expired, exiting... Please purchase a license to continue using the software.");
+                exit(1);
+            });
+        }
+    };
 
     // Start the server, if watch is enabled, start the watcher
     // else, just start the server.

@@ -11,7 +11,7 @@ db = "subgraph_mongo"
 name = "Bike"
 [service.entities.data_source]
 from = "bikes_db"
-collection = "dogs"
+collection = "bikes"
 
 [[service.entities.fields]]
 name = "_id"
