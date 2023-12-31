@@ -154,12 +154,14 @@ impl SqlDataSource {
                 &entity,
                 &subgraph_config,
                 disable_eager_loading,
+                dialect,
             )?;
             let join_clause = SqlDataSource::get_join_clause(
                 &field,
                 &entity,
                 subgraph_config,
                 parent_alias.clone(),
+                dialect,
             )?;
             if join_clause.is_some() {
                 join_clauses.0.push(join_clause.unwrap());

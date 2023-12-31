@@ -50,6 +50,7 @@ impl SqlDataSource {
                 &entity,
                 &subgraph_config,
                 disable_eager_loading,
+                dialect,
             )?;
 
             // If the field is eager loaded, we can assume it is a object with many fields. Iterate
@@ -59,8 +60,13 @@ impl SqlDataSource {
                 trace!("Parsing Eager Loaded Field");
 
                 // Get the join clause and push it to the join clauses vector
-                let join_clause =
-                    SqlDataSource::get_join_clause(&field, &entity, subgraph_config, None)?;
+                let join_clause = SqlDataSource::get_join_clause(
+                    &field,
+                    &entity,
+                    subgraph_config,
+                    None,
+                    dialect,
+                )?;
                 if join_clause.is_some() {
                     join_clauses.0.push(join_clause.unwrap());
                 }
@@ -140,6 +146,7 @@ impl SqlDataSource {
         parent_entity: &ServiceEntityConfig,
         subgraph_config: &SubGraphConfig,
         parent_alias: Option<String>,
+        dialect: &DialectEnum,
     ) -> Result<Option<String>, async_graphql::Error> {
         debug!("Get Join Clause");
         trace!("Field: {:?}", field);
@@ -177,24 +184,40 @@ impl SqlDataSource {
                 child_entity.name.clone()
             };
 
+            let parent_entity_data_source =
+                ServiceEntityConfig::get_entity_data_source(&parent_entity);
+            let parent_table_name = if parent_entity_data_source.is_some() {
+                parent_entity_data_source
+                    .unwrap()
+                    .table
+                    .unwrap_or(parent_entity.name.clone())
+            } else {
+                parent_entity.name.clone()
+            };
+
+            let d = match dialect {
+                DialectEnum::POSTGRES => "\"",
+                DialectEnum::MYSQL | DialectEnum::SQLITE => "`",
+            };
+
             // Create the join clauses, to be used later.
             let join_clause = format!(
-                " JOIN {} {} ON {}.{} = {}.{} ",
+                " JOIN {} AS {} ON {}.{} = {}.{} ",
                 table_name,
                 format!(
-                    "\"{}.{}.{}\"",
+                    "{d}{}.{}.{}{d}",
                     table_name,
                     parent_entity.name.clone(),
                     field.name.clone()
                 ),
                 format!(
-                    "\"{}.{}.{}\"",
+                    "{d}{}.{}.{}{d}",
                     table_name,
                     parent_entity.name.clone(),
                     field.name.clone()
                 ),
                 field.join_on.clone().unwrap(),
-                parent_alias.unwrap_or(parent_entity.name.clone()),
+                format!("{d}{}{d}", parent_alias.unwrap_or(parent_table_name)),
                 field.join_from.clone().unwrap_or(field.name.clone())
             );
             Some(join_clause)
@@ -214,6 +237,7 @@ impl SqlDataSource {
         entity: &ServiceEntityConfig,
         subgraph_config: &SubGraphConfig,
         disable_eager_loading: bool,
+        dialect: &DialectEnum,
     ) -> Result<String, async_graphql::Error> {
         debug!("Get Where Key Prefix");
 
@@ -259,8 +283,14 @@ impl SqlDataSource {
             } else {
                 child_entity.name.clone()
             };
+
+            let d = match dialect {
+                DialectEnum::POSTGRES => "\"",
+                DialectEnum::MYSQL | DialectEnum::SQLITE => "`",
+            };
+
             where_key_prefix = format!(
-                "\"{}.{}.{}\"",
+                "{d}{}.{}.{}{d}",
                 table_name,
                 entity.name.clone(),
                 field.name.clone()
