@@ -185,3 +185,19 @@ async fn find_one_with_or_filter() {
     let response = execute(request, None).await;
     assert!(response.is_ok());
 }
+
+#[tokio::test]
+async fn find_one_with_virtual_field() {
+    let request = async_graphql::Request::new(
+        r#"
+        query {
+            get_coffee(get_coffee_input: { query: { name: "Katz", virtual_id: "im virtual" } }) {
+                id
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
+    assert!(response.is_ok());
+}

@@ -552,3 +552,19 @@ async fn find_one_with_and_filter() {
 
     assert!(response.is_ok());
 }
+
+#[tokio::test]
+async fn find_one_with_virtual_field() {
+    let request = async_graphql::Request::new(
+        r#"
+        {
+            get_user(get_user_input: { query: { virtual_id: "is virtual" } }) {
+                _id
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
+    assert!(response.is_ok());
+}

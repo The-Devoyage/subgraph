@@ -164,3 +164,19 @@ async fn find_one_with_and_filter() {
     let response = execute(request, None).await;
     assert!(response.is_err());
 }
+
+#[tokio::test]
+async fn find_one_with_virtual_field() {
+    let request = async_graphql::Request::new(
+        r#"
+        query {
+            get_car(get_car_input: { query: { id: 1, virtual_id: "me too" } }) {
+                id
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
+    assert!(response.is_ok());
+}

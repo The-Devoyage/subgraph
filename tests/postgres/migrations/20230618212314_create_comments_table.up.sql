@@ -16,3 +16,17 @@ VALUES (
   'This is content test 2.',
   false
 );
+
+CREATE TABLE reactions (
+  id SERIAL PRIMARY KEY,
+  content TEXT NOT NULL,
+  status BOOLEAN NOT NULL,
+  comment_id INTEGER NOT NULL
+);
+
+INSERT INTO reactions (content, status, comment_id)
+VALUES (
+  'This is content test.',
+  true,
+  1
+);
