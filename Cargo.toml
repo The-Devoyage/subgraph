@@ -40,6 +40,7 @@ webauthn-rs = { version = "0.4.8", features = ["danger-allow-state-serialisation
 biscuit-auth = "4"
 base64 = "0.21.4"
 notify = "6.1.1"
+openssl = { version = "0.10", features = ["vendored"] }
 
 [dependencies.mongodb]
 version = "2.3.1"
@@ -54,8 +55,3 @@ features = [
     "macro-diagnostics",
 ]
 
-[features]
-static_ssl = ['openssl/vendored']
-
-[dependencies.openssl]
-optional = true
