@@ -2,7 +2,7 @@ use crate::{
     configuration::subgraph::data_sources::sql::DialectEnum,
     data_sources::sql::{SqlDataSource, SqlValueEnum},
 };
-use log::debug;
+use log::{debug, error};
 
 impl SqlDataSource {
     pub fn create_where_clause(
@@ -22,6 +22,7 @@ impl SqlDataSource {
 
                 // If where_values[i] does not exist, return error.
                 if where_values.len() <= i {
+                    error!("Where value for key does not exist: {}", where_keys[i]);
                     return Err(async_graphql::Error::new(format!(
                         "Where value for key does not exist.",
                     )));

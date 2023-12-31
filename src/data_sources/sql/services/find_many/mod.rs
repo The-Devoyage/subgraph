@@ -1,4 +1,4 @@
-use log::debug;
+use log::{debug, error};
 use sqlx::{mysql::MySqlArguments, MySql};
 
 use crate::data_sources::sql::{PoolEnum, SqlQuery, SqlValueEnum};
@@ -62,7 +62,10 @@ impl Services {
                     }
                 }
 
-                let rows = query.fetch_all(pool).await?;
+                let rows = query.fetch_all(pool).await.map_err(|e| {
+                    error!("Error executing query: {:?}", e);
+                    async_graphql::Error::new("Error executing query.")
+                })?;
 
                 let mut response_rows = Vec::new();
                 for row in rows {
@@ -118,7 +121,10 @@ impl Services {
                     }
                 }
 
-                let rows = query.fetch_all(pool).await?;
+                let rows = query.fetch_all(pool).await.map_err(|e| {
+                    error!("Error executing query: {:?} \n Error: {:?}", sql_query, e);
+                    async_graphql::Error::new("Error executing query.")
+                })?;
 
                 let mut response_rows = Vec::new();
                 for row in rows {
@@ -174,7 +180,10 @@ impl Services {
                     }
                 }
 
-                let rows = query.fetch_all(pool).await?;
+                let rows = query.fetch_all(pool).await.map_err(|e| {
+                    error!("Error executing query: {:?} \n Error: {:?}", sql_query, e);
+                    async_graphql::Error::new("Error executing query.")
+                })?;
 
                 let mut response_rows = Vec::new();
                 for row in rows {

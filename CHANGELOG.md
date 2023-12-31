@@ -1,5 +1,25 @@
 # Changelog
 
+## [v0.0.13]
+
+### Added
+
+- Guard Data Context - use data within the data sources to validate guards.
+- Default values on a field config allow you to use dynamic values from request, context, or token data (similar to guards).
+- Eager loading enabled on SQL data sources which allows you to query with relation to referenced entities.
+- Virtual Fields allow you to specify input fields that do not ever touch the database.
+- Require a valid license key to run the product.
+
+### Fixed
+
+- Nullable Entities Patched
+- `--watch` functionality infinite loop bug fix.
+
+### Changed
+
+- Guard Creation Errors - `then_msg` now returned as main error message. Guard creation error now provided as an error extension with the guard creation error message.
+- No longer removes line breaks when saving strings to a SQL DB.
+
 ## [v0.0.12]
 
 ### Added

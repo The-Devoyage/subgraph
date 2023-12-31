@@ -1,5 +1,7 @@
 use crate::{
-    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
+    configuration::subgraph::{
+        data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
+    },
     data_sources::sql::{
         create_query::create_nested_query_recursive::FilterOperator, SqlDataSource, SqlValueEnum,
     },
@@ -14,12 +16,30 @@ impl SqlDataSource {
         value_keys: &Vec<String>,
         dialect: &DialectEnum,
         input: &Document,
+        subgraph_config: &SubGraphConfig,
     ) -> Result<(String, Vec<SqlValueEnum>), async_graphql::Error> {
         debug!("Creating Update Many Query");
 
         let mut query = String::new();
         query.push_str("UPDATE ");
         query.push_str(table_name);
+
+        let offset = Some(value_keys.len() as i32);
+        let query_input = input.get("query").unwrap();
+        let (nested_query, combined_where_values, _combined_join_values) =
+            SqlDataSource::create_nested_query_recursive(
+                true,
+                &vec![query_input.clone()],
+                entity,
+                dialect,
+                FilterOperator::And,
+                false,
+                offset,
+                subgraph_config,
+                None,
+                false,
+            )?;
+
         query.push_str(" SET ");
 
         for i in 0..value_keys.len() {
@@ -31,20 +51,7 @@ impl SqlDataSource {
             }
         }
 
-        let offset = Some(value_keys.len() as i32);
-
         query.push_str(" WHERE ");
-
-        let query_input = input.get("query").unwrap();
-        let (nested_query, combined_where_values) = SqlDataSource::create_nested_query_recursive(
-            true,
-            &vec![query_input.clone()],
-            entity,
-            dialect,
-            FilterOperator::And,
-            false,
-            offset,
-        )?;
 
         if let Some(nested_query) = nested_query {
             query.push_str(nested_query.as_str());

@@ -1,4 +1,4 @@
-use log::debug;
+use log::{debug, error, trace, warn};
 
 use crate::data_sources::sql::{PoolEnum, SqlQuery, SqlValueEnum};
 
@@ -128,7 +128,7 @@ impl Services {
                 Ok(Some(ResponseRow::Postgres(row.unwrap())))
             }
             PoolEnum::SqLite(pool) => {
-                debug!("Executing SQLITE Query");
+                debug!("Executing SQLITE Query: {:?}", sql_query.query);
                 let mut query = sqlx::query(&sql_query.query);
 
                 for value in &sql_query.where_values {
@@ -176,12 +176,16 @@ impl Services {
                     }
                 }
 
-                let row = query.fetch_optional(pool).await?;
+                let row = query.fetch_optional(pool).await.map_err(|e| {
+                    error!("Sqlite Find One Error: {:?}", e);
+                    async_graphql::Error::new(format!("Error finding one"))
+                })?;
 
                 if row.is_none() {
+                    warn!("No row found: {:?}", sql_query);
                     return Ok(None);
                 }
-
+                trace!("Row Found: {:?}", row.is_some());
                 Ok(Some(ResponseRow::SqLite(row.unwrap())))
             }
         }

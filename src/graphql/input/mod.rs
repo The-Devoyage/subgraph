@@ -41,7 +41,7 @@ impl ServiceInput {
 
         // Create the main input object.
         let mut input = InputObject::new(&self.input_name);
-        let mut excluded_count = 0;
+        let mut excluded_count = 0; // Track excluded count, if all excluded, don't create input.
 
         // For each field in the entity, create an input field.
         for field in &self.fields {
@@ -78,9 +78,7 @@ impl ServiceInput {
         }
 
         // Only add filter inputs for specific resolvers.
-        let include_filters = include_filters.unwrap_or(false)
-            && (self.resolver_type == ResolverType::FindOne
-                || self.resolver_type == ResolverType::FindMany);
+        let include_filters = include_filters.unwrap_or(false);
 
         // Only add filter inputs for specific DataSources.
         let include_filters = match self.entity_data_source {

@@ -36,6 +36,26 @@ impl ServiceInput {
         let mut inputs = Vec::new();
         let is_list = entity_field.list.unwrap_or(false);
         let is_required = entity_field.required.unwrap_or(false);
+        let is_eager = entity_field.eager.unwrap_or(false);
+
+        // If the field is eager, we don't need to create an input for it.
+        // Just use the field name as the input.
+        if is_eager
+            && (resolver_type == &ResolverType::FindMany || resolver_type == &ResolverType::FindOne)
+        {
+            let as_type_name = entity_field.as_type.clone();
+            if as_type_name.is_none() {
+                panic!(
+                    "Eager field {} must have an as_type defined",
+                    entity_field.name
+                );
+            }
+            let input_type_name = format!("get_{}_query_input", as_type_name.unwrap());
+            return TypeRefWithInputs {
+                type_ref: TypeRef::named(&input_type_name),
+                inputs,
+            };
+        }
 
         let type_ref = match &entity_field.scalar {
             ScalarOptions::String => {

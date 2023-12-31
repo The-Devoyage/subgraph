@@ -18,6 +18,9 @@ pub struct ServiceEntityFieldConfig {
     pub as_type: Option<String>,
     pub join_on: Option<String>,
     pub join_from: Option<String>,
+    pub default_value: Option<String>,
+    pub eager: Option<bool>,
+    pub is_virtual: Option<bool>,
 }
 
 impl ServiceEntityFieldConfig {
@@ -126,24 +129,26 @@ impl ServiceEntityFieldConfig {
         excluded: Option<ExcludeFromInput>,
     ) -> bool {
         debug!("Validate Exclude From Input");
+        let mut is_excluded = false;
         let exclude_from_input = entity_field.exclude_from_input.clone();
 
-        if exclude_from_input.is_none() {
-            return false;
+        if exclude_from_input.is_some() {
+            is_excluded = match exclude_from_input {
+                Some(exclude_from_input) => {
+                    if exclude_from_input.contains(&ExcludeFromInput::All) {
+                        return true;
+                    }
+                    if exclude_from_input.contains(&excluded.unwrap()) {
+                        true
+                    } else {
+                        false
+                    }
+                }
+                None => false,
+            };
         }
 
-        match exclude_from_input {
-            Some(exclude_from_input) => {
-                if exclude_from_input.contains(&ExcludeFromInput::All) {
-                    return true;
-                }
-                if exclude_from_input.contains(&excluded.unwrap()) {
-                    true
-                } else {
-                    false
-                }
-            }
-            None => false,
-        }
+        debug!("Is Excluded: {:?}", is_excluded);
+        is_excluded
     }
 }

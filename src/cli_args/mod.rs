@@ -5,6 +5,7 @@ use clap::{builder::PossibleValuesParser, Parser, ValueHint};
 
 mod generate_keypair;
 
+/// Command line arguments for the Subgraph Service.
 #[derive(Parser, Debug, Serialize, Clone)]
 #[command(author, version, about, long_about = None)]
 pub struct CliArgs {
@@ -14,7 +15,7 @@ pub struct CliArgs {
 
     /// Service log level.
     #[serde(rename = "log-level")]
-    #[arg(short, long, value_parser = PossibleValuesParser::new(["info", "debug", "info", "warn", "error"]))]
+    #[arg(short, long, value_parser = PossibleValuesParser::new(["info", "debug", "info", "warn", "error", "trace"]))]
     pub log_level: Option<String>,
 
     /// The port this service runs on.
@@ -36,7 +37,9 @@ pub struct CliArgs {
 }
 
 impl CliArgs {
-    pub fn handle_flags(&self) {
-        self.generate_keypair();
+    /// Execute functions based on the flags passed to the service.
+    pub fn handle_flags(&self) -> Result<(), Box<dyn std::error::Error>> {
+        self.generate_keypair()?;
+        Ok(())
     }
 }

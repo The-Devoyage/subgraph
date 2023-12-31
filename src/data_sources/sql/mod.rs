@@ -10,7 +10,9 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::{DialectEnum, SqlDataSourceConfig},
         entities::ServiceEntityConfig,
+        SubGraphConfig,
     },
+    data_sources::sql::services::ResponseRow,
     graphql::schema::ResolverType,
 };
 
@@ -23,6 +25,7 @@ pub mod services;
 pub struct SqlDataSource {
     pub pool: PoolEnum,
     pub config: SqlDataSourceConfig,
+    pub subgraph_config: SubGraphConfig,
 }
 
 #[derive(Debug, Clone)]
@@ -64,7 +67,11 @@ pub struct SqlQuery {
 }
 
 impl SqlDataSource {
-    pub async fn init(sql_data_source_config: &SqlDataSourceConfig, args: &CliArgs) -> DataSource {
+    pub async fn init(
+        sql_data_source_config: &SqlDataSourceConfig,
+        args: &CliArgs,
+        subgraph_config: SubGraphConfig,
+    ) -> DataSource {
         debug!("Initializing SQL Data Source");
 
         // Create the pool
@@ -170,6 +177,7 @@ impl SqlDataSource {
         DataSource::SQL(SqlDataSource {
             pool,
             config: sql_data_source_config.clone(),
+            subgraph_config,
         })
     }
 
@@ -178,7 +186,8 @@ impl SqlDataSource {
         input: Document,
         entity: ServiceEntityConfig,
         resolver_type: ResolverType,
-    ) -> Result<FieldValue<'a>, async_graphql::Error> {
+        subgraph_config: &SubGraphConfig,
+    ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
         debug!("Executing SQL Operation");
 
         let data_source = match data_source {
@@ -207,19 +216,23 @@ impl SqlDataSource {
             &table,
             data_source.config.dialect.clone(),
             &entity,
+            &subgraph_config,
         )?;
 
         // Return the result from the database as a FieldValue
         match resolver_type {
             ResolverType::FindOne => {
                 let result = services::Services::find_one(&data_source.pool, &query).await?;
-                Ok(FieldValue::owned_any(result))
+                if result.is_none() {
+                    return Ok(FieldValue::NONE);
+                }
+                Ok(Some(FieldValue::owned_any(result)))
             }
             ResolverType::FindMany => {
                 let results = services::Services::find_many(&data_source.pool, &query).await?;
-                Ok(FieldValue::list(
+                Ok(Some(FieldValue::list(
                     results.into_iter().map(|row| FieldValue::owned_any(row)),
-                ))
+                )))
             }
             ResolverType::CreateOne => {
                 let result = services::Services::create_one(
@@ -227,9 +240,13 @@ impl SqlDataSource {
                     &data_source.pool,
                     &query,
                     data_source.config.dialect.clone(),
+                    &subgraph_config,
                 )
                 .await?;
-                Ok(FieldValue::owned_any(result))
+                if result.is_none() {
+                    return Ok(FieldValue::NONE);
+                }
+                Ok(Some(FieldValue::owned_any(result)))
             }
             ResolverType::UpdateOne => {
                 let result = services::Services::update_one(
@@ -237,9 +254,13 @@ impl SqlDataSource {
                     &data_source.pool,
                     &query,
                     data_source.config.dialect.clone(),
+                    &subgraph_config,
                 )
                 .await?;
-                Ok(FieldValue::owned_any(result))
+                if result.is_none() {
+                    return Ok(FieldValue::NONE);
+                }
+                Ok(Some(FieldValue::owned_any(result)))
             }
             ResolverType::UpdateMany => {
                 let results = services::Services::update_many(
@@ -247,11 +268,12 @@ impl SqlDataSource {
                     &data_source.pool,
                     &query,
                     data_source.config.dialect.clone(),
+                    &subgraph_config,
                 )
                 .await?;
-                Ok(FieldValue::list(
+                Ok(Some(FieldValue::list(
                     results.into_iter().map(|row| FieldValue::owned_any(row)),
-                ))
+                )))
             }
             _ => panic!("Invalid resolver type"),
         }

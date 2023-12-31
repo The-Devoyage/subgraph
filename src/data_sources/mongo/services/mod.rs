@@ -1,5 +1,5 @@
 use bson::{doc, Document};
-use log::debug;
+use log::{debug, trace};
 
 mod create_one;
 mod find_many;
@@ -29,10 +29,14 @@ impl Services {
         debug!("Created Nested Filter: {:?}", set_doc);
         set_doc
     }
-    pub fn create_nested_find_filter(doc: &Document) -> Document {
-        debug!("Creating Nested Find Filter From Doc: {:?}", doc);
+
+    /// Takes in a graphql input `query` and parses it into a nested find filter.
+    pub fn create_nested_find_filter(query_doc: &Document) -> Document {
+        debug!("Creating Nested Find Filter");
+        trace!("Query Doc: {:?}", query_doc);
         let mut find_doc = Document::new();
-        for (key, value) in doc.clone().iter_mut() {
+        for (key, value) in query_doc.clone().iter_mut() {
+            // If the value is a doc, create a key that represents the nested field
             if let Some(sub_doc) = value.as_document() {
                 let sub_set_doc = Services::create_nested_find_filter(sub_doc);
                 for (sub_key, sub_value) in sub_set_doc.iter() {
@@ -72,7 +76,8 @@ impl Services {
                 find_doc.insert(key.clone(), value.clone());
             }
         }
-        debug!("Created Nested Find Filter: {:?}", find_doc);
+        debug!("Created Nested Find Filter");
+        trace!("Nested Find Filter: {:?}", find_doc);
         find_doc
     }
 }

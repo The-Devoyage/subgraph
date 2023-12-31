@@ -11,27 +11,37 @@ pub struct CorsConfig;
 
 impl CorsConfig {
     pub fn create_cors(subgraph_config: SubGraphConfig) -> Cors {
-        debug!("Creating CORS Config");
+        debug!("Enabling Cors");
 
         let mut cors = warp::cors();
         let cors_config = match subgraph_config.service.cors {
             Some(config) => config,
-            None => CorsConfigOptions {
-                allow_methods: Some(vec![MethodOption {
-                    method: Method::POST,
-                }]),
-                allow_headers: Some(vec![CONTENT_TYPE.to_string()]),
-                allow_any_origin: Some(true),
-                allow_origins: None,
-            },
+            None => {
+                debug!("Cors Config not found, using default config");
+                CorsConfigOptions {
+                    allow_methods: Some(vec![MethodOption {
+                        method: Method::POST,
+                    }]),
+                    allow_headers: Some(vec![CONTENT_TYPE.to_string()]),
+                    allow_any_origin: Some(true),
+                    allow_origins: None,
+                }
+            }
         };
 
         debug!("Generated Cors Config, {:?}", cors_config);
 
-        if cors_config.allow_methods.is_some() {
-            let methods = cors_config.allow_methods.unwrap();
-            cors = cors.allow_methods(methods.iter().map(|m| &m.method));
-        }
+        let methods = match cors_config.allow_methods {
+            Some(methods) => methods,
+            None => {
+                debug!("Cors Config allow_methods not found, using default cors `allow_methods` config: POST");
+                vec![MethodOption {
+                    method: Method::POST,
+                }]
+            }
+        };
+
+        cors = cors.allow_methods(methods.iter().map(|m| &m.method));
 
         if cors_config.allow_headers.is_some() {
             let headers = cors_config.allow_headers.unwrap();
@@ -47,6 +57,8 @@ impl CorsConfig {
         } else {
             cors = cors.allow_any_origin()
         }
+
+        debug!("Cors Config: {:?}", cors);
         cors.build()
     }
 }

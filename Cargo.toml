@@ -1,6 +1,6 @@
 [package]
 name = "subgraph"
-version = "0.0.12"
+version = "0.0.13"
 edition = "2021"
 license = "MIT"
 description = "Subgraph is a CLI that instantly generates a GraphQL API around Mongo, SQL, and HTTP APIs."
@@ -34,12 +34,13 @@ toml = "0.7.2"
 http-serde = "1.1.2"
 json = "0.12.4"
 serde_json = "1.0.95"
-sqlx = { version = "0.7.0-alpha.2", features = [ "runtime-tokio", "postgres", "mysql", "sqlite", "json", "uuid", "chrono", "time" ] }
-evalexpr = "10.0.0"
+sqlx = { version = "0.7.3", features = [ "runtime-tokio", "postgres", "mysql", "sqlite", "json", "uuid", "chrono", "time" ] }
+evalexpr = { version = "11.2.0", features = ["regex_support"]}
 webauthn-rs = { version = "0.4.8", features = ["danger-allow-state-serialisation"] }
 biscuit-auth = "4"
 base64 = "0.21.4"
 notify = "6.1.1"
+openssl = { version = "0.10", features = ["vendored"] }
 
 [dependencies.mongodb]
 version = "2.3.1"
@@ -54,8 +55,3 @@ features = [
     "macro-diagnostics",
 ]
 
-[features]
-static_ssl = ['openssl/vendored']
-
-[dependencies.openssl]
-optional = true

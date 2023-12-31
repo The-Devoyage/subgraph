@@ -36,5 +36,3 @@ name = "brand"
 scalar = "String"
 required = true
 
-
-

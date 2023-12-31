@@ -454,13 +454,19 @@ async fn find_with_nested_object() {
         {
             get_user(get_user_input: { query: { address: { line_one: "address lineone" } } }) {
                 _id
+                address {
+                  line_one
+                }
             }
         }
         "#,
     );
     let response = execute(request, None).await;
-
     assert!(response.is_ok());
+
+    let json = response.data.into_json().unwrap();
+    let address = json["get_user"]["address"].clone();
+    assert_eq!(address["line_one"], "address lineone");
 }
 
 #[tokio::test]
@@ -544,5 +550,21 @@ async fn find_one_with_and_filter() {
 
     let response = execute(request, None).await;
 
+    assert!(response.is_ok());
+}
+
+#[tokio::test]
+async fn find_one_with_virtual_field() {
+    let request = async_graphql::Request::new(
+        r#"
+        {
+            get_user(get_user_input: { query: { virtual_id: "is virtual" } }) {
+                _id
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
     assert!(response.is_ok());
 }

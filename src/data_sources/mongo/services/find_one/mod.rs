@@ -1,5 +1,8 @@
-use log::debug;
+use async_graphql::futures_util::StreamExt;
+use log::{debug, trace};
 use mongodb::{bson::Document, Database};
+
+use crate::data_sources::mongo::{EagerLoadOptions, MongoDataSource};
 
 use super::Services;
 
@@ -8,10 +11,12 @@ impl Services {
         db: Database,
         filter: Document,
         collection: String,
+        eager_load_options: Vec<EagerLoadOptions>,
     ) -> Result<Option<Document>, async_graphql::Error> {
         debug!("Executing Find One - Mongo Data Source: {:?}", collection);
+        trace!("Filter: {:?}", filter);
 
-        let collection = db.collection(&collection);
+        let collection = db.collection::<Document>(&collection);
 
         let query_filter = match filter.get("query") {
             Some(query_filter) => query_filter,
@@ -25,12 +30,17 @@ impl Services {
 
         let filter = Services::create_nested_find_filter(query_document);
 
-        let document = collection.find_one(filter, None).await?;
+        let aggregation = MongoDataSource::create_aggregation(&filter, eager_load_options)?;
 
-        if let Some(user_document) = document {
-            Ok(user_document)
-        } else {
-            Ok(None)
+        // let document = collection.find_one(filter, None).await?;
+        let mut cursor = collection.aggregate(aggregation, None).await?;
+
+        while let Some(document) = cursor.next().await {
+            if let Ok(document) = document {
+                return Ok(Some(document));
+            }
         }
+
+        Ok(None)
     }
 }

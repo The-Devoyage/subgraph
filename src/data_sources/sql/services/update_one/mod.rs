@@ -2,7 +2,9 @@ use bson::{doc, Document};
 use log::debug;
 
 use crate::{
-    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
+    configuration::subgraph::{
+        data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
+    },
     data_sources::sql::{PoolEnum, SqlDataSource, SqlQuery, SqlValueEnum},
 };
 
@@ -14,6 +16,7 @@ impl Services {
         pool_enum: &PoolEnum,
         sql_query: &SqlQuery,
         dialect: DialectEnum,
+        subgraph_config: &SubGraphConfig,
     ) -> Result<Option<ResponseRow>, async_graphql::Error> {
         debug!("Executing Update One Query: {:?}", sql_query);
 
@@ -152,6 +155,8 @@ impl Services {
                     &sql_query.table,
                     &dialect,
                     &query_doc,
+                    subgraph_config,
+                    None,
                 )?;
 
                 let mut find_one_query = sqlx::query(&find_one_query_string);

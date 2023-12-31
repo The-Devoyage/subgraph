@@ -29,7 +29,7 @@ async fn find_many_with_and_filter() {
     );
 
     let response = execute(request, None).await;
-    assert!(response.is_ok());
+    assert!(response.is_err());
 }
 
 #[tokio::test]
@@ -38,6 +38,22 @@ async fn find_many_with_or_filter() {
         r#"
         query {
             get_comments(get_comments_input: { query: { OR: [{ id: 1 }, { id: 2 }] } }) {
+                id
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
+    assert!(response.is_ok());
+}
+
+#[tokio::test]
+async fn find_many_with_eager_loading() {
+    let request = async_graphql::Request::new(
+        r#"
+        query {
+            get_comments(get_comments_input: { query: { reactions: { content: "This is content test." } } }) {
                 id
             }
         }

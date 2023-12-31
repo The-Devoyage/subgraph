@@ -119,14 +119,25 @@ impl SqlDataSource {
                             }
                         }
                     } else {
-                        let value = value.as_i32();
-                        if value.is_some() {
+                        let value_i32 = value.as_i32();
+                        if value_i32.is_some() {
                             if is_where_clause {
                                 where_keys.push(key.to_string());
-                                where_values.push(SqlValueEnum::Int(value.unwrap()));
+                                where_values.push(SqlValueEnum::Int(value_i32.unwrap()));
                             } else {
                                 value_keys.push(key.to_string());
-                                values.push(SqlValueEnum::Int(value.unwrap()));
+                                values.push(SqlValueEnum::Int(value_i32.unwrap()));
+                            }
+                        } else {
+                            let value = value.as_i64();
+                            if value.is_some() {
+                                if is_where_clause {
+                                    where_keys.push(key.to_string());
+                                    where_values.push(SqlValueEnum::Int(value.unwrap() as i32));
+                                } else {
+                                    value_keys.push(key.to_string());
+                                    values.push(SqlValueEnum::Int(value.unwrap() as i32));
+                                }
                             }
                         }
                     }
