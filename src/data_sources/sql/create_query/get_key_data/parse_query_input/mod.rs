@@ -217,7 +217,7 @@ impl SqlDataSource {
                     field.name.clone()
                 ),
                 field.join_on.clone().unwrap(),
-                format!("{d}{}{d}", parent_alias.unwrap_or(parent_table_name)),
+                parent_alias.unwrap_or(format!("{d}{}{d}", parent_table_name)),
                 field.join_from.clone().unwrap_or(field.name.clone())
             );
             Some(join_clause)
