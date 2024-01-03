@@ -191,11 +191,19 @@ Migrations are only executed if subgraph is run with the flag `--migrate run`
 
 #### Guard
 
-| Guard    | Description                                                                                    | Type   |
-| -------- | ---------------------------------------------------------------------------------------------- | ------ |
-| name     | The name of the guard. Used as the key of the key value pair if/when guard is invoked.         | String |
-| if_expr  | [EvalExpr](https://docs.rs/evalexpr/latest/evalexpr/) syntax to evaluate a boolean expression. | String |
-| then_msg | The message of the key value pair if/when guard is invoked.                                    | String |
+| Guard      | Description                                                                                    | Type               |
+| ---------- | ---------------------------------------------------------------------------------------------- | ------------------ |
+| name\*     | The name of the guard. Used as the key of the key value pair if/when guard is invoked.         | String             |
+| if_expr\*  | [EvalExpr](https://docs.rs/evalexpr/latest/evalexpr/) syntax to evaluate a boolean expression. | String             |
+| then_msg\* | The message of the key value pair if/when guard is invoked.                                    | String             |
+| context    | Options to define additional context from other calls to data sources.                         | GuardDataContext[] |
+
+| GuardDataContext | Description                                                          | Type               |
+| ---------------- | -------------------------------------------------------------------- | ------------------ |
+| entity_name\*    | The name of the entity of where to source the context                | String             |
+| name             | The unique identifier of the context to be added.                    | String             |
+| query\*          | The graphql query expression to populate the context                 | String             |
+| variables\*      | A vector of tuples representing the substitute and the substitution. | [String, String][] |
 
 Additional guard functions that may be used within the `if_expr` syntax. Currently not supported nativly in EvalExpr.
 
