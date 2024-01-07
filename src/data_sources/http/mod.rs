@@ -1,15 +1,19 @@
 use async_graphql::dynamic::FieldValue;
 use bson::Document;
 use http::{header::HeaderName, HeaderMap, HeaderValue};
-use log::{debug, info};
+use log::{debug, error, info, trace};
 use reqwest::Client;
 
 use crate::{
     configuration::subgraph::{
         data_sources::http::{DefaultHeader, HttpDataSourceConfig},
         entities::ServiceEntityConfig,
+        SubGraphConfig,
     },
-    graphql::schema::ResolverType,
+    graphql::{
+        entity::create_return_types::{ResolverResponse, ResolverResponseMeta},
+        schema::ResolverType,
+    },
 };
 
 use super::DataSource;
@@ -63,50 +67,125 @@ impl HttpDataSource {
         input: Document,
         entity: ServiceEntityConfig,
         resolver_type: ResolverType,
+        subgraph_config: &SubGraphConfig,
     ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
-        info!("Executing HTTP Data Source Operation");
+        debug!("Executing HTTP Data Source Operation");
 
         let data_source = match data_source {
             DataSource::HTTP(ds) => ds,
             _ => unreachable!(),
         };
 
-        debug!("HTTP Data Source: {:?}", data_source);
+        trace!("HTTP Data Source: {:?}", data_source);
 
         let filter =
             HttpDataSource::create_filter(data_source, input, &entity, resolver_type).await?;
 
-        debug!("Filter Created: {:?}", filter);
+        trace!("Filter Created: {:?}", filter);
 
         match resolver_type {
             ResolverType::FindOne => {
                 let result =
                     services::Services::find_one(data_source.client.clone(), filter).await?;
-                Ok(Some(FieldValue::owned_any(result)))
+                let res = ResolverResponse {
+                    data: vec![FieldValue::owned_any(result)],
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: 1,
+                        total: 1,
+                        page: 1,
+                        user_uuid: None,
+                    },
+                };
+                Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::FindMany => {
                 let results =
                     services::Services::find_many(data_source.client.clone(), filter).await?;
-                Ok(Some(FieldValue::list(
-                    results.into_iter().map(|doc| FieldValue::owned_any(doc)),
-                )))
+                let count = results.len();
+                let res = ResolverResponse {
+                    data: results
+                        .into_iter()
+                        .map(|doc| FieldValue::owned_any(doc))
+                        .collect(),
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: count as i64,
+                        total: count as i64,
+                        page: 1,
+                        user_uuid: None,
+                    },
+                };
+                Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::CreateOne => {
                 let result =
                     services::Services::create_one(data_source.client.clone(), filter).await?;
-                Ok(Some(FieldValue::owned_any(result)))
+                let res = ResolverResponse {
+                    data: vec![FieldValue::owned_any(result)],
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: 1,
+                        total: 1,
+                        page: 1,
+                        user_uuid: None,
+                    },
+                };
+                Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::UpdateOne => {
                 let result =
                     services::Services::update_one(data_source.client.clone(), filter).await?;
-                Ok(Some(FieldValue::owned_any(result)))
+                let res = ResolverResponse {
+                    data: vec![FieldValue::owned_any(result)],
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: 1,
+                        total: 1,
+                        page: 1,
+                        user_uuid: None,
+                    },
+                };
+                Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::UpdateMany => {
                 let results =
                     services::Services::update_many(data_source.client.clone(), filter).await?;
-                Ok(Some(FieldValue::list(
-                    results.into_iter().map(|doc| FieldValue::owned_any(doc)),
-                )))
+                let count = results.len();
+                let res = ResolverResponse {
+                    data: results
+                        .into_iter()
+                        .map(|doc| FieldValue::owned_any(doc))
+                        .collect(),
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: count as i64,
+                        total: count as i64,
+                        page: 1,
+                        user_uuid: None,
+                    },
+                };
+                Ok(Some(FieldValue::owned_any(res)))
             }
             _ => panic!("Invalid resolver type"),
         }

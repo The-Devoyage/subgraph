@@ -34,6 +34,7 @@ with the key in the service configuration to disable the timeout.
 | Service\*      | Description                                               | Type           |
 | -------------- | --------------------------------------------------------- | -------------- |
 | name\*         | The name of this service.                                 | String         |
+| version        | The version of the API.                                   | Option<String> |
 | data_sources\* | Where the data is located.                                | DataSource[]   |
 | entities\*     | The data to be defined.                                   | Entity[]       |
 | cors           | Cors options for the GraphQL Server.                      | Cors Config    |

@@ -6,7 +6,9 @@ async fn update_many() {
         r#"
         mutation {
             update_comments(update_comments_input: { values: { content: "update_many test", status: false }, query: { id: 2 } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,

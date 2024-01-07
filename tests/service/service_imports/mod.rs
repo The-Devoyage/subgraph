@@ -6,8 +6,10 @@ async fn find_one_from_import() {
         r#"
         {
             get_import(get_import_input: { query: {} }) {
-                _id
-                import_works     
+                data {
+                    _id
+                    import_works
+                }
             }
         }
     "#,

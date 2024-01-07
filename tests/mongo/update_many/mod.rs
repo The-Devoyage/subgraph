@@ -6,7 +6,9 @@ async fn update_many() {
         r#"
         mutation {
             create_user(create_user_input: { values: { name: "Steve", age: 2, married: false, email: "steve@noemail.com" } }) {
-                _id
+                data {
+                    _id
+                }
             }
         }
         "#,
@@ -16,7 +18,9 @@ async fn update_many() {
         r#"
         mutation {
             create_user(create_user_input: { values: { name: "Steve", age: 1, married: false, email: "steve@noemail.com" } }) {
-                _id
+                data {
+                    _id
+                }
             }
         }
         "#,
@@ -26,7 +30,9 @@ async fn update_many() {
         r#"
         mutation {
             update_users(update_users_input: { values: { age: 3 }, query: { name: "Steve" } }) {
-                _id
+                data {
+                    _id
+                }
             }
         }
         "#,

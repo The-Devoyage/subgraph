@@ -18,47 +18,35 @@ impl ServiceResolver {
 
         let list = list.unwrap_or(false);
 
-        // If is internal type, use the field definition to determine if required.
-        // Otherwise, use the entity definition.
-        let entity_required = match self.resolver_type {
-            ResolverType::InternalType => match &self.as_field {
-                Some(field) => field.required.unwrap_or(false),
-                None => false,
-            },
-            _ => self.entity.required.unwrap_or(false),
-        };
-
+        // Here we will create the name of the return type.
+        // The return type is made elsewhere but referenced here.
         let type_ref = match self.resolver_type {
-            ResolverType::FindOne => match entity_required {
-                true => TypeRef::named_nn(&self.entity.name),
-                false => TypeRef::named(&self.entity.name),
-            },
-            ResolverType::CreateOne => match entity_required {
-                true => TypeRef::named_nn(&self.entity.name),
-                false => TypeRef::named(&self.entity.name),
-            },
-            ResolverType::FindMany => match entity_required {
-                true => TypeRef::named_nn_list_nn(&self.entity.name),
-                false => TypeRef::named_list_nn(&self.entity.name),
-            },
-            ResolverType::UpdateOne => match entity_required {
-                true => TypeRef::named_nn(&self.entity.name),
-                false => TypeRef::named(&self.entity.name),
-            },
-            ResolverType::UpdateMany => match entity_required {
-                true => TypeRef::named_nn_list_nn(&self.entity.name),
-                false => TypeRef::named_list_nn(&self.entity.name),
-            },
             ResolverType::InternalType => match list {
-                true => match entity_required {
-                    true => TypeRef::named_nn_list_nn(&self.entity.name),
-                    false => TypeRef::named_list_nn(&self.entity.name),
-                },
-                false => match entity_required {
-                    true => TypeRef::named_nn(&self.entity.name),
-                    false => TypeRef::named(&self.entity.name),
-                },
+                true => {
+                    let return_type_name = format!(
+                        "{}_{}_response",
+                        ResolverType::FindMany.to_string().to_lowercase(),
+                        self.entity.name
+                    );
+                    TypeRef::named_nn(&return_type_name)
+                }
+                false => {
+                    let return_type_name = format!(
+                        "{}_{}_response",
+                        ResolverType::FindOne.to_string().to_lowercase(),
+                        self.entity.name
+                    );
+                    TypeRef::named_nn(&return_type_name)
+                }
             },
+            _ => {
+                let return_type_name = format!(
+                    "{}_{}_response",
+                    self.resolver_type.to_string().to_lowercase(),
+                    self.entity.name
+                );
+                TypeRef::named_nn(&return_type_name)
+            }
         };
 
         debug!("Resolver Type Ref: {:?}", type_ref);

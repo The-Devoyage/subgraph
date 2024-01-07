@@ -1,6 +1,6 @@
 [package]
 name = "subgraph"
-version = "0.0.13"
+version = "0.0.14"
 edition = "2021"
 license = "MIT"
 description = "Subgraph is a CLI that instantly generates a GraphQL API around Mongo, SQL, and HTTP APIs."

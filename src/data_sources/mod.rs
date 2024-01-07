@@ -127,6 +127,7 @@ impl DataSources {
                 input,
                 cloned_entity,
                 resolver_type,
+                subgraph_config,
             )
             .await?),
             DataSource::SQL(_ds) => Ok(sql::SqlDataSource::execute_operation(

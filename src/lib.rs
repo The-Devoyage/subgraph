@@ -90,7 +90,7 @@ pub async fn run(
     };
 
     info!("❇️  Subgraph Service Started");
-    info!("🛝 Playgorund: http://localhost:{:?}", port);
+    info!("🛝 Playground: http://localhost:{:?}", port);
 
     // Create Graceful Shutdown Channel
     let (tx, rx) = tokio::sync::oneshot::channel::<()>();

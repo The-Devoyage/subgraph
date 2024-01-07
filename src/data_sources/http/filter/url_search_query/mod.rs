@@ -1,5 +1,5 @@
 use bson::Document;
-use log::{debug, info};
+use log::{debug, info, trace};
 use reqwest::Url;
 
 use crate::{
@@ -187,32 +187,32 @@ impl HttpDataSource {
         identifier_variable: String,
         input: &Document,
     ) -> Result<Option<String>, async_graphql::Error> {
-        info!("Replacing Identifier");
-        debug!("Identifier Variable {:?}", identifier_variable);
+        debug!("Replacing Identifier");
+        trace!("Identifier Variable {:?}", identifier_variable);
 
         if let Some(identifier) = identifier_variable.chars().nth(0) {
-            debug!("Identifier: {:?}", identifier);
+            trace!("Identifier: {:?}", identifier);
 
             if identifier.to_string() == ":" {
-                debug!("Replacing Identifier");
+                trace!("Replacing Identifier");
                 let mut chars = identifier_variable.chars();
                 chars.next();
                 let param = input.get(chars.as_str());
-                debug!("Param: {:?}", param);
+                trace!("Param: {:?}", param);
 
                 if param.is_some() {
-                    debug!("Returning Replaced Identifier");
+                    trace!("Returning Replaced Identifier");
                     Ok(Some(param.unwrap().to_string()))
                 } else {
-                    debug!("No Param Found, Returning None Identifier");
+                    trace!("No Param Found, Returning None Identifier");
                     Ok(None)
                 }
             } else {
-                debug!("Not Valid Identifier, Returning Original Identifier");
+                trace!("Not Valid Identifier, Returning Original Identifier");
                 Ok(Some(identifier_variable))
             }
         } else {
-            debug!("Valid Identifier, Returning Original Identifier");
+            trace!("Valid Identifier, Returning Original Identifier");
             Ok(Some(identifier_variable))
         }
     }

@@ -6,7 +6,9 @@ async fn update_one() {
         r#"
         mutation {
             update_car(update_car_input: { values: { status: false }, query: { id: 1 } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,

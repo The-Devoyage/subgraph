@@ -63,9 +63,19 @@ impl ServiceResolver {
                     .into_iter()
                     .map(|f| f)
                     .collect::<Vec<SelectionField>>();
+                // Find the field that matches the entity name.
+                let entity_field = selection_fields
+                    .iter()
+                    .find(|f| f.name() == "data")
+                    .unwrap();
+                let entity_fields = entity_field
+                    .selection_set()
+                    .into_iter()
+                    .map(|f| f)
+                    .collect::<Vec<SelectionField>>();
 
                 let guard_context = ServiceResolver::guard_resolver_function(
-                    selection_fields,
+                    entity_fields,
                     &input_document.clone().unwrap(),
                     &entity,
                     service_guards.clone(),

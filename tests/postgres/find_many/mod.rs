@@ -6,7 +6,9 @@ async fn find_many() {
         r#"
         query {
             get_comments(get_comments_input: { query: { id: 1 } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -22,7 +24,9 @@ async fn find_many_with_and_filter() {
         r#"
         query {
             get_comments(get_comments_input: { query: { AND: [{ id: 1 }, { text: "This is content test." }] } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -38,7 +42,9 @@ async fn find_many_with_or_filter() {
         r#"
         query {
             get_comments(get_comments_input: { query: { OR: [{ id: 1 }, { id: 2 }] } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -54,7 +60,9 @@ async fn find_many_with_eager_loading() {
         r#"
         query {
             get_comments(get_comments_input: { query: { reactions: { content: "This is content test." } } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,

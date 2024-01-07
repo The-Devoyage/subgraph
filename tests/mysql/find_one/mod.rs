@@ -6,7 +6,9 @@ async fn find_one() {
         r#"
         query {
             get_car(get_car_input: { query: { id: 1 } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -22,7 +24,9 @@ async fn find_one_by_string() {
         r#"
         mutation {
             create_car(create_car_input: { values: { model: "Suub", price: 1000, status: true } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -33,7 +37,9 @@ async fn find_one_by_string() {
         r#"
         query {
             get_car(get_car_input: { query: { model: "Suub" } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -49,7 +55,9 @@ async fn find_one_by_int() {
         r#"
         mutation {
             create_car(create_car_input: { values: { model: "Tesla", price: 9898, status: true } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -60,7 +68,9 @@ async fn find_one_by_int() {
         r#"
         query {
             get_car(get_car_input: { query: { price: 9898 } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -76,7 +86,9 @@ async fn find_one_by_bool() {
         r#"
         mutation {
             create_car(create_car_input: { values: { model: "Ford", price: 97, status: true } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -87,7 +99,9 @@ async fn find_one_by_bool() {
         r#"
         query {
             get_car(get_car_input: { query: { status: true } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -103,7 +117,9 @@ async fn returns_correct_scalars() {
         r#"
         mutation {
             create_car(create_car_input: { values: { model: "Mazda", price: 1075, status: false } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -114,10 +130,12 @@ async fn returns_correct_scalars() {
         r#"
         query {
             get_car(get_car_input: { query: { model: "Mazda", price: 1075, status: false } }) {
-                id
-                model
-                price
-                status
+                data {
+                    id
+                    model
+                    price
+                    status
+                }
             }
         }
         "#,
@@ -125,9 +143,9 @@ async fn returns_correct_scalars() {
 
     let response = execute(request, None).await;
     let json = response.data.into_json().unwrap();
-    let model = json["get_car"]["model"].as_str().unwrap();
-    let price = json["get_car"]["price"].as_i64().unwrap();
-    let status = json["get_car"]["status"].as_bool().unwrap();
+    let model = json["get_car"]["data"]["model"].as_str().unwrap();
+    let price = json["get_car"]["data"]["price"].as_i64().unwrap();
+    let status = json["get_car"]["data"]["status"].as_bool().unwrap();
     assert_eq!(model, "Mazda");
     assert_eq!(price, 1075);
     assert_eq!(status, false);
@@ -139,7 +157,9 @@ async fn find_one_with_or_filter() {
         r#"
         query {
             get_car(get_car_input: { query: { OR: [{ id: 1 }, { id: 2 }] } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -155,7 +175,9 @@ async fn find_one_with_and_filter() {
         r#"
         query {
             get_car(get_car_input: { query: { AND: [{ id: 1 }, { id: 2 }] } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -171,7 +193,9 @@ async fn find_one_with_virtual_field() {
         r#"
         query {
             get_car(get_car_input: { query: { id: 1, virtual_id: "me too" } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,

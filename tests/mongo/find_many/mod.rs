@@ -6,7 +6,9 @@ async fn find_one() {
         r#"
         mutation {
             create_user(create_user_input: { values: { name: "Oakley", age: 5, married: false, email: "nickisyourfan@gmail.com" } }) {
-                _id
+                data {
+                    _id
+                }
             }
         }
         "#,
@@ -16,7 +18,9 @@ async fn find_one() {
         r#"
         {
             get_users(get_users_input: { query: { married: false } }) {
-                _id
+                data {
+                    _id
+                }
             }
         }
         "#,
@@ -32,7 +36,9 @@ async fn find_many_with_or_filter() {
         r#"
         mutation {
             create_user(create_user_input: { values: { name: "BongoWithOrFilter", age: 203, married: false, email: "nickisyourfan@gmail.com" } }) {
-                _id
+                data {
+                    _id
+                }
             }
         }
         "#,
@@ -42,7 +48,9 @@ async fn find_many_with_or_filter() {
         r#"
         mutation {
             create_user(create_user_input: { values: { name: "BongoWithOrFilter", age: 204, married: false, email: "nickisyourfan@gmail.com" } }) {
-                _id
+                data {
+                    _id
+                }
             }
         }
         "#,
@@ -53,7 +61,9 @@ async fn find_many_with_or_filter() {
         r#"
         {
             get_users(get_users_input: { query: { OR: [{ age: 203 }, { age: 204 }] } }) {
-                _id
+                data {
+                    _id
+                }
             }
         }
         "#,
@@ -69,7 +79,9 @@ async fn find_many_with_and_filter() {
         r#"
         mutation {
             create_user(create_user_input: { values: { name: "FindManyWithAndFilter", age: 988, married: false, email: "nickisyourfan@gmail.com" } }) {
-                _id
+                data {
+                    _id
+                }
             }
         }
         "#,
@@ -79,7 +91,9 @@ async fn find_many_with_and_filter() {
         r#"
         mutation {
             create_user(create_user_input: { values: { name: "FindManyWithAndFilter2", age: 988, married: false, email: "nickisyourfan@gmail.com" } }) {
-                _id
+                data {
+                    _id
+                }
             }
         }
         "#,
@@ -90,7 +104,9 @@ async fn find_many_with_and_filter() {
         r#"
         {
             get_user(get_user_input: { query: { AND: [{ age: 988 }, { married: false }] } }) {
-                _id
+                data {
+                    _id
+                }
             }
         }
         "#,
@@ -107,16 +123,16 @@ async fn find_many_with_eager_loading() {
         r#"
         mutation {
             create_user(create_user_input: { values: { name: "FindManyWithEagerLoading", age: 57, married: true, email: "abcdefg@fakemail.com" } }) {
-                _id
+                data {
+                    _id
+                }
             }   
         }
         "#,
     );
     let response = execute(request, None).await;
     let data = response.data.into_json().unwrap();
-    let user_id = data
-        .get("create_user")
-        .unwrap()
+    let user_id = data.get("create_user").unwrap()["data"]
         .as_object()
         .unwrap()
         .get("_id")
@@ -128,7 +144,9 @@ async fn find_many_with_eager_loading() {
         r#"
             mutation {{
                 create_user_access(create_user_access_input: {{ values: {{ user_id: "{}", view: true }} }}) {{
-                    _id
+                    data {{
+                        _id
+                    }}
                 }}   
             }}
             "#,
@@ -140,8 +158,10 @@ async fn find_many_with_eager_loading() {
         r#"
             {{
                 get_users(get_users_input: {{ query: {{ user_access: {{ user_id: "{}", view: true }} }} }}) {{
-                    _id
-                    name
+                    data {{
+                        _id
+                        name
+                    }}
                 }}
             }}
             "#,
@@ -151,7 +171,7 @@ async fn find_many_with_eager_loading() {
     let response = execute(request, None).await;
 
     let data = response.data.into_json().unwrap();
-    let users = data.get("get_users").unwrap().as_array().unwrap();
+    let users = data.get("get_users").unwrap()["data"].as_array().unwrap();
     let user = users.get(0).unwrap().as_object().unwrap();
     let name = user.get("name").unwrap().as_str().unwrap();
 

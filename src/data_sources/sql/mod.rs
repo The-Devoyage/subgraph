@@ -12,8 +12,10 @@ use crate::{
         entities::ServiceEntityConfig,
         SubGraphConfig,
     },
-    data_sources::sql::services::ResponseRow,
-    graphql::schema::ResolverType,
+    graphql::{
+        entity::create_return_types::{ResolverResponse, ResolverResponseMeta},
+        schema::ResolverType,
+    },
 };
 
 use super::DataSource;
@@ -223,16 +225,44 @@ impl SqlDataSource {
         match resolver_type {
             ResolverType::FindOne => {
                 let result = services::Services::find_one(&data_source.pool, &query).await?;
-                if result.is_none() {
-                    return Ok(FieldValue::NONE);
-                }
-                Ok(Some(FieldValue::owned_any(result)))
+                let res = ResolverResponse {
+                    data: vec![FieldValue::owned_any(result)],
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: 1,
+                        total: 1,
+                        page: 1,
+                        user_uuid: None,
+                    },
+                };
+                Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::FindMany => {
-                let results = services::Services::find_many(&data_source.pool, &query).await?;
-                Ok(Some(FieldValue::list(
-                    results.into_iter().map(|row| FieldValue::owned_any(row)),
-                )))
+                let entities = services::Services::find_many(&data_source.pool, &query).await?;
+                let count = entities.len();
+                let res = ResolverResponse {
+                    data: entities
+                        .into_iter()
+                        .map(|row| FieldValue::owned_any(row))
+                        .collect(),
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: count as i64,
+                        total: count as i64,
+                        page: 1,
+                        user_uuid: None,
+                    },
+                };
+
+                Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::CreateOne => {
                 let result = services::Services::create_one(
@@ -243,10 +273,23 @@ impl SqlDataSource {
                     &subgraph_config,
                 )
                 .await?;
-                if result.is_none() {
-                    return Ok(FieldValue::NONE);
-                }
-                Ok(Some(FieldValue::owned_any(result)))
+
+                let res = ResolverResponse {
+                    data: vec![FieldValue::owned_any(result)],
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: 1,
+                        total: 1,
+                        page: 1,
+                        user_uuid: None,
+                    },
+                };
+
+                Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::UpdateOne => {
                 let result = services::Services::update_one(
@@ -257,10 +300,21 @@ impl SqlDataSource {
                     &subgraph_config,
                 )
                 .await?;
-                if result.is_none() {
-                    return Ok(FieldValue::NONE);
-                }
-                Ok(Some(FieldValue::owned_any(result)))
+                let res = ResolverResponse {
+                    data: vec![FieldValue::owned_any(result)],
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: 1,
+                        total: 1,
+                        page: 1,
+                        user_uuid: None,
+                    },
+                };
+                Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::UpdateMany => {
                 let results = services::Services::update_many(
@@ -271,9 +325,25 @@ impl SqlDataSource {
                     &subgraph_config,
                 )
                 .await?;
-                Ok(Some(FieldValue::list(
-                    results.into_iter().map(|row| FieldValue::owned_any(row)),
-                )))
+                let count = results.len();
+                let res = ResolverResponse {
+                    data: results
+                        .into_iter()
+                        .map(|row| FieldValue::owned_any(row))
+                        .collect(),
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: count as i64,
+                        total: count as i64,
+                        page: 1,
+                        user_uuid: None,
+                    },
+                };
+                Ok(Some(FieldValue::owned_any(res)))
             }
             _ => panic!("Invalid resolver type"),
         }

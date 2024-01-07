@@ -34,6 +34,18 @@ impl Display for ResolverType {
     }
 }
 
+impl ResolverType {
+    pub fn get_resolver_types() -> Vec<ResolverType> {
+        vec![
+            ResolverType::FindOne,
+            ResolverType::FindMany,
+            ResolverType::CreateOne,
+            ResolverType::UpdateOne,
+            ResolverType::UpdateMany,
+        ]
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub enum ExcludeFromInput {
     FindOne,
@@ -61,7 +73,7 @@ impl ServiceSchemaBuilder {
         let key_pair;
         if subgraph_config.service.auth.is_some() {
             //info message with an unicode icon
-            info!("🔐 Auth Enabled! 🔐");
+            info!("🔐 Auth Enabled!");
             let auth = subgraph_config.service.auth.clone().unwrap();
             let b64_private_key = auth.private_key;
 

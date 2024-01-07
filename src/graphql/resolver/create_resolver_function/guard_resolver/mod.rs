@@ -16,7 +16,7 @@ use crate::{
     },
     data_sources::{sql::services::ResponseRow, DataSources},
     graphql::{
-        entity::ServiceEntity,
+        entity::{create_return_types::ResolverResponse, ServiceEntity},
         schema::{create_auth_service::TokenData, ResolverType},
     },
     utils::clean_string::clean_string,
@@ -147,11 +147,7 @@ impl ServiceResolver {
             let fields = ServiceEntityFieldConfig::get_fields_recursive(
                 entity.fields.clone(),
                 field_name.to_string(),
-            )
-            .map_err(|e| {
-                error!("Error getting fields recursively: {:?}", e);
-                async_graphql::Error::new("Error getting fields recursively")
-            })?;
+            )?;
 
             let field = fields.iter().last().unwrap(); // Last field found will be the one we want.
 
@@ -280,23 +276,11 @@ impl ServiceResolver {
 
             let results = results.unwrap();
 
-            let results = results.try_to_list();
+            let downcasted = results.try_downcast_ref::<ResolverResponse>()?;
 
-            if results.is_err() {
-                error!(
-                    "Failed to get results from data context query. Error: {:?}",
-                    results.err()
-                );
-                return Err(async_graphql::Error::new(
-                    "Can't parse the guard data context query. Failed to get results.".to_string(),
-                ));
-            }
-
-            let results_list = results.unwrap();
-
-            // iterate and turn all to json
+            // iterate and turn all to json so it can be parsed when guarding.
             let mut results_json = serde_json::json!([]);
-            for result in results_list {
+            for result in &downcasted.data {
                 let downcasted = result.try_downcast_ref::<Option<Document>>();
                 if downcasted.is_err() {
                     debug!(

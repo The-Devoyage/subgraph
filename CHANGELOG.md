@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.0.14]
+
+### Added
+
+- New response layer with request metadata such as service name, version (new), pagination details, timestamp, and more.
+- Pagination for Database related data sources.
+
 ## [v0.0.13]
 
 ### Added

@@ -1,5 +1,5 @@
 use bson::{to_document, Document};
-use log::{debug, info};
+use log::{debug, info, trace};
 use reqwest::Url;
 
 use crate::configuration::subgraph::entities::ServiceEntityConfig;
@@ -13,15 +13,15 @@ impl HttpDataSource {
         resolver_type: ResolverType,
     ) -> Result<Url, async_graphql::Error> {
         info!("Creating Parameratized Path");
-        debug!("For Resolver Type: {:?}", resolver_type);
+        trace!("For Resolver Type: {:?}", resolver_type);
 
         let entity_path = entity.data_source.as_ref().unwrap().path.as_ref().unwrap();
 
-        debug!("Entity Path Defined: {:?}", entity_path);
+        trace!("Entity Path Defined: {:?}", entity_path);
 
         url.set_path(entity_path);
 
-        debug!("Set Path: {:?}", url);
+        trace!("Url - Set Path: {:?}", url);
 
         let entity_resolvers = ServiceEntityConfig::get_resolvers(entity.clone());
 
@@ -37,7 +37,7 @@ impl HttpDataSource {
                     return Ok(url);
                 }
 
-                debug!("Current URL: {:?}", url);
+                trace!("Current URL: {:?}", url);
 
                 let resolver_path = find_one_resolver.unwrap().path.as_ref();
 
@@ -45,7 +45,7 @@ impl HttpDataSource {
                     return Ok(url);
                 }
 
-                debug!(
+                trace!(
                     "Resolver Path Defined: {:?}",
                     find_one_resolver.unwrap().path.as_ref()
                 );
@@ -61,7 +61,7 @@ impl HttpDataSource {
                     return Ok(url);
                 }
 
-                debug!("Current URL: {:?}", url);
+                trace!("Current URL: {:?}", url);
 
                 let resolver_path = find_many_resolver.unwrap().path.as_ref();
 
@@ -69,7 +69,7 @@ impl HttpDataSource {
                     return Ok(url);
                 }
 
-                debug!(
+                trace!(
                     "Resolver Path Defined: {:?}",
                     find_many_resolver.unwrap().path.as_ref()
                 );
@@ -85,7 +85,7 @@ impl HttpDataSource {
                     return Ok(url);
                 }
 
-                debug!("Current URL: {:?}", url);
+                trace!("Current URL: {:?}", url);
 
                 let resolver_path = create_one_resolver.unwrap().path.as_ref();
 
@@ -93,7 +93,7 @@ impl HttpDataSource {
                     return Ok(url);
                 }
 
-                debug!(
+                trace!(
                     "Resolver Path Defined: {:?}",
                     create_one_resolver.unwrap().path.as_ref()
                 );
@@ -109,7 +109,7 @@ impl HttpDataSource {
                     return Ok(url);
                 }
 
-                debug!("Current URL: {:?}", url);
+                trace!("Current URL: {:?}", url);
 
                 let resolver_path = update_one_resolver.unwrap().path.as_ref();
 
@@ -117,7 +117,7 @@ impl HttpDataSource {
                     return Ok(url);
                 }
 
-                debug!(
+                trace!(
                     "Resolver Path Defined: {:?}",
                     update_one_resolver.unwrap().path.as_ref()
                 );
@@ -133,7 +133,7 @@ impl HttpDataSource {
                     return Ok(url);
                 }
 
-                debug!("Current URL: {:?}", url);
+                trace!("Current URL: {:?}", url);
 
                 let resolver_path = update_many_resolver.unwrap().path.as_ref();
 
@@ -141,7 +141,7 @@ impl HttpDataSource {
                     return Ok(url);
                 }
 
-                debug!(
+                trace!(
                     "Resolver Path Defined: {:?}",
                     update_many_resolver.unwrap().path.as_ref()
                 );
@@ -175,24 +175,26 @@ impl HttpDataSource {
         };
 
         while let Some(path_segment) = path_segments.next() {
-            debug!("Path Segment: {:?}", path_segment);
+            trace!("Path Segment: {:?}", path_segment);
 
             if let Some(identifier) = path_segment.chars().nth(0) {
                 if identifier.to_string() == ":" {
                     let mut chars = path_segment.chars();
                     chars.next();
                     let param = input.get(chars.as_str());
-                    debug!("Param Found: {:?}", param);
+                    trace!("Param Found: {:?}", param);
                     if param.is_some() {
+                        trace!("Param Value: {:?}", param.unwrap());
                         url = url.join(&param.unwrap().to_string()).unwrap_or(url.clone());
                     }
                 } else {
+                    trace!("Adding Path Segment: {:?}", path_segment);
                     url = url.join(path_segment).unwrap_or(url.clone());
                 }
             }
         }
 
-        debug!("Url: {:?}", url);
+        trace!("Url Created: {:?}", url);
 
         Ok(url)
     }

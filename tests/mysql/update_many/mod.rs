@@ -6,7 +6,9 @@ async fn update_many() {
         r#"
         mutation {
             update_cars(update_cars_input: { values: { model: "Toyota" }, query: { price: 10100 } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,

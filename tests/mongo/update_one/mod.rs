@@ -6,7 +6,9 @@ async fn update_one() {
         r#"
         mutation {
             create_user(create_user_input: { values: { name: "Johnny", age: 1, married: false, email: "johnny@noemail.com" } }) {
-                _id
+                data {
+                    _id
+                }
             }
         }
         "#,
@@ -16,7 +18,9 @@ async fn update_one() {
         r#"
         mutation {
             update_user(update_user_input: { values: { age: 3 }, query: { name: "Johnny" } }) {
-                _id
+                data {
+                    _id
+                }
             }
         }
         "#,

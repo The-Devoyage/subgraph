@@ -6,7 +6,9 @@ async fn update_many() {
         r#"
         mutation {
             create_coffee(create_coffee_input: { values: { name: "Starbucks", price: 5, available: true, created_by: "6510865e93142f6d61b10dd8" } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -16,7 +18,9 @@ async fn update_many() {
         r#"
         mutation {
             update_coffees(update_coffees_input: { values: { price: 7 }, query: { name: "Starbucks" } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
