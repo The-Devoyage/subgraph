@@ -207,6 +207,7 @@ impl ServiceResolver {
             }
         }
 
+        trace!("Query document: {:?}", query_document);
         Ok(query_document.clone())
     }
 }
