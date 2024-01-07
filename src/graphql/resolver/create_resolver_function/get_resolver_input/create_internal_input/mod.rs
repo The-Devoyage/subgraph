@@ -2,10 +2,14 @@ use async_graphql::dynamic::ResolverContext;
 use bson::{doc, Document};
 use log::debug;
 
-use crate::configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig;
+use crate::{
+    configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
+    data_sources::DataSource,
+};
 
 use super::ServiceResolver;
 
+mod combine_http_input_value;
 mod combine_input_value;
 mod get_parent_value;
 
@@ -15,6 +19,7 @@ impl ServiceResolver {
     pub fn create_internal_input(
         ctx: &ResolverContext,
         as_type_field: ServiceEntityFieldConfig,
+        data_source: &DataSource,
     ) -> Result<Option<Document>, async_graphql::Error> {
         debug!("Creating Internal Input: {:?}", ctx.field().name());
         debug!("As Type Field: {:?}", as_type_field);
@@ -62,13 +67,28 @@ impl ServiceResolver {
             .unwrap()
             .clone();
 
-        query_input = ServiceResolver::combine_input_value(
-            &parent_value,
-            &mut query_input,
-            &field_name,
-            &scalar,
-            &join_on,
-        )?;
+        let is_http_ds = match data_source {
+            DataSource::HTTP(_) => true,
+            _ => false,
+        };
+
+        if is_http_ds {
+            query_input = ServiceResolver::combine_http_input_value(
+                &parent_value,
+                &mut query_input,
+                &field_name,
+                &scalar,
+                &join_on,
+            )?;
+        } else {
+            query_input = ServiceResolver::combine_input_value(
+                &parent_value,
+                &mut query_input,
+                &field_name,
+                &scalar,
+                &join_on,
+            )?;
+        }
 
         if query_input.is_empty() {
             debug!("Empty Internal Query Input.");

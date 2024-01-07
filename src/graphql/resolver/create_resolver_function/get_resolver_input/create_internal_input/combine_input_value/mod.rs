@@ -25,9 +25,8 @@ impl ServiceResolver {
         // Declare the new query input.
         let mut query_input = Document::new();
 
-        // Add the `AND` filter, which is an empty vector.
+        // Add the `AND` and `OR` filter, which is an empty vector.
         query_input.insert::<_, Vec<Bson>>("AND", vec![]);
-        // Add the `OR` filter, which is an empty vector.
         query_input.insert::<_, Vec<Bson>>("OR", vec![]);
 
         // Add the original parent value to the `AND` filter.
@@ -47,7 +46,7 @@ impl ServiceResolver {
         match scalar {
             ScalarOptions::String | ScalarOptions::UUID | ScalarOptions::DateTime => {
                 if is_list {
-                    debug!("Combining String Value With Input - Is List");
+                    trace!("Combining String Value With Input - Is List");
                     // Check that all values in array are of type string.
                     let valid_strings = parent_value
                         .get_array(&field_name)
@@ -56,6 +55,10 @@ impl ServiceResolver {
                         .all(|v| v.as_str().is_some());
 
                     if !valid_strings {
+                        error!(
+                            "Invalid value provided for field: {}. Value is not of type `string`.",
+                            field_name
+                        );
                         return Err(async_graphql::Error::from(format!(
                             "Invalid value provided for field: {}. All values are not of type `string`.",
                             field_name
@@ -84,9 +87,9 @@ impl ServiceResolver {
                 }
             }
             ScalarOptions::Int => {
-                debug!("Combining Int Value With Input");
+                trace!("Combining Int Value With Input");
                 if is_list {
-                    debug!("Combining Int Value With Input - Is List");
+                    trace!("Combining Int Value With Input - Is List");
                     // Check that all values in array are of type int.
                     let valid_ints = parent_value
                         .get_array(&field_name)
@@ -95,6 +98,7 @@ impl ServiceResolver {
                         .all(|v| v.as_i32().is_some());
 
                     if !valid_ints {
+                        error!("Invalid value provided for field: {}. All values are not of type `int`.", field_name);
                         return Err(async_graphql::Error::from(format!(
                             "Invalid value provided for field: {}. All values are not of type `int`.",
                             field_name
@@ -123,9 +127,9 @@ impl ServiceResolver {
                 }
             }
             ScalarOptions::Boolean => {
-                debug!("Combining Boolean Value With Input");
+                trace!("Combining Boolean Value With Input");
                 if is_list {
-                    debug!("Combining Boolean Value With Input - Is List");
+                    trace!("Combining Boolean Value With Input - Is List");
                     // Check that all values in array are of type bool.
                     let valid_bools = parent_value
                         .get_array(&field_name)
@@ -134,6 +138,7 @@ impl ServiceResolver {
                         .all(|v| v.as_bool().is_some());
 
                     if !valid_bools {
+                        error!("Invalid value provided for field: {}. All values are not of type `bool`.", field_name);
                         return Err(async_graphql::Error::from(format!(
                             "Invalid value provided for field: {}. All values are not of type `bool`.",
                             field_name
@@ -162,7 +167,7 @@ impl ServiceResolver {
                 }
             }
             ScalarOptions::ObjectID => {
-                debug!("Combining ObjectID Value With Input");
+                trace!("Combining ObjectID Value With Input");
                 if is_list {
                     debug!("Combining ObjectID Value With Input - Is List");
 
@@ -174,6 +179,7 @@ impl ServiceResolver {
                         .all(|v| v.as_object_id().is_some());
 
                     if !valid_object_ids {
+                        error!("Invalid value provided for field: {}. All values are not of type `ObjectID`.", field_name);
                         return Err(async_graphql::Error::from(format!(
                             "Invalid value provided for field: {}. All values are not of type `ObjectID`.",
                             field_name

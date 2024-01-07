@@ -47,8 +47,13 @@ impl ServiceResolver {
                     token_data = ServiceResolver::get_token_data(&ctx, headers.clone())?;
                 }
 
-                let input_document =
-                    ServiceResolver::get_resolver_input(&ctx, &as_field, &resolver_type)?;
+                let input_document = ServiceResolver::get_resolver_input(
+                    &ctx,
+                    &as_field,
+                    &resolver_type,
+                    &data_sources,
+                    &entity,
+                )?;
 
                 // If input document is none, then return none.
                 // This is the case when peforming internal joins without any provided input from
