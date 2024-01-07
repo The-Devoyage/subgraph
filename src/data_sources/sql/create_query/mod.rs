@@ -44,6 +44,7 @@ impl SqlDataSource {
                 &subgraph_config,
                 false,
             )?;
+        let mut count_query = None;
 
         // Generate the query string and get the where values.
         let query = match resolver_type {
@@ -60,16 +61,18 @@ impl SqlDataSource {
                 query_string
             }
             ResolverType::FindMany => {
-                let (query_string, combined_where_values) = SqlDataSource::create_find_many_query(
-                    &entity,
-                    table_name,
-                    &dialect,
-                    &input,
-                    subgraph_config,
-                    Some(join_clauses),
-                    false,
-                )?;
+                let (query_string, combined_where_values, count_q) =
+                    SqlDataSource::create_find_many_query(
+                        &entity,
+                        table_name,
+                        &dialect,
+                        &input,
+                        subgraph_config,
+                        Some(join_clauses),
+                        false,
+                    )?;
                 where_values = combined_where_values;
+                count_query = Some(count_q);
                 query_string
             }
             ResolverType::CreateOne => {
@@ -104,6 +107,7 @@ impl SqlDataSource {
 
         let sql_query = SqlQuery {
             query,
+            count_query,
             where_keys,
             where_values,
             value_keys,

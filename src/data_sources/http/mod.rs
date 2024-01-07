@@ -96,8 +96,9 @@ impl HttpDataSource {
                         executed_at: chrono::Utc::now()
                             .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
                         count: 1,
-                        total: 1,
+                        total_count: 1,
                         page: 1,
+                        total_pages: 1,
                         user_uuid: None,
                     },
                 };
@@ -119,8 +120,9 @@ impl HttpDataSource {
                         executed_at: chrono::Utc::now()
                             .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
                         count: count as i64,
-                        total: count as i64,
+                        total_count: count as i64,
                         page: 1,
+                        total_pages: 1,
                         user_uuid: None,
                     },
                 };
@@ -138,8 +140,9 @@ impl HttpDataSource {
                         executed_at: chrono::Utc::now()
                             .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
                         count: 1,
-                        total: 1,
+                        total_count: 1,
                         page: 1,
+                        total_pages: 1,
                         user_uuid: None,
                     },
                 };
@@ -157,8 +160,9 @@ impl HttpDataSource {
                         executed_at: chrono::Utc::now()
                             .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
                         count: 1,
-                        total: 1,
+                        total_count: 1,
                         page: 1,
+                        total_pages: 1,
                         user_uuid: None,
                     },
                 };
@@ -180,8 +184,9 @@ impl HttpDataSource {
                         executed_at: chrono::Utc::now()
                             .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
                         count: count as i64,
-                        total: count as i64,
+                        total_count: count as i64,
                         page: 1,
+                        total_pages: 1,
                         user_uuid: None,
                     },
                 };

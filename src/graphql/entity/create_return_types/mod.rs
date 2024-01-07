@@ -16,8 +16,9 @@ use super::ServiceEntity;
 pub struct ResolverResponseMeta {
     pub request_id: String,
     pub count: i64,
-    pub total: i64,
+    pub total_count: i64,
     pub page: i64,
+    pub total_pages: i64,
     pub service_name: String,
     pub executed_at: String,
     pub service_version: Option<String>,
@@ -302,7 +303,7 @@ impl ServiceEntity {
         ));
 
         meta_return_type = meta_return_type.field(Field::new(
-            "total",
+            "total_count",
             TypeRef::named_nn(TypeRef::INT),
             move |ctx| {
                 FieldFuture::new(async move {
@@ -314,9 +315,9 @@ impl ServiceEntity {
                             async_graphql::Error::new("Error getting meta total.");
                             e
                         })?;
-                    let total = meta.total;
+                    let total_count = meta.total_count;
 
-                    Ok(Some(Value::from(total)))
+                    Ok(Some(Value::from(total_count)))
                 })
             },
         ));
@@ -337,6 +338,26 @@ impl ServiceEntity {
                     let page = meta.page;
 
                     Ok(Some(Value::from(page)))
+                })
+            },
+        ));
+
+        meta_return_type = meta_return_type.field(Field::new(
+            "total_pages",
+            TypeRef::named_nn(TypeRef::INT),
+            move |ctx| {
+                FieldFuture::new(async move {
+                    let meta = ctx
+                        .parent_value
+                        .try_downcast_ref::<ResolverResponseMeta>()
+                        .map_err(|e| {
+                            error!("Error: {:?}", e);
+                            async_graphql::Error::new("Error getting meta page_size.");
+                            e
+                        })?;
+                    let total_pages = meta.total_pages;
+
+                    Ok(Some(Value::from(total_pages)))
                 })
             },
         ));

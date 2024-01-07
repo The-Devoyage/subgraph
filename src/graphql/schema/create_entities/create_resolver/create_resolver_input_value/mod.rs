@@ -1,6 +1,6 @@
 use crate::{
     configuration::subgraph::entities::ServiceEntityConfig,
-    data_sources::DataSources,
+    data_sources::{DataSource, DataSources},
     graphql::{
         input::ServiceInput,
         schema::{ExcludeFromInput, ResolverType, ServiceSchemaBuilder},
@@ -71,7 +71,7 @@ impl ServiceSchemaBuilder {
             let rest_inputs = ServiceInput::new(
                 query_input_name.clone(),
                 entity.fields.clone(),
-                resolver_type.clone(), // NOTE: Previsously had find one here
+                resolver_type.clone(),
                 exclude_from_input,
                 entity_data_source.clone(),
             )
@@ -81,6 +81,16 @@ impl ServiceSchemaBuilder {
                 "query",
                 TypeRef::named_nn(query_input_name.clone()),
             ));
+            let is_http_ds = match entity_data_source {
+                DataSource::HTTP(_) => true,
+                _ => false,
+            };
+            if resolver_type == &ResolverType::FindMany && !is_http_ds {
+                root_input = root_input.field(InputValue::new(
+                    "opts",
+                    TypeRef::named("options_input".to_string()),
+                ));
+            }
 
             inputs.extend(rest_inputs);
         }
@@ -119,7 +129,7 @@ impl ServiceSchemaBuilder {
             let rest_inputs = ServiceInput::new(
                 values_input_name.clone(),
                 entity.fields.clone(),
-                resolver_type.clone(), // NOTE: Previously had FINDONE here.
+                resolver_type.clone(),
                 exclude_from_input,
                 entity_data_source.clone(),
             )

@@ -8,6 +8,7 @@ use super::ServiceSchemaBuilder;
 use log::debug;
 
 mod create_entity_type_defs;
+mod create_options_input;
 mod create_resolver;
 
 impl ServiceSchemaBuilder {
@@ -15,6 +16,9 @@ impl ServiceSchemaBuilder {
         debug!("Creating Entities Config");
         debug!("Entities: {:?}", self.subgraph_config.service.entities);
         let entities = self.subgraph_config.service.entities.clone();
+
+        // Create shared options input
+        self = self.create_options_input();
 
         for entity in entities.iter() {
             self = self.create_entity_type_defs(entity);

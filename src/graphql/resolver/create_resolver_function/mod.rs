@@ -86,7 +86,7 @@ impl ServiceResolver {
                     service_guards.clone(),
                     &resolver_type,
                     headers,
-                    token_data,
+                    &token_data,
                     &data_sources,
                     &subgraph_config,
                 )
@@ -111,6 +111,7 @@ impl ServiceResolver {
                     entity,
                     operation_type,
                     &subgraph_config,
+                    &token_data,
                 )
                 .await?;
 

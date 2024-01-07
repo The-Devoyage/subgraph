@@ -32,7 +32,7 @@ impl ServiceResolver {
         service_guards: Option<Vec<Guard>>,
         resolver_type: &ResolverType,
         headers: HeaderMap,
-        token_data: Option<TokenData>,
+        token_data: &Option<TokenData>,
         data_sources: &DataSources,
         subgraph_config: &SubGraphConfig,
     ) -> Result<HashMapContext, async_graphql::Error> {
@@ -86,7 +86,7 @@ impl ServiceResolver {
             subgraph_config,
             guard_context,
             headers.clone(),
-            token_data.clone(),
+            token_data,
             resolver_type,
             input_document.clone(),
         )
@@ -99,7 +99,7 @@ impl ServiceResolver {
         // Re-create the evalexpr context including the data context
         guard_context = Guard::create_guard_context(
             headers,
-            token_data,
+            token_data.clone(),
             input_document.clone(),
             resolver_type.to_string(),
             Some(data_context),
@@ -177,7 +177,7 @@ impl ServiceResolver {
         subgraph_config: &SubGraphConfig,
         mut guard_context: HashMapContext,
         headers: HeaderMap,
-        token_data: Option<TokenData>,
+        token_data: &Option<TokenData>,
         resolver_type: &ResolverType,
         input: Document,
     ) -> Result<Value, async_graphql::Error> {
@@ -266,6 +266,7 @@ impl ServiceResolver {
                 entity.clone(),
                 ResolverType::FindMany,
                 subgraph_config,
+                token_data,
             )
             .await?;
 

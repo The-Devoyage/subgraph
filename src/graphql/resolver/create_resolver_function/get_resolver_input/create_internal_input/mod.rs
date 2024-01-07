@@ -95,9 +95,21 @@ impl ServiceResolver {
             return Ok(None);
         }
 
+        let opts_input = field_input.get("opts").map(|opts| opts.clone());
+        let opts_doc = match opts_input {
+            Some(opts_input) => opts_input.as_document().unwrap().clone(),
+            None => {
+                let mut d = Document::new();
+                d.insert("per_page", 10);
+                d.insert("page", 1);
+                d
+            }
+        };
+
         // Recreate the input with the new query input.
         let field_input = doc! {
             "query": query_input,
+            "opts": opts_doc,
         };
 
         debug!("Internal Input: {:?}", field_input);

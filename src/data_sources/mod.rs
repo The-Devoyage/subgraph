@@ -7,7 +7,7 @@ use crate::{
     configuration::subgraph::{
         data_sources::ServiceDataSourceConfig, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    graphql::schema::ResolverType,
+    graphql::schema::{create_auth_service::TokenData, ResolverType},
 };
 
 pub mod http;
@@ -26,6 +26,8 @@ pub struct DataSources {
     sources: Vec<DataSource>,
     subgraph_config: SubGraphConfig,
 }
+
+pub struct TotalCount(i64);
 
 impl DataSources {
     /// Initialize Data Sources
@@ -106,6 +108,7 @@ impl DataSources {
         entity: ServiceEntityConfig,
         resolver_type: ResolverType,
         subgraph_config: &SubGraphConfig,
+        token_data: &Option<TokenData>,
     ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
         debug!("Executing Datasource Operation");
 
@@ -136,6 +139,7 @@ impl DataSources {
                 cloned_entity,
                 resolver_type,
                 subgraph_config,
+                token_data,
             )
             .await?),
         }

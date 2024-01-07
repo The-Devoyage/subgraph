@@ -1,7 +1,7 @@
 use std::{path::Path, str::FromStr};
 
 use async_graphql::dynamic::FieldValue;
-use bson::Document;
+use bson::{to_document, Document};
 use log::{debug, error, info};
 use sqlx::{sqlite::SqliteConnectOptions, MySql, Pool, Postgres, Sqlite};
 
@@ -14,7 +14,7 @@ use crate::{
     },
     graphql::{
         entity::create_return_types::{ResolverResponse, ResolverResponseMeta},
-        schema::ResolverType,
+        schema::{create_auth_service::TokenData, ResolverType},
     },
 };
 
@@ -61,6 +61,7 @@ pub enum SqlValueEnum {
 #[derive(Debug, Clone)]
 pub struct SqlQuery {
     query: String,
+    count_query: Option<String>,
     values: Vec<SqlValueEnum>,
     value_keys: Vec<String>,
     where_values: Vec<SqlValueEnum>,
@@ -189,6 +190,7 @@ impl SqlDataSource {
         entity: ServiceEntityConfig,
         resolver_type: ResolverType,
         subgraph_config: &SubGraphConfig,
+        token_data: &Option<TokenData>,
     ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
         debug!("Executing SQL Operation");
 
@@ -213,13 +215,19 @@ impl SqlDataSource {
         }
 
         let query = SqlDataSource::create_query(
-            input,
+            input.clone(),
             resolver_type,
             &table,
             data_source.config.dialect.clone(),
             &entity,
             &subgraph_config,
         )?;
+
+        let user_uuid = if token_data.is_some() {
+            Some(token_data.as_ref().unwrap().user_uuid.to_string())
+        } else {
+            None
+        };
 
         // Return the result from the database as a FieldValue
         match resolver_type {
@@ -234,16 +242,27 @@ impl SqlDataSource {
                         executed_at: chrono::Utc::now()
                             .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
                         count: 1,
-                        total: 1,
+                        total_count: 1,
                         page: 1,
-                        user_uuid: None,
+                        total_pages: 1,
+                        user_uuid,
                     },
                 };
                 Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::FindMany => {
-                let entities = services::Services::find_many(&data_source.pool, &query).await?;
+                let (entities, total_count) =
+                    services::Services::find_many(&data_source.pool, &query).await?;
                 let count = entities.len();
+                let opts_doc = if input.clone().get("opts").is_some() {
+                    to_document(input.get("opts").unwrap()).unwrap()
+                } else {
+                    let mut d = Document::new();
+                    d.insert("per_page", 10);
+                    d.insert("page", 1);
+                    d
+                };
+                let per_page = opts_doc.get("per_page").unwrap().as_i32().unwrap();
                 let res = ResolverResponse {
                     data: entities
                         .into_iter()
@@ -256,9 +275,10 @@ impl SqlDataSource {
                         executed_at: chrono::Utc::now()
                             .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
                         count: count as i64,
-                        total: count as i64,
-                        page: 1,
-                        user_uuid: None,
+                        total_count: total_count.0,
+                        page: opts_doc.get("page").unwrap().as_i32().unwrap() as i64,
+                        total_pages: (total_count.0 / per_page as i64) + 1,
+                        user_uuid,
                     },
                 };
 
@@ -283,9 +303,10 @@ impl SqlDataSource {
                         executed_at: chrono::Utc::now()
                             .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
                         count: 1,
-                        total: 1,
+                        total_count: 1,
                         page: 1,
-                        user_uuid: None,
+                        total_pages: 1,
+                        user_uuid,
                     },
                 };
 
@@ -309,9 +330,10 @@ impl SqlDataSource {
                         executed_at: chrono::Utc::now()
                             .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
                         count: 1,
-                        total: 1,
+                        total_count: 1,
                         page: 1,
-                        user_uuid: None,
+                        total_pages: 1,
+                        user_uuid,
                     },
                 };
                 Ok(Some(FieldValue::owned_any(res)))
@@ -338,9 +360,10 @@ impl SqlDataSource {
                         executed_at: chrono::Utc::now()
                             .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
                         count: count as i64,
-                        total: count as i64,
+                        total_count: count as i64,
                         page: 1,
-                        user_uuid: None,
+                        total_pages: 1,
+                        user_uuid,
                     },
                 };
                 Ok(Some(FieldValue::owned_any(res)))

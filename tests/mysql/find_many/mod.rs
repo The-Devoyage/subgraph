@@ -108,3 +108,73 @@ async fn find_many_with_eager_loading_1() {
     let data = response.data.into_json().unwrap();
     assert_eq!(data["get_cars"]["data"][0]["id"], 1);
 }
+
+#[tokio::test]
+async fn find_many_with_pagination() {
+    for _i in 1..=10 {
+        let request = async_graphql::Request::new(
+            r#"
+                mutation {
+                    create_car(create_car_input: { values: { model: "Paginate", price: 10100 status: true } }) {
+                        data {
+                            id
+                        }
+                    }
+                }
+            "#,
+        );
+
+        let response = execute(request, None).await;
+        assert!(response.is_ok());
+    }
+
+    let request = async_graphql::Request::new(
+        r#"
+        query {
+            get_cars(get_cars_input: { query: { model: "Paginate" },  opts: { page: 1, per_page: 3 } }) {
+                data {
+                    id
+                }
+                meta {
+                    count
+                    total_count
+                    page
+                    total_pages
+                }
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
+    let json = response.data.into_json().unwrap();
+    let meta = json.get("get_cars").unwrap().get("meta").unwrap();
+    assert_eq!(meta.get("count").unwrap().as_i64().unwrap(), 3);
+    assert!(meta.get("total_count").unwrap().as_i64().unwrap() > 9);
+    assert_eq!(meta.get("page").unwrap().as_i64().unwrap(), 1);
+
+    let request = async_graphql::Request::new(
+        r#"
+        query {
+            get_cars(get_cars_input: { query: { model: "Paginate" },  opts: { page: 2, per_page: 3 } }) {
+                data {
+                    id
+                }
+                meta {
+                    count
+                    total_count
+                    page
+                    total_pages
+                }
+            }
+        }
+        "#,
+    );
+
+    let response = execute(request, None).await;
+    let json = response.data.into_json().unwrap();
+    let meta = json.get("get_cars").unwrap().get("meta").unwrap();
+    assert_eq!(meta.get("count").unwrap().as_i64().unwrap(), 3);
+    assert!(meta.get("total_count").unwrap().as_i64().unwrap() > 9);
+    assert_eq!(meta.get("page").unwrap().as_i64().unwrap(), 2);
+}
