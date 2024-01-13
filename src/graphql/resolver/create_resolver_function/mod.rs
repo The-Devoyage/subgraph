@@ -1,11 +1,14 @@
 use async_graphql::{
-    dynamic::{FieldFuture, ResolverContext},
+    dynamic::{FieldFuture, FieldValue, ResolverContext},
     SelectionField,
 };
 use http::HeaderMap;
 use log::debug;
 
-use crate::data_sources::DataSources;
+use crate::{
+    data_sources::DataSources,
+    graphql::entity::create_return_types::{ResolverResponse, ResolverResponseMeta},
+};
 
 use super::ServiceResolver;
 
@@ -55,11 +58,31 @@ impl ServiceResolver {
                     &entity,
                 )?;
 
-                // If input document is none, then return none.
+                // If input document is none, then return none for the resolver response data.
                 // This is the case when peforming internal joins without any provided input from
                 // the ds or the client and is not an error, but should not be resolved.
                 if input_document.is_none() {
-                    return Ok(None);
+                    let user_uuid = if token_data.is_some() {
+                        Some(token_data.as_ref().unwrap().user_uuid.to_string())
+                    } else {
+                        None
+                    };
+                    let response = ResolverResponse {
+                        data: vec![],
+                        meta: ResolverResponseMeta {
+                            request_id: uuid::Uuid::new_v4().to_string(),
+                            service_name: subgraph_config.service.name.clone(),
+                            service_version: subgraph_config.service.version.clone(),
+                            executed_at: chrono::Utc::now()
+                                .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                            count: 0,
+                            total_count: 0,
+                            page: 0,
+                            total_pages: 0,
+                            user_uuid,
+                        },
+                    };
+                    return Ok(Some(FieldValue::owned_any(response)));
                 }
 
                 let selection_fields = ctx
