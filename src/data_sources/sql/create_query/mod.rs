@@ -16,7 +16,6 @@ pub mod create_find_one_query;
 pub mod create_nested_query_recursive;
 pub mod create_update_many_query;
 pub mod create_update_one_query;
-pub mod create_update_return_key_data;
 pub mod create_where_clause;
 pub mod get_key_data;
 pub mod get_placeholder;
@@ -83,7 +82,7 @@ impl SqlDataSource {
                 SqlDataSource::create_create_one_query(table_name, &value_keys, &dialect)?
             }
             ResolverType::UpdateOne => {
-                let (query_string, combined_where_value, combined_where_keys) =
+                let (query_string, combined_where_value, combined_where_keys, identifier_q) =
                     SqlDataSource::create_update_one_query(
                         &entity,
                         table_name,
@@ -94,6 +93,7 @@ impl SqlDataSource {
                     )?;
                 where_values = combined_where_value;
                 where_keys = combined_where_keys;
+                identifier_query = Some(identifier_q);
                 query_string
             }
             ResolverType::UpdateMany => {

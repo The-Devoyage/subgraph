@@ -452,7 +452,8 @@ impl MongoDataSource {
                 Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::UpdateOne => {
-                let result = services::Services::update_one(db, input, collection_name).await?;
+                let result =
+                    services::Services::update_one(db, input, collection_name, &entity).await?;
                 let res = ResolverResponse {
                     data: vec![FieldValue::owned_any(result)],
                     meta: ResolverResponseMeta {

@@ -266,6 +266,9 @@ impl SqlDataSource {
                     d
                 };
                 trace!("opts_doc: {:?}", opts_doc);
+                let page = opts_doc
+                    .get_i64("page")
+                    .unwrap_or(opts_doc.get_i32("page").unwrap_or(1) as i64);
                 let per_page = opts_doc
                     .get_i64("per_page")
                     .unwrap_or(opts_doc.get_i32("per_page").unwrap_or(10) as i64);
@@ -283,7 +286,7 @@ impl SqlDataSource {
                             .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
                         count: count as i64,
                         total_count: total_count.0,
-                        page: opts_doc.get("page").unwrap().as_i32().unwrap() as i64,
+                        page,
                         total_pages: if per_page == -1 {
                             1
                         } else {
@@ -324,14 +327,8 @@ impl SqlDataSource {
                 Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::UpdateOne => {
-                let result = services::Services::update_one(
-                    &entity,
-                    &data_source.pool,
-                    &query,
-                    data_source.config.dialect.clone(),
-                    &subgraph_config,
-                )
-                .await?;
+                let result =
+                    services::Services::update_one(&entity, &data_source.pool, &query).await?;
                 let res = ResolverResponse {
                     data: vec![FieldValue::owned_any(result)],
                     meta: ResolverResponseMeta {

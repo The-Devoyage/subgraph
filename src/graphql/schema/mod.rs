@@ -21,6 +21,12 @@ pub enum ResolverType {
     InternalType,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+pub struct SortInput {
+    pub field: String,
+    pub direction: String,
+}
+
 impl Display for ResolverType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

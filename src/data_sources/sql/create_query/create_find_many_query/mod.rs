@@ -6,6 +6,7 @@ use crate::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
     data_sources::sql::{SqlDataSource, SqlValueEnum},
+    graphql::schema::SortInput,
 };
 
 use super::{create_nested_query_recursive::FilterOperator, JoinClauses};
@@ -75,8 +76,7 @@ impl SqlDataSource {
         let opts_input = input.get("opts");
         let mut per_page = 10;
         let mut page = 1;
-        let mut sort: Option<&str> = None;
-        let mut order = "ASC";
+        let mut sort_vec = Vec::new();
 
         if let Some(opts_input) = opts_input {
             let opts = opts_input.as_document().unwrap();
@@ -90,16 +90,48 @@ impl SqlDataSource {
                     .as_i32()
                     .unwrap_or(page_input.as_i64().unwrap_or(1) as i32);
             }
+
             if let Some(sort_input) = opts.get("sort") {
-                sort = Some(sort_input.as_str().unwrap());
-            }
-            if let Some(order_input) = opts.get("order") {
-                order = order_input.as_str().unwrap();
+                let sort_input = sort_input.as_array().unwrap(); // Ok to unwrap, graphql checks
+                                                                 // this.
+                for sort_item in sort_input {
+                    let sort_item = sort_item.as_document().unwrap();
+                    let field = sort_item.get("field").unwrap();
+                    let field = field.as_str().unwrap();
+                    let direction = sort_item.get("direction").unwrap();
+                    let direction = direction.as_str().unwrap();
+                    sort_vec.push(SortInput {
+                        field: field.to_string(),
+                        direction: direction.to_string(),
+                    });
+                }
             }
         }
 
-        if let Some(sort) = sort {
-            query.push_str(&format!(" ORDER BY {} {}", sort, order));
+        if sort_vec.len() > 0 {
+            // If postgres, we need to add the sort fields to the group by clause
+            if dialect == &DialectEnum::POSTGRES {
+                query.push_str(" GROUP BY ");
+                count_query.push_str(" GROUP BY ");
+                for (i, sort_item) in sort_vec.iter().enumerate() {
+                    if i > 0 {
+                        query.push_str(", ");
+                        count_query.push_str(", ");
+                    }
+                    query.push_str(&format!("{} ", sort_item.field));
+                    count_query.push_str(&format!("{} ", sort_item.field));
+                }
+            }
+            query.push_str(" ORDER BY ");
+            count_query.push_str(" ORDER BY ");
+            for (i, sort_item) in sort_vec.iter().enumerate() {
+                if i > 0 {
+                    query.push_str(", ");
+                    count_query.push_str(", ");
+                }
+                query.push_str(&format!("{} {}", sort_item.field, sort_item.direction));
+                count_query.push_str(&format!("{} {}", sort_item.field, sort_item.direction));
+            }
         }
 
         if per_page != -1 {

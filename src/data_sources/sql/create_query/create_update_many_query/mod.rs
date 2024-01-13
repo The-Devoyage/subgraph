@@ -77,6 +77,10 @@ impl SqlDataSource {
             query.push(';');
         }
 
+        if !identifier_query.ends_with(';') {
+            identifier_query.push(';');
+        }
+
         debug!("Update Many Query: {}", query);
         Ok((
             query,

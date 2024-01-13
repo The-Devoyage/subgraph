@@ -1,3 +1,4 @@
+use async_graphql::ErrorExtensions;
 use log::{debug, error};
 use sqlx::{mysql::MySqlArguments, MySql, Row};
 
@@ -80,6 +81,7 @@ impl Services {
                 let rows = query.fetch_all(pool).await.map_err(|e| {
                     error!("Error executing query: {:?}", e);
                     async_graphql::Error::new("Error executing query.")
+                        .extend_with(|_, err| err.set("cause", e.to_string()))
                 })?;
 
                 let mut response_rows = Vec::new();
@@ -90,6 +92,7 @@ impl Services {
                 let count = count_query.fetch_one(pool).await.map_err(|e| {
                     error!("Error executing query: {:?} \n Error: {:?}", sql_query, e);
                     async_graphql::Error::new("Error executing query.")
+                        .extend_with(|_, err| err.set("cause", e.to_string()))
                 })?;
 
                 let total_count = count.try_get("total_count").unwrap_or(0);
@@ -160,6 +163,7 @@ impl Services {
                 let rows = query.fetch_all(pool).await.map_err(|e| {
                     error!("Error executing query: {:?} \n Error: {:?}", sql_query, e);
                     async_graphql::Error::new("Error executing query.")
+                        .extend_with(|_, err| err.set("cause", e.to_string()))
                 })?;
 
                 let mut response_rows = Vec::new();
@@ -170,6 +174,7 @@ impl Services {
                 let count = count_query.fetch_one(pool).await.map_err(|e| {
                     error!("Error executing query: {:?} \n Error: {:?}", sql_query, e);
                     async_graphql::Error::new("Error executing query.")
+                        .extend_with(|_, err| err.set("cause", e.to_string()))
                 })?;
 
                 let total_count = count.try_get("total_count").unwrap_or(0);
@@ -240,6 +245,7 @@ impl Services {
                 let rows = query.fetch_all(pool).await.map_err(|e| {
                     error!("Error executing query: {:?} \n Error: {:?}", sql_query, e);
                     async_graphql::Error::new("Error executing query.")
+                        .extend_with(|_, err| err.set("cause", e.to_string()))
                 })?;
 
                 let mut response_rows = Vec::new();
@@ -250,6 +256,7 @@ impl Services {
                 let count = count_query.fetch_one(pool).await.map_err(|e| {
                     error!("Error executing query: {:?} \n Error: {:?}", sql_query, e);
                     async_graphql::Error::new("Error executing query.")
+                        .extend_with(|_, err| err.set("cause", e.to_string()))
                 })?;
 
                 let total_count = count.try_get("total_count").unwrap_or(0);

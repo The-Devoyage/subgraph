@@ -26,10 +26,14 @@ impl Services {
                 let identifier_query = match &sql_query.identifier_query {
                     Some(query) => query,
                     None => {
+                        error!(
+                            "Identifier query not found for update_many on {}",
+                            entity.name
+                        );
                         return Err(async_graphql::Error::new(format!(
                             "Identifier query not found for update_many on {}",
                             entity.name
-                        )))
+                        )));
                     }
                 };
 
