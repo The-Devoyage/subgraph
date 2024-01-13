@@ -13,6 +13,7 @@
 - Join to HTTP Data Source Entities. Internal input created correctly.
 - SQL Datasources return incorrect results after update many. Now currently requires table to have ID column and \_id column (if mongo).
 - Mongo Datasource now only returns matched updated documents on find many instead of all documents that match the updated document.
+- Mongo Datasource now returns correct documents when updating one and using nested filtering.
 
 ## [v0.0.13]
 
