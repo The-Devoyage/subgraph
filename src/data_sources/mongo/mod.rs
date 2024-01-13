@@ -471,7 +471,8 @@ impl MongoDataSource {
                 Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::UpdateMany => {
-                let results = services::Services::update_many(db, input, collection_name).await?;
+                let results =
+                    services::Services::update_many(db, input, collection_name, &entity).await?;
                 let count = results.len();
                 let res = ResolverResponse {
                     data: results

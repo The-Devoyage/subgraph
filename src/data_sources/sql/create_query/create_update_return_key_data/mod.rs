@@ -1,5 +1,5 @@
 use crate::data_sources::sql::{SqlDataSource, SqlValueEnum};
-use log::debug;
+use log::{debug, trace};
 
 impl SqlDataSource {
     /// Iterates over the original query's where k/v pairs and update value k/v pairs.
@@ -12,6 +12,10 @@ impl SqlDataSource {
         sql_query_values: &Vec<SqlValueEnum>,
     ) -> Result<(Vec<String>, Vec<SqlValueEnum>), async_graphql::Error> {
         debug!("Creating Update Return Key Data");
+        trace!("sql_query_where_keys: {:?}", sql_query_where_keys);
+        trace!("sql_query_where_values: {:?}", sql_query_where_values);
+        trace!("sql_query_value_keys: {:?}", sql_query_value_keys);
+        trace!("sql_query_values: {:?}", sql_query_values);
         let mut where_keys = Vec::new();
         let mut where_values = Vec::new();
 
@@ -65,8 +69,8 @@ impl SqlDataSource {
             }
         }
 
-        debug!("Update Return Key Data: {:?}", where_keys);
-        debug!("Update Return Value Data: {:?}", where_values);
+        trace!("Update Return Key Data: {:?}", where_keys);
+        trace!("Update Return Value Data: {:?}", where_values);
         Ok((where_keys, where_values))
     }
 }

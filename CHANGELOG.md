@@ -6,10 +6,13 @@
 
 - New response layer with request metadata such as service name, version (new), pagination details, timestamp, and more.
 - Pagination for Database related data sources.
+- Primary key identifier added to the Service Entity Field Config.
 
 ### Fixed
 
 - Join to HTTP Data Source Entities. Internal input created correctly.
+- SQL Datasources return incorrect results after update many. Now currently requires table to have ID column and \_id column (if mongo).
+- Mongo Datasource now only returns matched updated documents on find many instead of all documents that match the updated document.
 
 ## [v0.0.13]
 

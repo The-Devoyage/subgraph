@@ -2,7 +2,7 @@ use std::{path::Path, str::FromStr};
 
 use async_graphql::dynamic::FieldValue;
 use bson::{to_document, Document};
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 use sqlx::{sqlite::SqliteConnectOptions, MySql, Pool, Postgres, Sqlite};
 
 use crate::{
@@ -62,6 +62,7 @@ pub enum SqlValueEnum {
 pub struct SqlQuery {
     query: String,
     count_query: Option<String>,
+    identifier_query: Option<String>,
     values: Vec<SqlValueEnum>,
     value_keys: Vec<String>,
     where_values: Vec<SqlValueEnum>,
@@ -255,14 +256,20 @@ impl SqlDataSource {
                     services::Services::find_many(&data_source.pool, &query).await?;
                 let count = entities.len();
                 let opts_doc = if input.clone().get("opts").is_some() {
+                    trace!("opts: {:?}", input.get("opts").unwrap());
                     to_document(input.get("opts").unwrap()).unwrap()
                 } else {
                     let mut d = Document::new();
                     d.insert("per_page", 10);
                     d.insert("page", 1);
+                    trace!("created opts: {:?}", d);
                     d
                 };
-                let per_page = opts_doc.get("per_page").unwrap().as_i32().unwrap();
+                trace!("opts_doc: {:?}", opts_doc);
+                let per_page = opts_doc
+                    .get_i64("per_page")
+                    .unwrap_or(opts_doc.get_i32("per_page").unwrap_or(10) as i64);
+                trace!("per_page: {:?}", per_page);
                 let res = ResolverResponse {
                     data: entities
                         .into_iter()
@@ -277,7 +284,11 @@ impl SqlDataSource {
                         count: count as i64,
                         total_count: total_count.0,
                         page: opts_doc.get("page").unwrap().as_i32().unwrap() as i64,
-                        total_pages: (total_count.0 / per_page as i64) + 1,
+                        total_pages: if per_page == -1 {
+                            1
+                        } else {
+                            (total_count.0 / per_page) + 1
+                        },
                         user_uuid,
                     },
                 };
@@ -339,14 +350,8 @@ impl SqlDataSource {
                 Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::UpdateMany => {
-                let results = services::Services::update_many(
-                    &entity,
-                    &data_source.pool,
-                    &query,
-                    data_source.config.dialect.clone(),
-                    &subgraph_config,
-                )
-                .await?;
+                let results =
+                    services::Services::update_many(&entity, &data_source.pool, &query).await?;
                 let count = results.len();
                 let res = ResolverResponse {
                     data: results

@@ -21,6 +21,7 @@ pub struct ServiceEntityFieldConfig {
     pub default_value: Option<String>,
     pub eager: Option<bool>,
     pub is_virtual: Option<bool>,
+    pub primary_key: Option<bool>,
 }
 
 impl ServiceEntityFieldConfig {

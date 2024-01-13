@@ -118,11 +118,13 @@ impl ServiceResolver {
                         query_input.get_array_mut("OR").unwrap().push(bson);
                     }
                 } else {
+                    trace!("Combining Int Value With Input - Is Not List");
                     let join_on_value = ServiceResolver::get_int_value(parent_value, field_name)?;
                     if join_on_value.is_some() {
                         let join_query = doc! { join_on: join_on_value };
                         let bson = bson::to_bson(&join_query).unwrap();
                         query_input.get_array_mut("AND").unwrap().push(bson);
+                        trace!("Join Query: {:?}", query_input);
                     }
                 }
             }

@@ -115,7 +115,7 @@ async fn find_many_with_pagination() {
         let request = async_graphql::Request::new(
             r#"
                 mutation {
-                    create_car(create_car_input: { values: { model: "Paginate", price: 10100 status: true } }) {
+                    create_car(create_car_input: { values: { model: "Paginate33", price: 120100, status: true } }) {
                         data {
                             id
                         }
@@ -131,7 +131,7 @@ async fn find_many_with_pagination() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_cars(get_cars_input: { query: { model: "Paginate" },  opts: { page: 1, per_page: 3 } }) {
+            get_cars(get_cars_input: { query: { model: "Paginate33" },  opts: { page: 1, per_page: 3 } }) {
                 data {
                     id
                 }
@@ -156,7 +156,7 @@ async fn find_many_with_pagination() {
     let request = async_graphql::Request::new(
         r#"
         query {
-            get_cars(get_cars_input: { query: { model: "Paginate" },  opts: { page: 2, per_page: 3 } }) {
+            get_cars(get_cars_input: { query: { model: "Paginate33" },  opts: { page: 2, per_page: 3 } }) {
                 data {
                     id
                 }

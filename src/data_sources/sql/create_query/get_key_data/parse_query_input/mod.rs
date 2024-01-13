@@ -44,6 +44,9 @@ impl SqlDataSource {
             trace!("Parsing Query Key: {:?}", key);
             let field = ServiceEntityConfig::get_field(entity.clone(), key.to_string())?;
 
+            let eager_input = value.as_document();
+            let disable_eager_loading = disable_eager_loading || eager_input.is_none();
+
             // Get the where key prefix
             let where_key_prefix = SqlDataSource::get_where_key_prefix(
                 &field,
@@ -56,8 +59,9 @@ impl SqlDataSource {
             // If the field is eager loaded, we can assume it is a object with many fields. Iterate
             // over the fields and return the keys.
             // Else, just return the key as is.
-            if field.eager.is_some() && !disable_eager_loading {
+            if field.eager.is_some() && !disable_eager_loading && eager_input.is_some() {
                 trace!("Parsing Eager Loaded Field");
+                let eager_input = eager_input.unwrap();
 
                 // Get the join clause and push it to the join clauses vector
                 let join_clause = SqlDataSource::get_join_clause(
@@ -71,16 +75,8 @@ impl SqlDataSource {
                     join_clauses.0.push(join_clause.unwrap());
                 }
 
-                let eager_input = match value.as_document() {
-                    Some(v) => Some(v),
-                    None => {
-                        error!("Invalid Eager Loaded Field: {:?}", value);
-                        return Err(async_graphql::Error::new("Invalid Eager Loaded Field"));
-                    }
-                };
-
                 let as_type = field.as_type;
-                for (key, nested_value) in eager_input.unwrap().iter() {
+                for (key, nested_value) in eager_input.iter() {
                     let (wk, wv, jc) = SqlDataSource::get_query_where_values(
                         nested_value,
                         dialect,
@@ -107,6 +103,7 @@ impl SqlDataSource {
                     }
                 }
             } else {
+                trace!("Parsing Non Eager Loaded Field");
                 let (parsed_where_keys, parsed_where_values, parsed_join_clauses) =
                     SqlDataSource::get_query_where_values(
                         value,

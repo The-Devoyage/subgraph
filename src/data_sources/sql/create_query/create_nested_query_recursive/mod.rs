@@ -1,5 +1,5 @@
 use bson::{doc, Bson};
-use log::debug;
+use log::{debug, trace};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -32,11 +32,13 @@ impl SqlDataSource {
         subgraph_config: &SubGraphConfig,
         join_clauses: Option<JoinClauses>,
         disable_eager_loading: bool,
-    ) -> Result<(Option<String>, Vec<SqlValueEnum>, JoinClauses), async_graphql::Error> {
+    ) -> Result<(Option<String>, Vec<SqlValueEnum>, JoinClauses, Vec<String>), async_graphql::Error>
+    {
         debug!("Creating Recursive Nested Query From: {:?}", inputs);
         debug!("Initial Join Clauses: {:?}", join_clauses);
         let mut nested_query = String::new();
         let mut combined_where_values = vec![];
+        let mut combined_where_keys = vec![];
         let mut combined_join_clauses = join_clauses.unwrap_or(JoinClauses(Vec::new()));
 
         // Possibly need this for postgres.
@@ -85,6 +87,7 @@ impl SqlDataSource {
 
             combined_join_clauses.0.extend(join_clauses.0);
             combined_where_values.extend(where_values.clone());
+            combined_where_keys.extend(where_keys.clone());
 
             let (parameterized_query, offset) = SqlDataSource::create_where_clause(
                 &where_keys,
@@ -106,7 +109,7 @@ impl SqlDataSource {
                 } else {
                     false
                 };
-                let (and_query, and_where_values, and_join_clauses) =
+                let (and_query, and_where_values, and_join_clauses, and_where_keys) =
                     SqlDataSource::create_nested_query_recursive(
                         is_first,
                         and_filters,
@@ -122,6 +125,7 @@ impl SqlDataSource {
 
                 combined_where_values.extend(and_where_values.clone());
                 combined_join_clauses.0.extend(and_join_clauses.0);
+                combined_where_keys.extend(and_where_keys.clone());
 
                 if let Some(and_query) = and_query {
                     nested_query.push_str(&and_query);
@@ -130,7 +134,7 @@ impl SqlDataSource {
 
             if or_filters.is_some() {
                 let or_filters = or_filters.unwrap().as_array().unwrap();
-                let (or_query, or_where_values, or_join_clauses) =
+                let (or_query, or_where_values, or_join_clauses, or_where_keys) =
                     SqlDataSource::create_nested_query_recursive(
                         is_first,
                         or_filters,
@@ -146,6 +150,7 @@ impl SqlDataSource {
 
                 combined_where_values.extend(or_where_values.clone());
                 combined_join_clauses.0.extend(or_join_clauses.0);
+                combined_where_keys.extend(or_where_keys.clone());
 
                 if let Some(or_query) = or_query {
                     nested_query.push_str(&or_query);
@@ -169,21 +174,28 @@ impl SqlDataSource {
         let is_empty = nested_query.contains("()");
         let is_empty_and = nested_query.contains("AND") && nested_query.contains("()");
         if is_empty || nested_query.is_empty() || is_empty_and {
-            return Ok((None, combined_where_values, combined_join_clauses));
+            return Ok((
+                None,
+                combined_where_values,
+                combined_join_clauses,
+                combined_where_keys,
+            ));
         }
 
         // Filter duplicates from the join clauses.
         combined_join_clauses.0.sort();
         combined_join_clauses.0.dedup();
 
-        debug!("Nested query: {}", nested_query);
-        debug!("Combined Where Values: {:?}", combined_where_values);
-        debug!("Combined Join Clauses: {:?}", combined_join_clauses);
+        trace!("Nested query: {}", nested_query);
+        trace!("Combined Where Values: {:?}", combined_where_values);
+        trace!("Combined Join Clauses: {:?}", combined_join_clauses);
+        trace!("Combined Where Keys: {:?}", combined_where_keys);
 
         Ok((
             Some(nested_query),
             combined_where_values,
             combined_join_clauses,
+            combined_where_keys,
         ))
     }
 }

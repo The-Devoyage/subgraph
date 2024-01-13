@@ -2,7 +2,7 @@ use crate::{
     configuration::subgraph::data_sources::sql::DialectEnum,
     data_sources::sql::{SqlDataSource, SqlValueEnum},
 };
-use log::{debug, error};
+use log::{debug, error, trace};
 
 impl SqlDataSource {
     pub fn create_where_clause(
@@ -12,8 +12,8 @@ impl SqlDataSource {
         where_values: &Vec<SqlValueEnum>,
     ) -> Result<(String, i32), async_graphql::Error> {
         debug!("Creating Where Clause");
-        debug!("Where Keys: {:?}", where_keys);
-        debug!("Where Values: {:?}", where_values);
+        trace!("Where Keys: {:?}", where_keys);
+        trace!("Where Values: {:?}", where_values);
         let parameterized_query = if !where_keys.is_empty() {
             let mut query = String::new();
 
@@ -87,7 +87,7 @@ impl SqlDataSource {
         } else {
             String::new()
         };
-        debug!("Where Clause: {}", parameterized_query);
+        trace!("Where Clause: {}", parameterized_query);
         Ok((parameterized_query, pg_param_offset.unwrap_or(0)))
     }
 }

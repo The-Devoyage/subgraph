@@ -18,7 +18,7 @@ impl SqlDataSource {
         input: &Document,
         subgraph_config: &SubGraphConfig,
         join_clauses: Option<JoinClauses>,
-    ) -> Result<(String, Vec<SqlValueEnum>), async_graphql::Error> {
+    ) -> Result<(String, Vec<SqlValueEnum>, Vec<String>), async_graphql::Error> {
         let mut query = String::new();
         let entity_table_name = if let Some(entity_ds) = entity.data_source.clone() {
             if entity_ds.table.is_some() {
@@ -41,7 +41,7 @@ impl SqlDataSource {
             }
         };
 
-        let (nested_query, combined_where_values, combined_join_clauses) =
+        let (nested_query, combined_where_values, combined_join_clauses, combined_where_keys) =
             SqlDataSource::create_nested_query_recursive(
                 true,
                 &vec![query_input.clone()],
@@ -71,6 +71,6 @@ impl SqlDataSource {
             query.push(';');
         }
 
-        Ok((query, combined_where_values))
+        Ok((query, combined_where_values, combined_where_keys))
     }
 }

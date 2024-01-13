@@ -19,7 +19,7 @@ impl SqlDataSource {
         subgraph_config: &SubGraphConfig,
         join_clauses: Option<JoinClauses>,
         disable_eager_loading: bool,
-    ) -> Result<(String, Vec<SqlValueEnum>, String), async_graphql::Error> {
+    ) -> Result<(String, Vec<SqlValueEnum>, String, Vec<String>), async_graphql::Error> {
         debug!("Creating Find Many Query");
 
         let mut query = String::new();
@@ -41,7 +41,7 @@ impl SqlDataSource {
         count_query.push_str(&count_statement);
 
         let query_input = input.get("query").unwrap();
-        let (nested_query, combined_where_values, combined_join_clauses) =
+        let (nested_query, combined_where_values, combined_join_clauses, combined_where_keys) =
             SqlDataSource::create_nested_query_recursive(
                 true,
                 &vec![query_input.clone()],
@@ -75,19 +75,37 @@ impl SqlDataSource {
         let opts_input = input.get("opts");
         let mut per_page = 10;
         let mut page = 1;
+        let mut sort: Option<&str> = None;
+        let mut order = "ASC";
 
         if let Some(opts_input) = opts_input {
             let opts = opts_input.as_document().unwrap();
             if let Some(per_page_input) = opts.get("per_page") {
-                per_page = per_page_input.as_i32().unwrap();
+                per_page = per_page_input
+                    .as_i32()
+                    .unwrap_or(per_page_input.as_i64().unwrap_or(10) as i32);
             }
             if let Some(page_input) = opts.get("page") {
-                page = page_input.as_i32().unwrap();
+                page = page_input
+                    .as_i32()
+                    .unwrap_or(page_input.as_i64().unwrap_or(1) as i32);
+            }
+            if let Some(sort_input) = opts.get("sort") {
+                sort = Some(sort_input.as_str().unwrap());
+            }
+            if let Some(order_input) = opts.get("order") {
+                order = order_input.as_str().unwrap();
             }
         }
 
-        let offset = (page - 1) * per_page;
-        query.push_str(&format!(" LIMIT {} OFFSET {}", per_page, offset));
+        if let Some(sort) = sort {
+            query.push_str(&format!(" ORDER BY {} {}", sort, order));
+        }
+
+        if per_page != -1 {
+            let offset = (page - 1) * per_page;
+            query.push_str(&format!(" LIMIT {} OFFSET {}", per_page, offset));
+        }
 
         if !query.ends_with(';') {
             query.push(';');
@@ -97,6 +115,11 @@ impl SqlDataSource {
             count_query.push(';');
         }
 
-        Ok((query, combined_where_values, count_query))
+        Ok((
+            query,
+            combined_where_values,
+            count_query,
+            combined_where_keys,
+        ))
     }
 }

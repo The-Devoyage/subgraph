@@ -18,7 +18,7 @@ impl SqlDataSource {
         dialect: &DialectEnum,
         input: &Document,
         subgraph_config: &SubGraphConfig,
-    ) -> Result<(String, Vec<SqlValueEnum>), async_graphql::Error> {
+    ) -> Result<(String, Vec<SqlValueEnum>, Vec<String>), async_graphql::Error> {
         debug!("Creating Update One Query");
 
         let mut query = String::new();
@@ -41,7 +41,7 @@ impl SqlDataSource {
         query.push_str(" WHERE ");
 
         let query_input = input.get("query").unwrap();
-        let (nested_query, combined_where_values, _combined_join_values) =
+        let (nested_query, combined_where_values, _combined_join_values, combined_where_keys) =
             SqlDataSource::create_nested_query_recursive(
                 true,
                 &vec![query_input.clone()],
@@ -67,6 +67,6 @@ impl SqlDataSource {
             query.push(';');
         }
 
-        Ok((query, combined_where_values))
+        Ok((query, combined_where_values, combined_where_keys))
     }
 }
