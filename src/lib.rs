@@ -11,8 +11,8 @@ use warp::{http::Response as HttpResponse, Filter, Future, Rejection};
 
 pub mod cli_args;
 pub mod configuration;
-mod data_sources;
-mod graphql;
+pub mod data_sources;
+pub mod graphql;
 pub mod utils;
 
 /// Starts the Subgraph Service. Initializes the DataSources and builds the GraphQL Schema.

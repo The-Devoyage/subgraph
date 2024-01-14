@@ -1,5 +1,5 @@
 use async_graphql::dynamic::FieldValue;
-use bson::{doc, oid::ObjectId, Document};
+use bson::{doc, oid::ObjectId, to_document, Document};
 use log::{debug, error, trace};
 use mongodb::{options::ClientOptions, Client, Database};
 use std::str::FromStr;
@@ -14,7 +14,7 @@ use crate::{
     },
     graphql::{
         entity::create_return_types::{ResolverResponse, ResolverResponseMeta},
-        schema::ResolverType,
+        schema::{DirectionEnum, OptionsInput, ResolverType, SortInput},
     },
 };
 
@@ -306,6 +306,11 @@ impl MongoDataSource {
                 let key = if key == "AND" { "$and" } else { "$or" };
                 finalized.insert(key, and_or_filters);
             }
+
+            // Add the options back to the filter.
+            if key == "opts" {
+                finalized.insert(key.clone(), value.clone());
+            }
         }
 
         // Parse the provided object eager options and convert them to the correct format.
@@ -328,8 +333,12 @@ impl MongoDataSource {
     pub fn create_aggregation(
         query_doc: &Document,
         eager_load_options: Vec<EagerLoadOptions>,
+        opts_doc: Option<OptionsInput>,
     ) -> Result<Vec<Document>, async_graphql::Error> {
         debug!("Creating Aggregation");
+        trace!("Query Doc: {:?}", query_doc);
+        trace!("Eager Load Options: {:?}", eager_load_options);
+        trace!("Opts Doc: {:?}", opts_doc);
         let mut pipeline = Vec::new();
         for eager_load_option in eager_load_options {
             let lookup = doc! {
@@ -353,8 +362,71 @@ impl MongoDataSource {
         let match_doc = doc! {
             "$match": query_doc
         };
-
         pipeline.push(match_doc);
+
+        // Start the facet pipeline.
+        let mut facet_doc = doc! {
+            "total_count": [
+                {
+                    "$count": "total_count"
+                }
+            ]
+        };
+
+        let mut paginated_facet_doc = vec![];
+
+        // Handle sorting and paginating
+        if let Some(opts) = opts_doc {
+            let mut sort_doc = doc! {};
+            let mut skip = 0;
+            let mut limit = 10;
+            if let Some(sort) = opts.sort {
+                for sort_input in sort.iter() {
+                    sort_doc.insert(
+                        sort_input.field.clone(),
+                        match sort_input.direction {
+                            DirectionEnum::Asc => 1,
+                            DirectionEnum::Desc => -1,
+                        },
+                    );
+                }
+            }
+
+            // If opts.page and opts.per_page, calculate the new skip and limit values.
+            if let Some(page_value) = opts.page {
+                if let Some(per_page_value) = opts.per_page {
+                    skip = (page_value - 1) * per_page_value;
+                    limit = per_page_value;
+                }
+            }
+
+            trace!("Sort Doc: {:?}", sort_doc);
+
+            if !sort_doc.is_empty() {
+                let sort = doc! {
+                    "$sort": sort_doc
+                };
+                paginated_facet_doc.push(sort);
+            }
+            if skip > 0 {
+                let skip = doc! {
+                    "$skip": skip
+                };
+                paginated_facet_doc.push(skip);
+            }
+            if limit > 0 {
+                let limit = doc! {
+                    "$limit": limit
+                };
+                paginated_facet_doc.push(limit);
+            }
+        }
+
+        facet_doc.insert("documents", paginated_facet_doc);
+
+        pipeline.push(doc! {
+            "$facet": facet_doc
+        });
 
         trace!("Pipeline: {:?}", pipeline);
         Ok(pipeline)
@@ -408,12 +480,42 @@ impl MongoDataSource {
                 Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::FindMany => {
-                let results =
-                    services::Services::find_many(db, input, collection_name, eager_load_options)
-                        .await?;
-                let count = results.len();
+                let (results, total_count) = services::Services::find_many(
+                    db,
+                    input.clone(),
+                    collection_name,
+                    eager_load_options,
+                )
+                .await?;
+                let opts_doc = if input.clone().get("opts").is_some() {
+                    trace!("opts: {:?}", input.get("opts").unwrap());
+                    to_document(input.get("opts").unwrap()).unwrap()
+                } else {
+                    let mut d = Document::new();
+                    d.insert("per_page", 10);
+                    d.insert("page", 1);
+                    trace!("created opts: {:?}", d);
+                    d
+                };
+                let page = if let Some(page_value) = opts_doc.get("page") {
+                    page_value.as_i32().unwrap() as i64
+                } else {
+                    1
+                };
+                let total_pages = if let Some(per_page_value) = opts_doc.get("per_page") {
+                    let per_page = per_page_value.as_i32().unwrap();
+                    if total_count as i32 % per_page as i32 == 0 {
+                        total_count as i32 / per_page as i32
+                    } else {
+                        (total_count as i32 / per_page as i32) + 1
+                    }
+                } else {
+                    1
+                };
+
                 let res = ResolverResponse {
                     data: results
+                        .clone()
                         .into_iter()
                         .map(|doc| FieldValue::owned_any(doc))
                         .collect(),
@@ -423,10 +525,10 @@ impl MongoDataSource {
                         service_version: subgraph_config.service.version.clone(),
                         executed_at: chrono::Utc::now()
                             .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
-                        count: count as i64,
-                        total_count: count as i64,
-                        page: 1,
-                        total_pages: 1,
+                        count: results.len() as i64,
+                        total_count: total_count as i64,
+                        page,
+                        total_pages: total_pages as i64,
                         user_uuid: None,
                     },
                 };

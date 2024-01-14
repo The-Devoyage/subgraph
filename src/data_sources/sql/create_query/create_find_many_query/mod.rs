@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use bson::Document;
 use log::{debug, trace};
 
@@ -6,7 +8,7 @@ use crate::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
     data_sources::sql::{SqlDataSource, SqlValueEnum},
-    graphql::schema::SortInput,
+    graphql::schema::{DirectionEnum, SortInput},
 };
 
 use super::{create_nested_query_recursive::FilterOperator, JoinClauses};
@@ -99,10 +101,11 @@ impl SqlDataSource {
                     let field = sort_item.get("field").unwrap();
                     let field = field.as_str().unwrap();
                     let direction = sort_item.get("direction").unwrap();
-                    let direction = direction.as_str().unwrap();
+                    let direction = DirectionEnum::from_str(direction.as_str().unwrap()).unwrap();
+
                     sort_vec.push(SortInput {
                         field: field.to_string(),
-                        direction: direction.to_string(),
+                        direction,
                     });
                 }
             }
@@ -129,8 +132,16 @@ impl SqlDataSource {
                     query.push_str(", ");
                     count_query.push_str(", ");
                 }
-                query.push_str(&format!("{} {}", sort_item.field, sort_item.direction));
-                count_query.push_str(&format!("{} {}", sort_item.field, sort_item.direction));
+                query.push_str(&format!(
+                    "{} {}",
+                    sort_item.field,
+                    sort_item.direction.to_string()
+                ));
+                count_query.push_str(&format!(
+                    "{} {}",
+                    sort_item.field,
+                    sort_item.direction.to_string()
+                ));
             }
         }
 

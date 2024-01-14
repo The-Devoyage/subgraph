@@ -1,8 +1,14 @@
 use async_graphql::futures_util::StreamExt;
 use log::{debug, trace};
-use mongodb::{bson::Document, Database};
+use mongodb::{
+    bson::{doc, Document},
+    Database,
+};
 
-use crate::data_sources::mongo::{EagerLoadOptions, MongoDataSource};
+use crate::{
+    data_sources::mongo::{EagerLoadOptions, MongoDataSource},
+    graphql::schema::OptionsInput,
+};
 
 use super::Services;
 
@@ -30,15 +36,41 @@ impl Services {
 
         let filter = Services::create_nested_find_filter(query_document);
 
-        let aggregation = MongoDataSource::create_aggregation(&filter, eager_load_options)?;
+        if let Some(opts_doc) = filter.get("opts") {
+            let opts = match opts_doc.as_document() {
+                Some(opts) => opts.clone(),
+                None => {
+                    let default_opts = doc! {
+                        "per_page": 10,
+                        "page": 1,
+                        "sort": [
+                            {
+                                "field": "_id",
+                                "direction": "Asc"
+                            }
+                        ]
+                    };
+                    default_opts
+                }
+            };
+            // Serialize the opts document to a OptionsInput
+            let opts: OptionsInput = bson::from_bson(bson::Bson::Document(opts))?;
 
-        // let document = collection.find_one(filter, None).await?;
-        let mut cursor = collection.aggregate(aggregation, None).await?;
+            let aggregation =
+                MongoDataSource::create_aggregation(&filter, eager_load_options, Some(opts))?;
 
-        while let Some(document) = cursor.next().await {
-            if let Ok(document) = document {
-                return Ok(Some(document));
+            // let document = collection.find_one(filter, None).await?;
+            let mut cursor = collection.aggregate(aggregation, None).await?;
+
+            while let Some(document) = cursor.next().await {
+                if let Ok(document) = document {
+                    return Ok(Some(document));
+                }
             }
+        } else {
+            let document = collection.find_one(filter, None).await?;
+
+            return Ok(document);
         }
 
         Ok(None)

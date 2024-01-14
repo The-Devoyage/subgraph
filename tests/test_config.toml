@@ -1,5 +1,6 @@
 [service]
 name = "subgraph_tests"
+version = "1.0.0"
 port = 0
 log_level = "debug"
 imports = ["./test_config_imports.toml"]
