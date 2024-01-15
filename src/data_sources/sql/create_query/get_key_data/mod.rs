@@ -35,7 +35,8 @@ impl SqlDataSource {
         ),
         async_graphql::Error,
     > {
-        debug!("Getting Key Data From Input: {:?}", input_object);
+        debug!("Getting Key Data From Input");
+        trace!("{:?}", input_object);
         let (mut where_keys, mut where_values, mut value_keys, mut values, mut join_clauses) = (
             Vec::new(),
             Vec::new(),

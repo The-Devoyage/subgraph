@@ -34,7 +34,7 @@ impl SqlDataSource {
     ) -> Result<SqlQuery, async_graphql::Error> {
         debug!("Creating SQL Query");
 
-        let (mut where_keys, mut where_values, value_keys, values, join_clauses) =
+        let (_where_keys, mut where_values, value_keys, values, join_clauses) =
             SqlDataSource::get_key_data(
                 &input,
                 entity,
@@ -49,7 +49,7 @@ impl SqlDataSource {
         // Generate the query string and get the where values.
         let query = match resolver_type {
             ResolverType::FindOne => {
-                let (query_string, combined_where_values, combined_where_keys) =
+                let (query_string, combined_where_values, _combined_where_keys) =
                     SqlDataSource::create_find_one_query(
                         &entity,
                         table_name,
@@ -59,11 +59,10 @@ impl SqlDataSource {
                         Some(join_clauses),
                     )?;
                 where_values = combined_where_values;
-                where_keys = combined_where_keys;
                 query_string
             }
             ResolverType::FindMany => {
-                let (query_string, combined_where_values, count_q, combined_where_keys) =
+                let (query_string, combined_where_values, count_q, _combined_where_keys) =
                     SqlDataSource::create_find_many_query(
                         &entity,
                         table_name,
@@ -74,7 +73,6 @@ impl SqlDataSource {
                         false,
                     )?;
                 where_values = combined_where_values;
-                where_keys = combined_where_keys;
                 count_query = Some(count_q);
                 query_string
             }
@@ -82,7 +80,7 @@ impl SqlDataSource {
                 SqlDataSource::create_create_one_query(table_name, &value_keys, &dialect)?
             }
             ResolverType::UpdateOne => {
-                let (query_string, combined_where_value, combined_where_keys, identifier_q) =
+                let (query_string, combined_where_value, _combined_where_keys, identifier_q) =
                     SqlDataSource::create_update_one_query(
                         &entity,
                         table_name,
@@ -92,12 +90,11 @@ impl SqlDataSource {
                         subgraph_config,
                     )?;
                 where_values = combined_where_value;
-                where_keys = combined_where_keys;
                 identifier_query = Some(identifier_q);
                 query_string
             }
             ResolverType::UpdateMany => {
-                let (query_string, combined_where_value, combined_where_keys, identifier_q) =
+                let (query_string, combined_where_value, _combined_where_keys, identifier_q) =
                     SqlDataSource::create_update_many_query(
                         &entity,
                         table_name,
@@ -107,7 +104,6 @@ impl SqlDataSource {
                         subgraph_config,
                     )?;
                 where_values = combined_where_value;
-                where_keys = combined_where_keys;
                 identifier_query = Some(identifier_q);
                 query_string
             }
@@ -118,9 +114,7 @@ impl SqlDataSource {
             query,
             count_query,
             identifier_query,
-            where_keys,
             where_values,
-            value_keys,
             values,
             table: table_name.to_string(),
         };

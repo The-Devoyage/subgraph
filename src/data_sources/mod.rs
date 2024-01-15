@@ -25,7 +25,6 @@ pub enum DataSource {
 #[derive(Debug, Clone)]
 pub struct DataSources {
     sources: Vec<DataSource>,
-    subgraph_config: SubGraphConfig,
 }
 
 pub struct TotalCount(i64);
@@ -56,7 +55,6 @@ impl DataSources {
 
         DataSources {
             sources: data_sources,
-            subgraph_config: subgraph_config.clone(),
         }
     }
 

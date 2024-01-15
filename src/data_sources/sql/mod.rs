@@ -65,9 +65,7 @@ pub struct SqlQuery {
     count_query: Option<String>,
     identifier_query: Option<String>,
     values: Vec<SqlValueEnum>,
-    value_keys: Vec<String>,
     where_values: Vec<SqlValueEnum>,
-    where_keys: Vec<String>,
     table: String,
 }
 
