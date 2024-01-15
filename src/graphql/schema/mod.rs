@@ -3,13 +3,14 @@ use std::fmt::Display;
 use async_graphql::dynamic::{Object, Scalar, Schema, SchemaBuilder};
 use base64::{engine::general_purpose, Engine as _};
 use biscuit_auth::{KeyPair, PrivateKey};
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 use serde::{Deserialize, Serialize};
 
 use crate::{configuration::subgraph::SubGraphConfig, data_sources::DataSources};
 
 pub mod create_auth_service;
 pub mod create_entities;
+pub mod create_options_input;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 pub enum ResolverType {
@@ -126,66 +127,57 @@ pub struct ServiceSchema {
     pub query: Object,
     pub mutation: Object,
     pub data_sources: DataSources,
+    pub key_pair: Option<KeyPair>,
 }
 
 impl ServiceSchema {
     pub fn new(subgraph_config: SubGraphConfig, data_sources: DataSources) -> Self {
         debug!("Creating Service Schema");
 
-        let key_pair;
-        if subgraph_config.service.auth.is_some() {
-            //info message with an unicode icon
-            info!("🔐 Auth Enabled!");
-            let auth = subgraph_config.service.auth.clone().unwrap();
-            let b64_private_key = auth.private_key;
-
-            if b64_private_key.is_some() {
-                debug!("Using provided key pair");
-                let bytes_private_key = &general_purpose::URL_SAFE_NO_PAD
-                    .decode(b64_private_key.unwrap())
-                    .unwrap();
-
-                let private_key = PrivateKey::from_bytes(bytes_private_key);
-
-                key_pair = Some(KeyPair::from(&private_key.unwrap()));
-            } else {
-                key_pair = Some(KeyPair::new());
-            }
-        } else {
-            key_pair = None;
-        }
-
-        ServiceSchema {
+        let service_schema = ServiceSchema {
             subgraph_config,
-            schema_builder: Schema::build("Query", Some("Mutation"), None)
-                .data(data_sources.clone())
-                .data(key_pair)
-                .enable_federation(),
+            schema_builder: Schema::build("Query", Some("Mutation"), None),
             query: Object::new("Query").extends(),
             mutation: Object::new("Mutation"),
             data_sources,
-        }
+            key_pair: None,
+        };
+
+        service_schema
     }
 
     pub fn build(mut self) -> Schema {
         debug!("Building Schema");
 
-        let object_id = Scalar::new("ObjectID");
+        // Check for key pair and create if needed
+        self.get_key_pair();
 
+        // Create shared options input
+        self = self.create_options_input();
+
+        // Create entities
         self = self.create_entities();
 
+        // Create auth service
         if self.subgraph_config.service.auth.is_some() {
             self = self.create_auth_service();
         }
 
+        // List scalars
+        let object_id = Scalar::new("ObjectID");
+
+        // Register Query and Mutation
         let schema = self
             .schema_builder
+            .data(self.data_sources.clone())
+            .data(self.key_pair)
+            .enable_federation()
             .register(object_id)
             .register(self.query)
             .register(self.mutation)
             .finish();
 
-        debug!("Schema Created: {:?}", schema);
+        trace!("Schema Created: {:?}", schema);
 
         match schema {
             Ok(sch) => sch,
