@@ -1,10 +1,9 @@
 use crate::{
-    configuration::subgraph::entities::ServiceEntityConfig,
-    data_sources::{DataSource, DataSources},
-    graphql::{
-        input::ServiceInput,
-        schema::{ExcludeFromInput, ServiceSchema},
+    configuration::subgraph::entities::{
+        service_entity_field::exclude_from_input::ExcludeFromInput, ServiceEntityConfig,
     },
+    data_sources::{DataSource, DataSources},
+    graphql::{input::ServiceInput, schema::ServiceSchema},
     resolver_type::ResolverType,
 };
 use async_graphql::dynamic::{Field, InputObject, InputValue, TypeRef};

@@ -1,9 +1,13 @@
 use log::{debug, error};
 use serde::{Deserialize, Serialize};
 
-use crate::{configuration::subgraph::guard::Guard, graphql::schema::ExcludeFromInput};
+use crate::configuration::subgraph::guard::Guard;
+
+use self::exclude_from_input::ExcludeFromInput;
 
 use super::ScalarOptions;
+
+pub mod exclude_from_input;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceEntityFieldConfig {

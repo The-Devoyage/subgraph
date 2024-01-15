@@ -14,7 +14,7 @@ use crate::{
     },
     graphql::{
         entity::create_return_types::{ResolverResponse, ResolverResponseMeta},
-        schema::{DirectionEnum, OptionsInput, SortInput},
+        schema::create_options_input::{DirectionEnum, OptionsInput},
     },
     resolver_type::ResolverType,
 };

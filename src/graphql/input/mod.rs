@@ -2,11 +2,12 @@ use async_graphql::dynamic::{InputObject, InputValue, TypeRef};
 use log::debug;
 
 use crate::{
-    configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
-    data_sources::DataSource, resolver_type::ResolverType,
+    configuration::subgraph::entities::service_entity_field::{
+        exclude_from_input::ExcludeFromInput, ServiceEntityFieldConfig,
+    },
+    data_sources::DataSource,
+    resolver_type::ResolverType,
 };
-
-use super::schema::ExcludeFromInput;
 
 mod get_entity_field_type;
 

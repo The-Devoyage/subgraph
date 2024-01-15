@@ -5,7 +5,7 @@ use mongodb::Database;
 
 use crate::{
     data_sources::mongo::{EagerLoadOptions, MongoDataSource},
-    graphql::schema::OptionsInput,
+    graphql::schema::create_options_input::OptionsInput,
 };
 
 use super::Services;
