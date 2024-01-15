@@ -6,9 +6,10 @@ use crate::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
     data_sources::sql::{SqlDataSource, SqlValueEnum},
+    filter_operator::FilterOperator,
 };
 
-use super::{create_nested_query_recursive::FilterOperator, JoinClauses};
+use super::JoinClauses;
 
 impl SqlDataSource {
     pub fn create_find_one_query(

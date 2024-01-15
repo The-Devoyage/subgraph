@@ -6,9 +6,8 @@ use crate::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
     data_sources::sql::{SqlDataSource, SqlValueEnum},
+    filter_operator::FilterOperator,
 };
-
-use super::create_nested_query_recursive::FilterOperator;
 
 impl SqlDataSource {
     pub fn create_update_one_query(

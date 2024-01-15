@@ -12,6 +12,7 @@ use warp::{http::Response as HttpResponse, Filter, Future, Rejection};
 pub mod cli_args;
 pub mod configuration;
 pub mod data_sources;
+pub mod filter_operator;
 pub mod graphql;
 pub mod resolver_type;
 pub mod utils;

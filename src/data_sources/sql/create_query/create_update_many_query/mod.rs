@@ -2,9 +2,8 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    data_sources::sql::{
-        create_query::create_nested_query_recursive::FilterOperator, SqlDataSource, SqlValueEnum,
-    },
+    data_sources::sql::{SqlDataSource, SqlValueEnum},
+    filter_operator::FilterOperator,
 };
 use bson::Document;
 use log::debug;

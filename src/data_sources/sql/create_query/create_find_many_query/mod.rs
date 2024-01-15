@@ -8,10 +8,11 @@ use crate::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
     data_sources::sql::{SqlDataSource, SqlValueEnum},
+    filter_operator::FilterOperator,
     graphql::schema::create_options_input::{DirectionEnum, SortInput},
 };
 
-use super::{create_nested_query_recursive::FilterOperator, JoinClauses};
+use super::JoinClauses;
 
 impl SqlDataSource {
     pub fn create_find_many_query(

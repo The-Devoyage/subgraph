@@ -1,24 +1,16 @@
 use bson::{doc, Bson};
 use log::{debug, trace};
-use serde::{Deserialize, Serialize};
 
 use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
     data_sources::sql::{SqlDataSource, SqlValueEnum},
+    filter_operator::FilterOperator,
     resolver_type::ResolverType,
 };
 
 use super::JoinClauses;
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum FilterOperator {
-    #[serde(rename = "AND")]
-    And,
-    #[serde(rename = "OR")]
-    Or,
-}
 
 impl SqlDataSource {
     pub fn create_nested_query_recursive(
