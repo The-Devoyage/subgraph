@@ -13,6 +13,7 @@ pub mod cli_args;
 pub mod configuration;
 pub mod data_sources;
 pub mod graphql;
+pub mod resolver_type;
 pub mod utils;
 
 /// Starts the Subgraph Service. Initializes the DataSources and builds the GraphQL Schema.

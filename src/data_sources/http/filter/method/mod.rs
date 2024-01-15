@@ -1,9 +1,7 @@
 use http::Method;
 use log::{debug, info};
 
-use crate::{
-    configuration::subgraph::entities::ServiceEntityConfig, graphql::schema::ResolverType,
-};
+use crate::{configuration::subgraph::entities::ServiceEntityConfig, resolver_type::ResolverType};
 
 use super::HttpDataSource;
 

@@ -1,12 +1,13 @@
 use async_graphql::dynamic::Field;
 use log::debug;
 
-use crate::configuration::subgraph::{
-    entities::{service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig},
-    SubGraphConfig,
+use crate::{
+    configuration::subgraph::{
+        entities::{service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig},
+        SubGraphConfig,
+    },
+    resolver_type::ResolverType,
 };
-
-use super::schema::ResolverType;
 
 mod create_resolver_function;
 mod create_resolver_name;

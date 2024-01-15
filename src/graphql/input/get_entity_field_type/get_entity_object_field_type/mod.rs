@@ -2,8 +2,7 @@ use async_graphql::dynamic::TypeRef;
 
 use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
-    data_sources::DataSource,
-    graphql::{input::ServiceInput, schema::ResolverType},
+    data_sources::DataSource, graphql::input::ServiceInput, resolver_type::ResolverType,
 };
 
 use super::TypeRefWithInputs;

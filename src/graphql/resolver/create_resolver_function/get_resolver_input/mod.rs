@@ -7,7 +7,7 @@ use crate::{
         service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig,
     },
     data_sources::DataSources,
-    graphql::schema::ResolverType,
+    resolver_type::ResolverType,
 };
 
 use super::ServiceResolver;

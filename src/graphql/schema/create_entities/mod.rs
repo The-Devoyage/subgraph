@@ -1,7 +1,7 @@
 use crate::{
     configuration::subgraph::data_sources::sql::DialectEnum,
     data_sources::{DataSource, DataSources},
-    graphql::schema::ResolverType,
+    resolver_type::ResolverType,
 };
 
 use super::ServiceSchema;

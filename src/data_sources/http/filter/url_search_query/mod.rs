@@ -4,7 +4,7 @@ use reqwest::Url;
 
 use crate::{
     configuration::subgraph::entities::ServiceEntityConfig, data_sources::http::HttpDataSource,
-    graphql::schema::ResolverType,
+    resolver_type::ResolverType,
 };
 
 impl HttpDataSource {

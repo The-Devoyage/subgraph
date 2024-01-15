@@ -1,7 +1,7 @@
 use async_graphql::dynamic::FieldValue;
 use bson::Document;
 use http::{header::HeaderName, HeaderMap, HeaderValue};
-use log::{debug, error, info, trace};
+use log::{debug, trace};
 use reqwest::Client;
 
 use crate::{
@@ -10,10 +10,8 @@ use crate::{
         entities::ServiceEntityConfig,
         SubGraphConfig,
     },
-    graphql::{
-        entity::create_return_types::{ResolverResponse, ResolverResponseMeta},
-        schema::ResolverType,
-    },
+    graphql::entity::create_return_types::{ResolverResponse, ResolverResponseMeta},
+    resolver_type::ResolverType,
 };
 
 use super::DataSource;

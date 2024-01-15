@@ -1,6 +1,6 @@
 use async_graphql::dynamic::TypeRef;
 
-use crate::graphql::{input::ServiceInput, schema::ResolverType};
+use crate::{graphql::input::ServiceInput, resolver_type::ResolverType};
 
 impl ServiceInput {
     pub fn get_entity_int_field_type(

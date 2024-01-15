@@ -17,8 +17,9 @@ use crate::{
     data_sources::{sql::services::ResponseRow, DataSources},
     graphql::{
         entity::{create_return_types::ResolverResponse, ServiceEntity},
-        schema::{create_auth_service::TokenData, ResolverType},
+        schema::create_auth_service::TokenData,
     },
+    resolver_type::ResolverType,
     utils::clean_string::clean_string,
 };
 

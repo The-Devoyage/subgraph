@@ -6,7 +6,7 @@ use crate::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
     data_sources::sql::{SqlDataSource, SqlValueEnum},
-    graphql::schema::ResolverType,
+    resolver_type::ResolverType,
 };
 
 use super::JoinClauses;

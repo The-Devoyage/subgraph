@@ -3,8 +3,9 @@ use crate::{
     data_sources::{DataSource, DataSources},
     graphql::{
         input::ServiceInput,
-        schema::{ExcludeFromInput, ResolverType, ServiceSchema},
+        schema::{ExcludeFromInput, ServiceSchema},
     },
+    resolver_type::ResolverType,
 };
 use async_graphql::dynamic::{Field, InputObject, InputValue, TypeRef};
 use log::debug;

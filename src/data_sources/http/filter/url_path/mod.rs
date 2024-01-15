@@ -4,7 +4,7 @@ use reqwest::Url;
 
 use crate::configuration::subgraph::entities::ServiceEntityConfig;
 use crate::data_sources::http::HttpDataSource;
-use crate::graphql::schema::ResolverType;
+use crate::resolver_type::ResolverType;
 
 impl HttpDataSource {
     pub async fn create_parameratized_path(

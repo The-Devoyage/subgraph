@@ -6,7 +6,7 @@ use crate::{
         service_entity_field::ServiceEntityFieldConfig, ScalarOptions,
     },
     data_sources::DataSource,
-    graphql::schema::ResolverType,
+    resolver_type::ResolverType,
 };
 
 use super::ServiceInput;

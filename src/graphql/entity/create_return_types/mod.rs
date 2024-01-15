@@ -8,7 +8,7 @@ use log::{debug, error, trace};
 
 use crate::{
     data_sources::{sql::services::ResponseRow, DataSource},
-    graphql::schema::ResolverType,
+    resolver_type::ResolverType,
 };
 
 use super::ServiceEntity;

@@ -11,7 +11,7 @@ use crate::{
         },
     },
     data_sources::sql::{SqlDataSource, SqlValueEnum},
-    graphql::schema::ResolverType,
+    resolver_type::ResolverType,
 };
 
 impl SqlDataSource {

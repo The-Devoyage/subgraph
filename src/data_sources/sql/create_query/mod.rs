@@ -5,7 +5,7 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    graphql::schema::ResolverType,
+    resolver_type::ResolverType,
 };
 
 use super::{SqlDataSource, SqlQuery};

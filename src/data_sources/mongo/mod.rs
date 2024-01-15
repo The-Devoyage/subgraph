@@ -14,8 +14,9 @@ use crate::{
     },
     graphql::{
         entity::create_return_types::{ResolverResponse, ResolverResponseMeta},
-        schema::{DirectionEnum, OptionsInput, ResolverType, SortInput},
+        schema::{DirectionEnum, OptionsInput, SortInput},
     },
+    resolver_type::ResolverType,
 };
 
 use super::DataSource;

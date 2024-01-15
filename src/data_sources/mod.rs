@@ -7,7 +7,8 @@ use crate::{
     configuration::subgraph::{
         data_sources::ServiceDataSourceConfig, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    graphql::schema::{create_auth_service::TokenData, ResolverType},
+    graphql::schema::create_auth_service::TokenData,
+    resolver_type::ResolverType,
 };
 
 pub mod http;

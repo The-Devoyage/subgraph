@@ -14,8 +14,9 @@ use crate::{
     },
     graphql::{
         entity::create_return_types::{ResolverResponse, ResolverResponseMeta},
-        schema::{create_auth_service::TokenData, ResolverType},
+        schema::create_auth_service::TokenData,
     },
+    resolver_type::ResolverType,
 };
 
 use super::DataSource;

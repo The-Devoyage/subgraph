@@ -1,9 +1,8 @@
 use std::fmt::Display;
 
 use async_graphql::dynamic::{Object, Scalar, Schema, SchemaBuilder};
-use base64::{engine::general_purpose, Engine as _};
-use biscuit_auth::{KeyPair, PrivateKey};
-use log::{debug, error, info, trace};
+use biscuit_auth::KeyPair;
+use log::{debug, error, trace};
 use serde::{Deserialize, Serialize};
 
 use crate::{configuration::subgraph::SubGraphConfig, data_sources::DataSources};
@@ -11,16 +10,6 @@ use crate::{configuration::subgraph::SubGraphConfig, data_sources::DataSources};
 pub mod create_auth_service;
 pub mod create_entities;
 pub mod create_options_input;
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
-pub enum ResolverType {
-    FindOne,
-    FindMany,
-    CreateOne,
-    UpdateOne,
-    UpdateMany,
-    InternalType,
-}
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub enum DirectionEnum {
@@ -82,31 +71,6 @@ pub struct OptionsInput {
     pub per_page: Option<i32>,
     pub page: Option<i32>,
     pub sort: Option<Vec<SortInput>>,
-}
-
-impl Display for ResolverType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ResolverType::FindOne => write!(f, "FindOne"),
-            ResolverType::FindMany => write!(f, "FindMany"),
-            ResolverType::CreateOne => write!(f, "CreateOne"),
-            ResolverType::UpdateOne => write!(f, "UpdateOne"),
-            ResolverType::UpdateMany => write!(f, "UpdateMany"),
-            ResolverType::InternalType => write!(f, "InternalType"),
-        }
-    }
-}
-
-impl ResolverType {
-    pub fn get_resolver_types() -> Vec<ResolverType> {
-        vec![
-            ResolverType::FindOne,
-            ResolverType::FindMany,
-            ResolverType::CreateOne,
-            ResolverType::UpdateOne,
-            ResolverType::UpdateMany,
-        ]
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]

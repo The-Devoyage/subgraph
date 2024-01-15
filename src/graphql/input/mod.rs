@@ -3,10 +3,10 @@ use log::debug;
 
 use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
-    data_sources::DataSource,
+    data_sources::DataSource, resolver_type::ResolverType,
 };
 
-use super::schema::{ExcludeFromInput, ResolverType};
+use super::schema::ExcludeFromInput;
 
 mod get_entity_field_type;
 

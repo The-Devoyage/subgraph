@@ -3,7 +3,7 @@ use log::debug;
 
 use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
-    graphql::{resolver::ServiceResolver, schema::ResolverType},
+    graphql::resolver::ServiceResolver, resolver_type::ResolverType,
 };
 
 use super::ServiceEntity;

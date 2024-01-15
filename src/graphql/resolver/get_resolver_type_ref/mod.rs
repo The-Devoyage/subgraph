@@ -1,7 +1,7 @@
 use async_graphql::dynamic::TypeRef;
 use log::debug;
 
-use crate::graphql::schema::ResolverType;
+use crate::resolver_type::ResolverType;
 
 use super::ServiceResolver;
 

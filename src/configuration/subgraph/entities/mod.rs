@@ -4,8 +4,9 @@ use serde::{Deserialize, Serialize};
 
 use service_entity_field::ServiceEntityFieldConfig;
 
+use crate::resolver_type::ResolverType;
+
 use super::{cors::MethodOption, guard::Guard};
-use crate::graphql::schema::ResolverType;
 
 pub mod service_entity_field;
 
