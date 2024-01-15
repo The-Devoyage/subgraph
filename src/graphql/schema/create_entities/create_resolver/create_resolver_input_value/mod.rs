@@ -24,8 +24,7 @@ impl ServiceSchema {
         let mut inputs = Vec::new();
 
         let input_name = ServiceSchema::get_resolver_input_name(&entity.name, resolver_type, None);
-        let data_sources = self.data_sources.clone();
-        let entity_data_source = DataSources::get_entity_data_soruce(&data_sources, entity);
+        let entity_data_source = DataSources::get_entity_data_soruce(&self.data_sources, entity);
 
         let mut root_input = InputObject::new(&input_name);
 
