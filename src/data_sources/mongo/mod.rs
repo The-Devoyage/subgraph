@@ -12,6 +12,7 @@ use crate::{
         },
         SubGraphConfig,
     },
+    filter_operator::FilterOperator,
     graphql::{
         entity::create_return_types::{ResolverResponse, ResolverResponseMeta},
         schema::create_options_input::{DirectionEnum, OptionsInput},
@@ -74,7 +75,13 @@ impl MongoDataSource {
         let mut key = "".to_string();
         for (k, value) in filter.iter() {
             debug!("Key: {}, Value: {}", k, value);
-            if k == "query" || k == "values" || k == "OR" || k == "AND" {
+            if k == "query"
+                || k == "values"
+                || FilterOperator::list()
+                    .iter()
+                    .map(|x| x.as_str())
+                    .any(|x| x == k)
+            {
                 let document = match value.as_document() {
                     Some(document) => document,
                     None => {
@@ -292,7 +299,7 @@ impl MongoDataSource {
                 finalized.insert(key.clone(), value.clone());
             }
 
-            if key == "AND" || key == "OR" {
+            if key == FilterOperator::And.as_str() || key == FilterOperator::Or.as_str() {
                 debug!("AND/OR Filter");
                 let mut and_or_filters = Vec::new();
                 let filters = value.as_array().unwrap();
@@ -304,7 +311,11 @@ impl MongoDataSource {
                     eager_filters.extend(eager_opts);
                 }
                 finalized.remove(key);
-                let key = if key == "AND" { "$and" } else { "$or" };
+                let key = if key == FilterOperator::And.as_str() {
+                    "$and"
+                } else {
+                    "$or"
+                };
                 finalized.insert(key, and_or_filters);
             }
 

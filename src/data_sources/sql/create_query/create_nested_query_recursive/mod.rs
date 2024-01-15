@@ -44,16 +44,22 @@ impl SqlDataSource {
 
         for (i, filter) in inputs.iter().enumerate() {
             //get the and and the or filters and handle recursively
-            let and_filters = filter.as_document().unwrap().get("AND");
-            let or_filters = filter.as_document().unwrap().get("OR");
+            let and_filters = filter
+                .as_document()
+                .unwrap()
+                .get(FilterOperator::And.as_str());
+            let or_filters = filter
+                .as_document()
+                .unwrap()
+                .get(FilterOperator::Or.as_str());
 
             let mut initial_input = filter.clone().as_document().unwrap().clone();
 
-            if initial_input.contains_key("AND") {
-                initial_input.remove("AND");
+            if initial_input.contains_key(FilterOperator::And.as_str()) {
+                initial_input.remove(FilterOperator::And.as_str());
             }
-            if initial_input.contains_key("OR") {
-                initial_input.remove("OR");
+            if initial_input.contains_key(FilterOperator::Or.as_str()) {
+                initial_input.remove(FilterOperator::Or.as_str());
             }
 
             // Only accept an initial_input or and_filters/or_filters.
@@ -164,7 +170,8 @@ impl SqlDataSource {
         }
 
         let is_empty = nested_query.contains("()");
-        let is_empty_and = nested_query.contains("AND") && nested_query.contains("()");
+        let is_empty_and =
+            nested_query.contains(FilterOperator::And.as_str()) && nested_query.contains("()");
         if is_empty || nested_query.is_empty() || is_empty_and {
             return Ok((
                 None,

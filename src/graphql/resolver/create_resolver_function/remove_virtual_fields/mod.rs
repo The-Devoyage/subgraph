@@ -3,7 +3,7 @@ use log::{debug, trace};
 
 use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
-    graphql::resolver::ServiceResolver,
+    filter_operator::FilterOperator, graphql::resolver::ServiceResolver,
 };
 
 impl ServiceResolver {
@@ -42,8 +42,8 @@ impl ServiceResolver {
     ) -> Document {
         debug!("Removing Fields from Document");
         let mut output_document = document.clone();
-        let and_filters = document.get_array("AND");
-        let or_filters = document.get_array("OR");
+        let and_filters = document.get_array(FilterOperator::And.as_str());
+        let or_filters = document.get_array(FilterOperator::Or.as_str());
 
         // Remove virtual fields from root document filter.
         for field in fields {
@@ -75,8 +75,8 @@ impl ServiceResolver {
                 let filter = ServiceResolver::handle_remove_from_doc(filter, fields);
                 new_and_filters.push(filter);
             }
-            output_document.remove("AND");
-            output_document.insert("AND", new_and_filters);
+            output_document.remove(FilterOperator::And.as_str());
+            output_document.insert(FilterOperator::And.as_str(), new_and_filters);
         }
 
         // Remove virtual fields from OR filters.
@@ -88,8 +88,8 @@ impl ServiceResolver {
                 let filter = ServiceResolver::handle_remove_from_doc(filter, fields);
                 new_or_filters.push(filter);
             }
-            output_document.remove("OR");
-            output_document.insert("OR", new_or_filters);
+            output_document.remove(FilterOperator::Or.as_str());
+            output_document.insert(FilterOperator::Or.as_str(), new_or_filters);
         }
 
         trace!("Output Document: {:?}", output_document);

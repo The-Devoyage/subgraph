@@ -6,6 +6,7 @@ use crate::{
         exclude_from_input::ExcludeFromInput, ServiceEntityFieldConfig,
     },
     data_sources::DataSource,
+    filter_operator::FilterOperator,
     resolver_type::ResolverType,
 };
 
@@ -89,15 +90,13 @@ impl ServiceInput {
 
         // If include_filters is true, add the filter inputs.
         if include_filters {
-            input = input
-                .field(InputValue::new(
-                    "AND",
+            let filter_operators = FilterOperator::list();
+            for filter_operator in filter_operators {
+                input = input.field(InputValue::new(
+                    filter_operator.as_str(),
                     TypeRef::named_nn_list(&self.input_name),
-                ))
-                .field(InputValue::new(
-                    "OR",
-                    TypeRef::named_nn_list(&self.input_name),
-                ))
+                ));
+            }
         }
 
         // If all fields are excluded, don't add the input.

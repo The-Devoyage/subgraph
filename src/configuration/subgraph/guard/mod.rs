@@ -11,6 +11,7 @@ use crate::{
         entities::{ScalarOptions, ServiceEntityConfig},
         SubGraphConfig,
     },
+    filter_operator::FilterOperator,
     graphql::schema::create_auth_service::TokenData,
     utils::clean_string::clean_string,
 };
@@ -66,7 +67,10 @@ impl Guard {
     }
 
     pub fn extract_input_values(input_document: Document) -> Result<Document, EvalexprError> {
-        let exclude_keys = vec!["OR".to_string(), "AND".to_string()];
+        let exclude_keys = FilterOperator::list()
+            .iter()
+            .map(|op| op.as_str().to_string())
+            .collect::<Vec<String>>();
 
         let values_input = match input_document.get("values") {
             Some(values_input) => values_input.as_document(),
@@ -123,12 +127,12 @@ impl Guard {
 
         let query_document = query_document.as_document().unwrap();
 
-        let and_queries = query_document.get("AND");
-        let or_queries = query_document.get("OR");
+        let and_queries = query_document.get(FilterOperator::And.as_str());
+        let or_queries = query_document.get(FilterOperator::Or.as_str());
 
         let mut initial_query = query_document.clone();
-        initial_query.remove("AND");
-        initial_query.remove("OR");
+        initial_query.remove(FilterOperator::And.as_str());
+        initial_query.remove(FilterOperator::Or.as_str());
 
         if !initial_query.is_empty() {
             documents.push(initial_query)
@@ -197,7 +201,7 @@ impl Guard {
 
                         let mut values_tuple = vec![];
                         let is_nested = key.contains(".");
-                        let excluded_keys = vec!["AND", "OR"];
+                        let excluded_keys = FilterOperator::list().iter().map(|op| op.as_str().to_string()).collect::<Vec<String>>();
 
                         for input_document in documents {
                             let json = serde_json::to_value(input_document.clone()).unwrap();
@@ -208,7 +212,7 @@ impl Guard {
                                 let mut value = &json[keys[0]];
                                 for key in keys.iter().skip(1) {
                                     trace!("Input Nested Key: {:?}", key);
-                                    if excluded_keys.contains(key) {
+                                    if excluded_keys.contains(&key.to_string()) {
                                         continue;
                                     }
                                     value = &value[key];
@@ -224,7 +228,7 @@ impl Guard {
 
                                 values_tuple.push(value);
                             } else { // Else extract the value directly.
-                                if excluded_keys.contains(&key.as_str()) {
+                                if excluded_keys.contains(&key.to_string()) {
                                     continue;
                                 }
                                 let value = json.get(key.clone());

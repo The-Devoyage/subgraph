@@ -1,6 +1,9 @@
 use std::str::FromStr;
 
-use crate::{configuration::subgraph::entities::ScalarOptions, graphql::resolver::ServiceResolver};
+use crate::{
+    configuration::subgraph::entities::ScalarOptions, filter_operator::FilterOperator,
+    graphql::resolver::ServiceResolver,
+};
 use bson::{doc, oid::ObjectId, Bson, Document};
 use log::{debug, error, trace};
 
@@ -26,13 +29,16 @@ impl ServiceResolver {
         let mut query_input = Document::new();
 
         // Add the `AND` and `OR` filter, which is an empty vector.
-        query_input.insert::<_, Vec<Bson>>("AND", vec![]);
-        query_input.insert::<_, Vec<Bson>>("OR", vec![]);
+        query_input.insert::<_, Vec<Bson>>(FilterOperator::And.as_str(), vec![]);
+        query_input.insert::<_, Vec<Bson>>(FilterOperator::Or.as_str(), vec![]);
 
         // Add the original parent value to the `AND` filter.
         if !query_document.is_empty() {
             let bson = bson::to_bson(&query_document).unwrap();
-            query_input.get_array_mut("AND").unwrap().push(bson);
+            query_input
+                .get_array_mut(FilterOperator::And.as_str())
+                .unwrap()
+                .push(bson);
         }
 
         // Determine if the value provided is an array/vec or not.
@@ -74,7 +80,10 @@ impl ServiceResolver {
                     for value in join_on_value {
                         let join_query = doc! { join_on: value };
                         let bson = bson::to_bson(&join_query).unwrap();
-                        query_input.get_array_mut("OR").unwrap().push(bson);
+                        query_input
+                            .get_array_mut(FilterOperator::Or.as_str())
+                            .unwrap()
+                            .push(bson);
                     }
                 } else {
                     let join_on_value =
@@ -82,7 +91,10 @@ impl ServiceResolver {
                     if join_on_value.is_some() {
                         let join_query = doc! { join_on: join_on_value };
                         let bson = bson::to_bson(&join_query).unwrap();
-                        query_input.get_array_mut("AND").unwrap().push(bson);
+                        query_input
+                            .get_array_mut(FilterOperator::And.as_str())
+                            .unwrap()
+                            .push(bson);
                     }
                 }
             }
@@ -115,7 +127,10 @@ impl ServiceResolver {
                     for value in join_on_value {
                         let join_query = doc! { join_on: value };
                         let bson = bson::to_bson(&join_query).unwrap();
-                        query_input.get_array_mut("OR").unwrap().push(bson);
+                        query_input
+                            .get_array_mut(FilterOperator::Or.as_str())
+                            .unwrap()
+                            .push(bson);
                     }
                 } else {
                     trace!("Combining Int Value With Input - Is Not List");
@@ -123,7 +138,10 @@ impl ServiceResolver {
                     if join_on_value.is_some() {
                         let join_query = doc! { join_on: join_on_value };
                         let bson = bson::to_bson(&join_query).unwrap();
-                        query_input.get_array_mut("AND").unwrap().push(bson);
+                        query_input
+                            .get_array_mut(FilterOperator::And.as_str())
+                            .unwrap()
+                            .push(bson);
                         trace!("Join Query: {:?}", query_input);
                     }
                 }
@@ -157,14 +175,20 @@ impl ServiceResolver {
                     for value in join_on_value {
                         let join_query = doc! { join_on: value };
                         let bson = bson::to_bson(&join_query).unwrap();
-                        query_input.get_array_mut("OR").unwrap().push(bson);
+                        query_input
+                            .get_array_mut(FilterOperator::Or.as_str())
+                            .unwrap()
+                            .push(bson);
                     }
                 } else {
                     let join_on_value = ServiceResolver::get_bool_value(parent_value, field_name)?;
                     if join_on_value.is_some() {
                         let join_query = doc! { join_on: join_on_value };
                         let bson = bson::to_bson(&join_query).unwrap();
-                        query_input.get_array_mut("AND").unwrap().push(bson);
+                        query_input
+                            .get_array_mut(FilterOperator::And.as_str())
+                            .unwrap()
+                            .push(bson);
                     }
                 }
             }
@@ -202,7 +226,10 @@ impl ServiceResolver {
                     for value in join_on_value {
                         let join_query = doc! { join_on: value };
                         let bson = bson::to_bson(&join_query).unwrap();
-                        query_input.get_array_mut("OR").unwrap().push(bson);
+                        query_input
+                            .get_array_mut(FilterOperator::Or.as_str())
+                            .unwrap()
+                            .push(bson);
                     }
                 } else {
                     let join_on_value =
@@ -210,7 +237,10 @@ impl ServiceResolver {
                     if join_on_value.is_some() {
                         let join_query = doc! { join_on: join_on_value };
                         let bson = bson::to_bson(&join_query).unwrap();
-                        query_input.get_array_mut("AND").unwrap().push(bson);
+                        query_input
+                            .get_array_mut(FilterOperator::And.as_str())
+                            .unwrap()
+                            .push(bson);
                     }
                 }
             }
@@ -223,11 +253,19 @@ impl ServiceResolver {
         };
 
         // If there are no values to join on, return empty document.
-        if query_input.get_array("AND").unwrap().is_empty() {
-            query_input.remove("AND");
+        if query_input
+            .get_array(FilterOperator::And.as_str())
+            .unwrap()
+            .is_empty()
+        {
+            query_input.remove(FilterOperator::And.as_str());
         }
-        if query_input.get_array("OR").unwrap().is_empty() {
-            query_input.remove("OR");
+        if query_input
+            .get_array(FilterOperator::Or.as_str())
+            .unwrap()
+            .is_empty()
+        {
+            query_input.remove(FilterOperator::Or.as_str());
         }
 
         trace!("Joined Query: {:?}", query_input);

@@ -8,6 +8,7 @@ use crate::{
         SubGraphConfig,
     },
     data_sources::sql::{create_query::JoinClauses, SqlDataSource, SqlValueEnum},
+    filter_operator::FilterOperator,
 };
 
 mod get_query_where_values;
@@ -33,7 +34,10 @@ impl SqlDataSource {
             return Err(async_graphql::Error::new("Invalid Query Object"));
         }
 
-        let excluded_keys = vec!["OR".to_string(), "AND".to_string()];
+        let excluded_keys = FilterOperator::list()
+            .iter()
+            .map(|x| x.as_str().to_string())
+            .collect::<Vec<String>>();
 
         // Iterate through the query object and create a vector of keys and values
         for (key, value) in query_object.unwrap().iter() {
