@@ -1,9 +1,9 @@
-use crate::{configuration::subgraph::auth::ServiceAuth, graphql::schema::ServiceSchemaBuilder};
+use crate::{configuration::subgraph::auth::ServiceAuth, graphql::schema::ServiceSchema};
 use log::debug;
 use reqwest::Url;
 use webauthn_rs::{Webauthn, WebauthnBuilder};
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     pub fn build_webauthn(auth_config: &ServiceAuth) -> Result<Webauthn, async_graphql::Error> {
         debug!("Building Webauthn");
 

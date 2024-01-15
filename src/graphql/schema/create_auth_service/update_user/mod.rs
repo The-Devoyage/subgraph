@@ -1,7 +1,7 @@
 use crate::{
     configuration::subgraph::data_sources::sql::DialectEnum,
     data_sources::{sql::PoolEnum, DataSource},
-    graphql::schema::ServiceSchemaBuilder,
+    graphql::schema::ServiceSchema,
 };
 use bson::{doc, Regex};
 use log::debug;
@@ -16,7 +16,7 @@ pub struct UpdateUserInput {
     pub authentication_state: Option<String>,
 }
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     fn create_set_options(update_user_input: UpdateUserInput) -> String {
         let mut set_options = String::new();
         if let Some(registration_state) = update_user_input.registration_state {
@@ -93,7 +93,7 @@ impl ServiceSchemaBuilder {
             }
             DataSource::SQL(sql_ds) => match sql_ds.config.dialect {
                 DialectEnum::MYSQL => {
-                    let set_query = ServiceSchemaBuilder::create_set_options(UpdateUserInput {
+                    let set_query = ServiceSchema::create_set_options(UpdateUserInput {
                         identifier: service_user.identifier.clone(),
                         registration_state: Some(
                             serde_json::to_string(&service_user.registration_state)
@@ -136,7 +136,7 @@ impl ServiceSchemaBuilder {
                     }
                 }
                 DialectEnum::POSTGRES => {
-                    let set_query = ServiceSchemaBuilder::create_set_options(UpdateUserInput {
+                    let set_query = ServiceSchema::create_set_options(UpdateUserInput {
                         identifier: service_user.identifier.clone(),
                         registration_state: Some(
                             serde_json::to_string(&service_user.registration_state)
@@ -173,7 +173,7 @@ impl ServiceSchemaBuilder {
                     }
                 }
                 DialectEnum::SQLITE => {
-                    let set_query = ServiceSchemaBuilder::create_set_options(UpdateUserInput {
+                    let set_query = ServiceSchema::create_set_options(UpdateUserInput {
                         identifier: service_user.identifier.clone(),
                         registration_state: Some(
                             serde_json::to_string(&service_user.registration_state)

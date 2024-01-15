@@ -7,7 +7,7 @@ use log::error;
 use serde::{Deserialize, Serialize};
 use webauthn_rs::prelude::PublicKeyCredential;
 
-use crate::{data_sources::DataSources, graphql::schema::ServiceSchemaBuilder};
+use crate::{data_sources::DataSources, graphql::schema::ServiceSchema};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AuthenticateSuccess {
@@ -16,7 +16,7 @@ pub struct AuthenticateSuccess {
     pub user_identifier: String,
 }
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     pub fn create_authenticate_finish(mut self) -> Self {
         let auth_config = match self.subgraph_config.service.auth.clone() {
             Some(auth) => auth,
@@ -79,7 +79,7 @@ impl ServiceSchemaBuilder {
                         }
                     };
 
-                    let user = ServiceSchemaBuilder::get_user(&data_source, &identifier).await?;
+                    let user = ServiceSchema::get_user(&data_source, &identifier).await?;
 
                     let user = match user {
                         Some(user) => {
@@ -101,7 +101,7 @@ impl ServiceSchemaBuilder {
                         }
                     };
 
-                    let webauthn = ServiceSchemaBuilder::build_webauthn(&auth_config)?;
+                    let webauthn = ServiceSchema::build_webauthn(&auth_config)?;
 
                     webauthn
                         .finish_passkey_authentication(

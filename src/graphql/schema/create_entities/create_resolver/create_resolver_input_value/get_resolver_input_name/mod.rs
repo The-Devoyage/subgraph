@@ -1,8 +1,8 @@
 use log::debug;
 
-use crate::graphql::schema::{ResolverType, ServiceSchemaBuilder};
+use crate::graphql::schema::{ResolverType, ServiceSchema};
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     pub fn get_resolver_input_name(
         entity_name: &str,
         resolver_type: &ResolverType,

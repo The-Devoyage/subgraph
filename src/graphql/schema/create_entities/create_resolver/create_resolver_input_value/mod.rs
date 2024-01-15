@@ -3,7 +3,7 @@ use crate::{
     data_sources::{DataSource, DataSources},
     graphql::{
         input::ServiceInput,
-        schema::{ExcludeFromInput, ResolverType, ServiceSchemaBuilder},
+        schema::{ExcludeFromInput, ResolverType, ServiceSchema},
     },
 };
 use async_graphql::dynamic::{Field, InputObject, InputValue, TypeRef};
@@ -12,7 +12,7 @@ use log::debug;
 mod get_resolver_input_name;
 mod register_inputs;
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     pub fn create_resolver_input_value(
         mut self,
         entity: &ServiceEntityConfig,
@@ -23,8 +23,7 @@ impl ServiceSchemaBuilder {
 
         let mut inputs = Vec::new();
 
-        let input_name =
-            ServiceSchemaBuilder::get_resolver_input_name(&entity.name, resolver_type, None);
+        let input_name = ServiceSchema::get_resolver_input_name(&entity.name, resolver_type, None);
         let data_sources = self.data_sources.clone();
         let entity_data_source = DataSources::get_entity_data_soruce(&data_sources, entity);
 
@@ -37,22 +36,22 @@ impl ServiceSchemaBuilder {
 
         if include_query_input {
             let query_input_name = match resolver_type {
-                ResolverType::UpdateOne => ServiceSchemaBuilder::get_resolver_input_name(
+                ResolverType::UpdateOne => ServiceSchema::get_resolver_input_name(
                     &format!("{}_query", &entity.name.to_lowercase()),
                     &ResolverType::FindOne,
                     None,
                 ),
-                ResolverType::UpdateMany => ServiceSchemaBuilder::get_resolver_input_name(
+                ResolverType::UpdateMany => ServiceSchema::get_resolver_input_name(
                     &format!("{}s_query", &entity.name.to_lowercase()),
                     &ResolverType::UpdateOne,
                     None,
                 ),
-                ResolverType::FindOne => ServiceSchemaBuilder::get_resolver_input_name(
+                ResolverType::FindOne => ServiceSchema::get_resolver_input_name(
                     &format!("{}_query", &entity.name.to_lowercase()),
                     &ResolverType::FindOne,
                     None,
                 ),
-                ResolverType::FindMany => ServiceSchemaBuilder::get_resolver_input_name(
+                ResolverType::FindMany => ServiceSchema::get_resolver_input_name(
                     &format!("{}s_query", &entity.name.to_lowercase()),
                     &ResolverType::FindMany,
                     None,
@@ -101,17 +100,17 @@ impl ServiceSchemaBuilder {
 
         if include_values_input {
             let values_input_name = match resolver_type {
-                ResolverType::CreateOne => ServiceSchemaBuilder::get_resolver_input_name(
+                ResolverType::CreateOne => ServiceSchema::get_resolver_input_name(
                     &format!("{}_values", &entity.name.to_lowercase()),
                     &ResolverType::CreateOne,
                     None,
                 ),
-                ResolverType::UpdateOne => ServiceSchemaBuilder::get_resolver_input_name(
+                ResolverType::UpdateOne => ServiceSchema::get_resolver_input_name(
                     &format!("{}_values", &entity.name.to_lowercase()),
                     &ResolverType::UpdateOne,
                     None,
                 ),
-                ResolverType::UpdateMany => ServiceSchemaBuilder::get_resolver_input_name(
+                ResolverType::UpdateMany => ServiceSchema::get_resolver_input_name(
                     &format!("{}s_values", &entity.name.to_lowercase()),
                     &ResolverType::UpdateOne,
                     None,

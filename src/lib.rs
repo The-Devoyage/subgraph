@@ -39,8 +39,7 @@ pub async fn run(
     .await;
 
     // Build GraphQL Schema
-    let schema =
-        graphql::schema::ServiceSchemaBuilder::new(subgraph_config.clone(), data_sources).build();
+    let schema = graphql::schema::ServiceSchema::new(subgraph_config.clone(), data_sources).build();
 
     // GraphQL Endpoint
     let graphql_post = async_graphql_warp::graphql(schema.clone())

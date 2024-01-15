@@ -5,11 +5,11 @@ use async_graphql::{
 use log::error;
 use webauthn_rs::prelude::RegisterPublicKeyCredential;
 
-use crate::{data_sources::DataSources, graphql::schema::ServiceSchemaBuilder};
+use crate::{data_sources::DataSources, graphql::schema::ServiceSchema};
 
 use super::ServiceUser;
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     pub fn create_register_finish(mut self) -> Self {
         let auth_config = match self.subgraph_config.service.auth.clone() {
             Some(auth) => auth,
@@ -49,7 +49,7 @@ impl ServiceSchemaBuilder {
                             .deserialize::<String>()
                             .expect("Failed to deserialize."),
                         Err(e) => {
-                            ServiceSchemaBuilder::delete_user(&data_source, &identifier).await?;
+                            ServiceSchema::delete_user(&data_source, &identifier).await?;
                             return Err(async_graphql::Error::new(format!(
                                 "Failed to get input: {:?}",
                                 e
@@ -57,7 +57,7 @@ impl ServiceSchemaBuilder {
                         }
                     };
 
-                    let user = ServiceSchemaBuilder::get_user(&data_source, &identifier).await;
+                    let user = ServiceSchema::get_user(&data_source, &identifier).await;
 
                     let user = match user {
                         Ok(user) => user,
@@ -77,10 +77,10 @@ impl ServiceSchemaBuilder {
                         )));
                     }
 
-                    let webauthn = match ServiceSchemaBuilder::build_webauthn(&auth_config) {
+                    let webauthn = match ServiceSchema::build_webauthn(&auth_config) {
                         Ok(w) => Ok(w),
                         Err(e) => {
-                            ServiceSchemaBuilder::delete_user(&data_source, &identifier).await?;
+                            ServiceSchema::delete_user(&data_source, &identifier).await?;
                             Err(async_graphql::Error::new(format!(
                                 "something went wrong when building webauthn: {:?}",
                                 e
@@ -96,7 +96,7 @@ impl ServiceSchemaBuilder {
                     let pub_key = match pub_key {
                         Ok(pk) => pk,
                         Err(error) => {
-                            ServiceSchemaBuilder::delete_user(&data_source, &identifier).await?;
+                            ServiceSchema::delete_user(&data_source, &identifier).await?;
                             return Err(error);
                         }
                     };
@@ -115,7 +115,7 @@ impl ServiceSchemaBuilder {
                     let passkey = match passkey {
                         Ok(pk) => pk,
                         Err(error) => {
-                            ServiceSchemaBuilder::delete_user(&data_source, &identifier).await?;
+                            ServiceSchema::delete_user(&data_source, &identifier).await?;
                             return Err(error);
                         }
                     };
@@ -129,12 +129,11 @@ impl ServiceSchemaBuilder {
                         uuid: user.unwrap().uuid,
                     };
 
-                    let updated =
-                        ServiceSchemaBuilder::update_user(&data_source, service_user).await;
+                    let updated = ServiceSchema::update_user(&data_source, service_user).await;
                     match updated {
                         Ok(_) => (),
                         Err(e) => {
-                            ServiceSchemaBuilder::delete_user(&data_source, &identifier).await?;
+                            ServiceSchema::delete_user(&data_source, &identifier).await?;
                             return Err(e);
                         }
                     };

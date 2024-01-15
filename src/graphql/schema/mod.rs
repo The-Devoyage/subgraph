@@ -120,7 +120,7 @@ pub enum ExcludeFromInput {
     All,
 }
 
-pub struct ServiceSchemaBuilder {
+pub struct ServiceSchema {
     pub subgraph_config: SubGraphConfig,
     pub schema_builder: SchemaBuilder,
     pub query: Object,
@@ -128,7 +128,7 @@ pub struct ServiceSchemaBuilder {
     pub data_sources: DataSources,
 }
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     pub fn new(subgraph_config: SubGraphConfig, data_sources: DataSources) -> Self {
         debug!("Creating Service Schema");
 
@@ -155,7 +155,7 @@ impl ServiceSchemaBuilder {
             key_pair = None;
         }
 
-        ServiceSchemaBuilder {
+        ServiceSchema {
             subgraph_config,
             schema_builder: Schema::build("Query", Some("Mutation"), None)
                 .data(data_sources.clone())

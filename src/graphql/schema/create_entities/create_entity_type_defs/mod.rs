@@ -2,11 +2,11 @@ use crate::{
     configuration::subgraph::entities::ServiceEntityConfig, graphql::entity::ServiceEntity,
 };
 
-use super::ServiceSchemaBuilder;
+use super::ServiceSchema;
 use async_graphql::dynamic::{Enum, Object};
 use log::debug;
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     pub fn register_types(mut self, type_defs: Vec<Object>) -> Self {
         debug!("Registering Types");
         for type_def in type_defs {

@@ -3,11 +3,11 @@ use async_graphql::{
     Value,
 };
 
-use crate::{data_sources::DataSources, graphql::schema::ServiceSchemaBuilder};
+use crate::{data_sources::DataSources, graphql::schema::ServiceSchema};
 
 use super::ServiceUser;
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     pub fn create_authenticate_start(mut self) -> Self {
         let auth_config = match self.subgraph_config.service.auth.clone() {
             Some(auth) => auth,
@@ -41,7 +41,7 @@ impl ServiceSchemaBuilder {
                         &auth_config.data_source,
                     );
 
-                    let user = ServiceSchemaBuilder::get_user(&data_source, &identifier).await;
+                    let user = ServiceSchema::get_user(&data_source, &identifier).await;
 
                     let user = match user {
                         Ok(user) => user,
@@ -64,7 +64,7 @@ impl ServiceSchemaBuilder {
                         )));
                     };
 
-                    let webauthn = ServiceSchemaBuilder::build_webauthn(&auth_config)?;
+                    let webauthn = ServiceSchema::build_webauthn(&auth_config)?;
 
                     let (rcr, auth_state) = webauthn
                         .start_passkey_authentication(&vec![user.clone().passkey.unwrap()])
@@ -84,8 +84,7 @@ impl ServiceSchemaBuilder {
                         uuid: user.uuid,
                     };
 
-                    let updated =
-                        ServiceSchemaBuilder::update_user(&data_source, service_user).await;
+                    let updated = ServiceSchema::update_user(&data_source, service_user).await;
 
                     match updated {
                         Ok(_) => {

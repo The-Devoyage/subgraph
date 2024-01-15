@@ -1,4 +1,4 @@
-use super::ServiceSchemaBuilder;
+use super::ServiceSchema;
 use serde::{Deserialize, Serialize};
 use webauthn_rs::prelude::{Passkey, PasskeyAuthentication, PasskeyRegistration};
 
@@ -58,7 +58,7 @@ where
     Ok(auth_state)
 }
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     pub fn create_auth_service(mut self) -> Self {
         self = self.create_register_start();
         self = self.create_register_finish();

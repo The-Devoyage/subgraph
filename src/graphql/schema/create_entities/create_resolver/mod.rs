@@ -4,11 +4,11 @@ use crate::{
     configuration::subgraph::entities::ServiceEntityConfig, graphql::resolver::ServiceResolver,
 };
 
-use super::{ResolverType, ServiceSchemaBuilder};
+use super::{ResolverType, ServiceSchema};
 
 mod create_resolver_input_value;
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     pub fn create_resolver(
         mut self,
         entity: &ServiceEntityConfig,

@@ -8,10 +8,10 @@ use log::{debug, error};
 use crate::{
     configuration::subgraph::data_sources::sql::DialectEnum,
     data_sources::{sql::PoolEnum, DataSource, DataSources},
-    graphql::schema::ServiceSchemaBuilder,
+    graphql::schema::ServiceSchema,
 };
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     pub fn create_register_start(mut self) -> Self {
         let auth_config = match self.subgraph_config.service.auth.clone() {
             Some(auth) => auth,
@@ -47,7 +47,7 @@ impl ServiceSchemaBuilder {
                     );
 
                     // Check if user exists. If previous register, reject, else delete the user.
-                    let user = ServiceSchemaBuilder::get_user(&data_source, &identifier).await; 
+                    let user = ServiceSchema::get_user(&data_source, &identifier).await; 
 
                     if !user.is_err() && user.clone().unwrap().clone().is_some() {
                         if user.clone().unwrap().unwrap().passkey.is_some() {
@@ -57,13 +57,13 @@ impl ServiceSchemaBuilder {
                                 &identifier
                             )));
                         }else {
-                            ServiceSchemaBuilder::delete_user(&data_source, &identifier).await?;
+                            ServiceSchema::delete_user(&data_source, &identifier).await?;
                         }
                     }
 
                     debug!("Creating webauthn service");
 
-                    let webauthn = ServiceSchemaBuilder::build_webauthn(&auth_config)?;
+                    let webauthn = ServiceSchema::build_webauthn(&auth_config)?;
 
                     let user_uuid = uuid::Uuid::new_v4();
 

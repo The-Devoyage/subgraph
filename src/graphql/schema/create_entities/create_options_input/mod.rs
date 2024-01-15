@@ -1,8 +1,8 @@
 use async_graphql::dynamic::{Enum, EnumItem, InputObject, InputValue, TypeRef};
 
-use crate::graphql::schema::ServiceSchemaBuilder;
+use crate::graphql::schema::ServiceSchema;
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     pub fn create_options_input(mut self) -> Self {
         // Create the sort/order input list
         let mut sort_input = InputObject::new("sort_input");
