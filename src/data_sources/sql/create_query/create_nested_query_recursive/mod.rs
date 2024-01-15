@@ -14,7 +14,6 @@ use super::JoinClauses;
 
 impl SqlDataSource {
     pub fn create_nested_query_recursive(
-        is_first: bool,
         inputs: &Vec<Bson>,
         entity: &ServiceEntityConfig,
         dialect: &DialectEnum,
@@ -34,11 +33,7 @@ impl SqlDataSource {
         let mut combined_join_clauses = join_clauses.unwrap_or(JoinClauses(Vec::new()));
 
         // Possibly need this for postgres.
-        if is_first {
-            nested_query.push_str(" (");
-        } else {
-            nested_query.push_str(" (");
-        }
+        nested_query.push_str(" (");
 
         let mut pg_param_offset = Some(pg_param_offset.unwrap_or(0));
 
@@ -98,8 +93,6 @@ impl SqlDataSource {
 
             nested_query.push_str(&parameterized_query);
 
-            let is_first = i == 0;
-
             if and_filters.is_some() {
                 let and_filters = and_filters.unwrap().as_array().unwrap();
                 let has_more = if let Some(or_filters) = or_filters {
@@ -109,7 +102,6 @@ impl SqlDataSource {
                 };
                 let (and_query, and_where_values, and_join_clauses, and_where_keys) =
                     SqlDataSource::create_nested_query_recursive(
-                        is_first,
                         and_filters,
                         entity,
                         dialect,
@@ -134,7 +126,6 @@ impl SqlDataSource {
                 let or_filters = or_filters.unwrap().as_array().unwrap();
                 let (or_query, or_where_values, or_join_clauses, or_where_keys) =
                     SqlDataSource::create_nested_query_recursive(
-                        is_first,
                         or_filters,
                         entity,
                         dialect,

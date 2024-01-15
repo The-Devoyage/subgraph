@@ -47,7 +47,6 @@ impl SqlDataSource {
         let query_input = input.get("query").unwrap();
         let (nested_query, combined_where_values, combined_join_clauses, combined_where_keys) =
             SqlDataSource::create_nested_query_recursive(
-                true,
                 &vec![query_input.clone()],
                 entity,
                 dialect,
