@@ -32,42 +32,34 @@ impl SqlDataSource {
         let mut combined_where_keys = vec![];
         let mut combined_join_clauses = join_clauses.unwrap_or(JoinClauses(Vec::new()));
 
-        // Possibly need this for postgres.
         nested_query.push_str(" (");
 
         let mut pg_param_offset = Some(pg_param_offset.unwrap_or(0));
 
         for (i, filter) in inputs.iter().enumerate() {
-            //get the and and the or filters and handle recursively
-            let and_filters = filter
-                .as_document()
-                .unwrap()
-                .get(FilterOperator::And.as_str());
-            let or_filters = filter
-                .as_document()
-                .unwrap()
-                .get(FilterOperator::Or.as_str());
+            //get the filters to handle recursively
+            let mut recursive_filters = vec![];
+            for filter_operator in FilterOperator::list() {
+                let filter = filter.as_document().unwrap().get(filter_operator.as_str());
+                recursive_filters.push((filter_operator, filter));
+            }
 
             let mut initial_input = filter.clone().as_document().unwrap().clone();
+            let mut is_nested = false;
 
-            if initial_input.contains_key(FilterOperator::And.as_str()) {
-                initial_input.remove(FilterOperator::And.as_str());
-            }
-            if initial_input.contains_key(FilterOperator::Or.as_str()) {
-                initial_input.remove(FilterOperator::Or.as_str());
-            }
-
-            // Only accept an initial_input or and_filters/or_filters.
-            if (and_filters.is_some() || or_filters.is_some()) && !initial_input.is_empty() {
-                return Err(async_graphql::Error::from(format!(
-                    "Combining AND/OR filters with other filters is not supported. Found: {:?}",
-                    filter
-                )));
+            // Remove the and/or/like filters from the initial_input.
+            // These are handled recursively.
+            for filter_operator in FilterOperator::list() {
+                if initial_input.contains_key(filter_operator.as_str()) {
+                    initial_input.remove(filter_operator.as_str());
+                    is_nested = true;
+                }
             }
 
             // Nest inside a "query" property for recursive calls.
             let query_input = doc! { "query": initial_input };
 
+            // Handle the initial filter.
             let (where_keys, where_values, _value_keys, _values, join_clauses) =
                 SqlDataSource::get_key_data(
                     &query_input,
@@ -77,7 +69,6 @@ impl SqlDataSource {
                     &subgraph_config,
                     disable_eager_loading,
                 )?;
-
             combined_join_clauses.0.extend(join_clauses.0);
             combined_where_values.extend(where_values.clone());
             combined_where_keys.extend(where_keys.clone());
@@ -87,69 +78,74 @@ impl SqlDataSource {
                 dialect,
                 pg_param_offset,
                 &where_values,
+                filter_by_operator.clone(),
             )?;
 
             pg_param_offset = Some(offset);
 
             nested_query.push_str(&parameterized_query);
 
-            if and_filters.is_some() {
-                let and_filters = and_filters.unwrap().as_array().unwrap();
-                let has_more = if let Some(or_filters) = or_filters {
-                    or_filters.as_array().unwrap().len() > 0
+            if is_nested && i == 0 && !has_more && nested_query != " (" {
+                nested_query.push_str(" and ");
+            }
+
+            for (i, recursive_filter) in recursive_filters.iter().enumerate() {
+                if recursive_filter.1.is_none() {
+                    continue;
+                }
+
+                let filters = match recursive_filter.0 {
+                    FilterOperator::And | FilterOperator::Or => recursive_filter
+                        .1
+                        .clone()
+                        .unwrap()
+                        .as_array()
+                        .unwrap()
+                        .clone(),
+                    _ => {
+                        let doc = recursive_filter.1.clone().unwrap().as_document().unwrap();
+                        let mut array = vec![];
+                        array.push(Bson::Document(doc.clone()));
+                        array
+                    }
+                };
+                let is_last = i == recursive_filters.len() - 1;
+                let has_more = if !is_last && recursive_filters[i + 1].1.is_some() {
+                    true
                 } else {
                     false
                 };
-                let (and_query, and_where_values, and_join_clauses, and_where_keys) =
-                    SqlDataSource::create_nested_query_recursive(
-                        and_filters,
-                        entity,
-                        dialect,
-                        FilterOperator::And,
-                        has_more,
-                        pg_param_offset,
-                        subgraph_config,
-                        Some(combined_join_clauses.clone()),
-                        disable_eager_loading,
-                    )?;
+                let (
+                    recursive_query,
+                    recursive_where_values,
+                    recursive_join_clauses,
+                    recursive_where_keys,
+                ) = SqlDataSource::create_nested_query_recursive(
+                    &filters,
+                    entity,
+                    dialect,
+                    recursive_filter.0.clone(),
+                    has_more,
+                    pg_param_offset,
+                    subgraph_config,
+                    Some(combined_join_clauses.clone()),
+                    disable_eager_loading,
+                )?;
 
-                combined_where_values.extend(and_where_values.clone());
-                combined_join_clauses.0.extend(and_join_clauses.0);
-                combined_where_keys.extend(and_where_keys.clone());
+                combined_where_values.extend(recursive_where_values);
+                combined_where_keys.extend(recursive_where_keys);
+                combined_join_clauses.0.extend(recursive_join_clauses.0);
 
-                if let Some(and_query) = and_query {
-                    nested_query.push_str(&and_query);
-                };
-            }
-
-            if or_filters.is_some() {
-                let or_filters = or_filters.unwrap().as_array().unwrap();
-                let (or_query, or_where_values, or_join_clauses, or_where_keys) =
-                    SqlDataSource::create_nested_query_recursive(
-                        or_filters,
-                        entity,
-                        dialect,
-                        FilterOperator::Or,
-                        false,
-                        pg_param_offset,
-                        subgraph_config,
-                        Some(combined_join_clauses.clone()),
-                        disable_eager_loading,
-                    )?;
-
-                combined_where_values.extend(or_where_values.clone());
-                combined_join_clauses.0.extend(or_join_clauses.0);
-                combined_where_keys.extend(or_where_keys.clone());
-
-                if let Some(or_query) = or_query {
-                    nested_query.push_str(&or_query);
-                };
+                if recursive_query.is_some() {
+                    nested_query.push_str(&recursive_query.unwrap());
+                }
             }
 
             if i != inputs.len() - 1 {
                 match filter_by_operator {
                     FilterOperator::And => nested_query.push_str(" AND "),
                     FilterOperator::Or => nested_query.push_str(" OR "),
+                    _ => (),
                 }
             }
         }

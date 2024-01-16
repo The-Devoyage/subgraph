@@ -7,6 +7,7 @@
 - New response layer with request metadata such as service name, version (new), pagination details, timestamp, and more.
 - Pagination for Database related data sources.
 - Primary key identifier added to the Service Entity Field Config.
+- LIKE Filter added to resolver query inputs.
 
 ### Fixed
 
@@ -14,6 +15,11 @@
 - SQL Datasources return incorrect results after update many. Now currently requires table to have ID column and \_id column (if mongo).
 - Mongo Datasource now only returns matched updated documents on find many instead of all documents that match the updated document.
 - Mongo Datasource now returns correct documents when updating one and using nested filtering.
+- Extract correct `values` input when parsing request body.
+
+### Changed
+
+- SQL Filters now allow nested filtering from root input.
 
 ## [v0.0.13]
 

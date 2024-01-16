@@ -108,7 +108,7 @@ impl DocumentUtils {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 let values = documents
                     .into_iter()
-                    .map(|value| value.as_i32().unwrap())
+                    .map(|value| value.as_i32().unwrap_or(value.as_i64().unwrap() as i32))
                     .collect::<Vec<i32>>();
                 debug!("Found Int Values: {:?}", values);
                 return Ok(GetDocumentResultType::IntArray(values));
@@ -118,8 +118,9 @@ impl DocumentUtils {
         }
 
         let value = document.get(field_name).unwrap();
+        let value = value.as_i32().unwrap_or(value.as_i64().unwrap() as i32);
         debug!("Found Int Value: {:?}", value);
-        Ok(GetDocumentResultType::Int(value.as_i32().unwrap()))
+        Ok(GetDocumentResultType::Int(value))
     }
 
     pub fn get_document_boolean_scalar(

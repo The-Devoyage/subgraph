@@ -1,4 +1,4 @@
-use async_graphql::dynamic::{InputObject, InputValue, TypeRef};
+use async_graphql::dynamic::{InputObject, InputValue};
 use log::debug;
 
 use crate::{
@@ -94,7 +94,7 @@ impl ServiceInput {
             for filter_operator in filter_operators {
                 input = input.field(InputValue::new(
                     filter_operator.as_str(),
-                    TypeRef::named_nn_list(&self.input_name),
+                    filter_operator.get_graphql_typeref(&self.input_name),
                 ));
             }
         }

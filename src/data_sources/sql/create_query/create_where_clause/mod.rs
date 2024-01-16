@@ -1,6 +1,7 @@
 use crate::{
     configuration::subgraph::data_sources::sql::DialectEnum,
     data_sources::sql::{SqlDataSource, SqlValueEnum},
+    filter_operator::FilterOperator,
 };
 use log::{debug, error, trace};
 
@@ -10,6 +11,7 @@ impl SqlDataSource {
         dialect: &DialectEnum,
         mut pg_param_offset: Option<i32>,
         where_values: &Vec<SqlValueEnum>,
+        filter_operator: FilterOperator,
     ) -> Result<(String, i32), async_graphql::Error> {
         debug!("Creating Where Clause");
         trace!("Where Keys: {:?}", where_keys);
@@ -34,11 +36,13 @@ impl SqlDataSource {
                     | SqlValueEnum::BoolList(_) => true,
                     _ => false,
                 };
-                let operator = match is_list {
-                    true => " IN (",
-                    false => " = ",
-                };
-                query.push_str(operator);
+
+                if is_list {
+                    query.push_str(" IN (");
+                } else {
+                    let sql_operator = FilterOperator::get_sql_operator(&filter_operator);
+                    query.push_str(sql_operator);
+                }
 
                 // This is used to offset the placeholder index for postgres.
                 // It is incremented by the number of placeholders added to the query.
