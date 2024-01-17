@@ -172,7 +172,10 @@ impl Services {
                 }
 
                 let count = count_query.fetch_one(pool).await.map_err(|e| {
-                    error!("Error executing query: {:?} \n Error: {:?}", sql_query, e);
+                    error!(
+                        "Error executing count query: {:?} \n Error: {:?}",
+                        sql_query, e
+                    );
                     async_graphql::Error::new("Error executing query.")
                         .extend_with(|_, err| err.set("cause", e.to_string()))
                 })?;

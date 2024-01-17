@@ -46,18 +46,23 @@ impl SqlDataSource {
         identifier_query.push_str(" WHERE ");
 
         let query_input = input.get("query").unwrap();
-        let (nested_query, combined_where_values, _combined_join_values, combined_where_keys) =
-            SqlDataSource::create_nested_query_recursive(
-                &vec![query_input.clone()],
-                entity,
-                dialect,
-                FilterOperator::And,
-                false,
-                offset,
-                subgraph_config,
-                None,
-                false,
-            )?;
+        let (
+            nested_query,
+            combined_where_values,
+            _combined_join_values,
+            combined_where_keys,
+            _offset,
+        ) = SqlDataSource::create_nested_query_recursive(
+            &vec![query_input.clone()],
+            entity,
+            dialect,
+            FilterOperator::And,
+            false,
+            offset,
+            subgraph_config,
+            None,
+            false,
+        )?;
 
         if let Some(nested_query) = nested_query {
             query.push_str(nested_query.as_str());

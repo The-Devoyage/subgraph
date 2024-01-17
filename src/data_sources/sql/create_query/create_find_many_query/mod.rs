@@ -45,18 +45,23 @@ impl SqlDataSource {
         count_query.push_str(&count_statement);
 
         let query_input = input.get("query").unwrap();
-        let (nested_query, combined_where_values, combined_join_clauses, combined_where_keys) =
-            SqlDataSource::create_nested_query_recursive(
-                &vec![query_input.clone()],
-                entity,
-                dialect,
-                FilterOperator::And,
-                false,
-                None,
-                subgraph_config,
-                join_clauses,
-                disable_eager_loading,
-            )?;
+        let (
+            nested_query,
+            combined_where_values,
+            combined_join_clauses,
+            combined_where_keys,
+            _offset,
+        ) = SqlDataSource::create_nested_query_recursive(
+            &vec![query_input.clone()],
+            entity,
+            dialect,
+            FilterOperator::And,
+            false,
+            None,
+            subgraph_config,
+            join_clauses,
+            disable_eager_loading,
+        )?;
 
         for join_clause in combined_join_clauses.0 {
             trace!("Adding Join Clause: {}", join_clause);
@@ -115,29 +120,19 @@ impl SqlDataSource {
             // If postgres, we need to add the sort fields to the group by clause
             if dialect == &DialectEnum::POSTGRES {
                 query.push_str(" GROUP BY ");
-                count_query.push_str(" GROUP BY ");
                 for (i, sort_item) in sort_vec.iter().enumerate() {
                     if i > 0 {
                         query.push_str(", ");
-                        count_query.push_str(", ");
                     }
                     query.push_str(&format!("{} ", sort_item.field));
-                    count_query.push_str(&format!("{} ", sort_item.field));
                 }
             }
             query.push_str(" ORDER BY ");
-            count_query.push_str(" ORDER BY ");
             for (i, sort_item) in sort_vec.iter().enumerate() {
                 if i > 0 {
                     query.push_str(", ");
-                    count_query.push_str(", ");
                 }
                 query.push_str(&format!(
-                    "{} {}",
-                    sort_item.field,
-                    sort_item.direction.to_string()
-                ));
-                count_query.push_str(&format!(
                     "{} {}",
                     sort_item.field,
                     sort_item.direction.to_string()

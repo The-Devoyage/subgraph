@@ -23,10 +23,20 @@ impl SqlDataSource {
         subgraph_config: &SubGraphConfig,
         join_clauses: Option<JoinClauses>,
         disable_eager_loading: bool,
-    ) -> Result<(Option<String>, Vec<SqlValueEnum>, JoinClauses, Vec<String>), async_graphql::Error>
-    {
-        debug!("Creating Recursive Nested Query From: {:?}", inputs);
-        debug!("Initial Join Clauses: {:?}", join_clauses);
+    ) -> Result<
+        (
+            Option<String>,
+            Vec<SqlValueEnum>,
+            JoinClauses,
+            Vec<String>,
+            Option<i32>,
+        ),
+        async_graphql::Error,
+    > {
+        debug!("Creating Recursive Nested Query");
+        trace!("Initial Inputs: {:?}", inputs);
+        trace!("Initial Join Clauses: {:?}", join_clauses);
+        trace!("Pg Param Offset: {:?}", pg_param_offset);
         let mut nested_query = String::new();
         let mut combined_where_values = vec![];
         let mut combined_where_keys = vec![];
@@ -35,6 +45,7 @@ impl SqlDataSource {
         nested_query.push_str(" (");
 
         let mut pg_param_offset = Some(pg_param_offset.unwrap_or(0));
+        trace!("Pg Param Offset Init: {:?}", pg_param_offset);
 
         for (i, filter) in inputs.iter().enumerate() {
             //get the filters to handle recursively
@@ -86,7 +97,7 @@ impl SqlDataSource {
             nested_query.push_str(&parameterized_query);
 
             if is_nested && i == 0 && !has_more && nested_query != " (" {
-                nested_query.push_str(" and ");
+                nested_query.push_str(" AND ");
             }
 
             for (i, recursive_filter) in recursive_filters.iter().enumerate() {
@@ -120,6 +131,7 @@ impl SqlDataSource {
                     recursive_where_values,
                     recursive_join_clauses,
                     recursive_where_keys,
+                    offset,
                 ) = SqlDataSource::create_nested_query_recursive(
                     &filters,
                     entity,
@@ -135,6 +147,9 @@ impl SqlDataSource {
                 combined_where_values.extend(recursive_where_values);
                 combined_where_keys.extend(recursive_where_keys);
                 combined_join_clauses.0.extend(recursive_join_clauses.0);
+                if offset.is_some() {
+                    pg_param_offset = offset;
+                }
 
                 if recursive_query.is_some() {
                     nested_query.push_str(&recursive_query.unwrap());
@@ -165,6 +180,7 @@ impl SqlDataSource {
                 combined_where_values,
                 combined_join_clauses,
                 combined_where_keys,
+                pg_param_offset,
             ));
         }
 
@@ -182,6 +198,7 @@ impl SqlDataSource {
             combined_where_values,
             combined_join_clauses,
             combined_where_keys,
+            pg_param_offset,
         ))
     }
 }

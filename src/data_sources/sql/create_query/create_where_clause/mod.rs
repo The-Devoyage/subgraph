@@ -47,8 +47,10 @@ impl SqlDataSource {
                 // This is used to offset the placeholder index for postgres.
                 // It is incremented by the number of placeholders added to the query.
                 let index = if pg_param_offset.is_some() {
+                    trace!("Existing Pg Param Offset: {:?}", pg_param_offset);
                     Some(i as i32 + pg_param_offset.unwrap())
                 } else {
+                    trace!("No Existing Pg Param Offset");
                     Some(0)
                 };
 
@@ -92,6 +94,7 @@ impl SqlDataSource {
             String::new()
         };
         trace!("Where Clause: {}", parameterized_query);
+        trace!("Parameter Offset: {:?}", pg_param_offset.unwrap_or(0));
         Ok((parameterized_query, pg_param_offset.unwrap_or(0)))
     }
 }

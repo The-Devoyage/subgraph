@@ -261,3 +261,116 @@ async fn find_many_with_sorting_and_pagination() {
         }
     }
 }
+
+#[tokio::test]
+async fn find_many_with_like_filter() {
+    // create several comments that have similar content.
+    let uuid_name = format!("with_like_filter_{}", uuid::Uuid::new_v4());
+    for i in 1..=9 {
+        let request = async_graphql::Request::new(format!(
+            r#"
+                mutation {{
+                    create_comment(create_comment_input: {{ values: {{ content: "{}", status: true }} }}) {{
+                        data {{
+                            id
+                        }}
+                    }}
+                }}
+            "#,
+            format!("{}_{}", uuid_name, i)
+        ));
+        let response = execute(request, None).await;
+        assert!(response.is_ok());
+    }
+
+    let request = async_graphql::Request::new(format!(
+        r#"
+        query {{
+            get_comments(get_comments_input: {{ query: {{ LIKE: {{ content: "{}%" }} }} }}) {{
+                data {{
+                    id
+                    content
+                }}
+            }}
+        }}
+        "#,
+        uuid_name
+    ));
+
+    let response = execute(request, None).await;
+    let json = response.data.into_json().unwrap();
+    let comments = json
+        .get("get_comments")
+        .unwrap()
+        .get("data")
+        .unwrap()
+        .as_array()
+        .unwrap();
+
+    // Make sure there are at least 9 comments returned
+    assert_eq!(comments.len(), 9);
+}
+
+#[tokio::test]
+async fn find_many_with_lt_gt_filters() {
+    // Create several comments. Get the ID of the first and last comment created.
+    let mut ids = Vec::new();
+    for _i in 0..=8 {
+        let request = async_graphql::Request::new(
+            r#"
+                mutation {
+                    create_comment(create_comment_input: { values: { content: "lt_gt_filter", status: true } }) {
+                        data {
+                            id
+                        }
+                    }
+                }
+            "#,
+        );
+        let response = execute(request, None).await;
+        assert!(response.is_ok());
+        let json = response.data.into_json().unwrap();
+        let id = json
+            .get("create_comment")
+            .unwrap()
+            .get("data")
+            .unwrap()
+            .get("id")
+            .unwrap()
+            .as_i64()
+            .unwrap();
+        ids.push(id);
+    }
+
+    // Search for those comments by ID using the GT and LT filters
+    let request = async_graphql::Request::new(format!(
+        r#"
+        query {{
+            get_comments(get_comments_input: {{ query: {{ AND: [{{ GT: {{ id: {} }} }}, {{ LT: {{ id: {} }} }}] }} }}) {{
+                data {{
+                    id
+                    content
+                }}
+            }}
+        }}
+        "#,
+        ids[0], ids[8]
+    ));
+
+    let response = execute(request, None).await;
+    let json = response.data.into_json().unwrap();
+    let comments = json
+        .get("get_comments")
+        .unwrap()
+        .get("data")
+        .unwrap()
+        .as_array()
+        .unwrap();
+
+    // Make sure the right comments have been returned.
+    assert!(comments.len() >= 8);
+    for comment in comments {
+        let id = comment.get("id").unwrap().as_i64().unwrap();
+        assert!(id > ids[0] && id < ids[8]);
+    }
+}

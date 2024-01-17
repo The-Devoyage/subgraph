@@ -1,5 +1,5 @@
 use bson::{oid::ObjectId, Bson};
-use log::debug;
+use log::{debug, error};
 
 use crate::configuration::subgraph::entities::{
     service_entity_field::ServiceEntityFieldConfig, ScalarOptions,
@@ -106,9 +106,44 @@ impl DocumentUtils {
     ) -> Result<GetDocumentResultType, async_graphql::Error> {
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
+                // Check that all values are i32 or i64
+                let valid = documents.iter().all(|value| {
+                    let i32_value = value.as_i32();
+                    if i32_value.is_none() {
+                        let i64_value = value.as_f64();
+                        if i64_value.is_some() {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                    return true;
+                });
+
+                if !valid {
+                    error!("Could not parse int value: {:?}", documents);
+                    return Err(async_graphql::Error::new(format!(
+                        "Could not parse int value: {:?}",
+                        documents
+                    )));
+                }
+
                 let values = documents
                     .into_iter()
-                    .map(|value| value.as_i32().unwrap_or(value.as_i64().unwrap() as i32))
+                    .map(|value| {
+                        let i32_value = value.as_i32();
+                        if i32_value.is_none() {
+                            let i64_value = value.as_f64();
+                            if i64_value.is_some() {
+                                return i64_value.unwrap() as i32;
+                            } else {
+                                // Alrady checked above.
+                                error!("Could not parse int value: {:?}", value);
+                                return -1;
+                            }
+                        }
+                        return i32_value.unwrap();
+                    })
                     .collect::<Vec<i32>>();
                 debug!("Found Int Values: {:?}", values);
                 return Ok(GetDocumentResultType::IntArray(values));
@@ -118,9 +153,21 @@ impl DocumentUtils {
         }
 
         let value = document.get(field_name).unwrap();
-        let value = value.as_i32().unwrap_or(value.as_i64().unwrap() as i32);
+        let i32_value = value.as_i32();
+        if i32_value.is_none() {
+            let i64_value = value.as_f64();
+            if i64_value.is_some() {
+                return Ok(GetDocumentResultType::Int(i64_value.unwrap() as i32));
+            } else {
+                error!("Could not parse int value: {:?}", value);
+                return Err(async_graphql::Error::new(format!(
+                    "Could not parse int value: {:?}",
+                    value
+                )));
+            }
+        }
         debug!("Found Int Value: {:?}", value);
-        Ok(GetDocumentResultType::Int(value))
+        Ok(GetDocumentResultType::Int(i32_value.unwrap()))
     }
 
     pub fn get_document_boolean_scalar(

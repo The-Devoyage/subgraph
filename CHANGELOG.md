@@ -7,7 +7,7 @@
 - New response layer with request metadata such as service name, version (new), pagination details, timestamp, and more.
 - Pagination for Database related data sources.
 - Primary key identifier added to the Service Entity Field Config.
-- LIKE Filter added to resolver query inputs.
+- LIKE, GT, and LT Filter added to resolver query inputs.
 
 ### Fixed
 

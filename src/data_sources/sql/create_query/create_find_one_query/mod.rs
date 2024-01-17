@@ -42,18 +42,23 @@ impl SqlDataSource {
             }
         };
 
-        let (nested_query, combined_where_values, combined_join_clauses, combined_where_keys) =
-            SqlDataSource::create_nested_query_recursive(
-                &vec![query_input.clone()],
-                entity,
-                dialect,
-                FilterOperator::And,
-                false,
-                None,
-                subgraph_config,
-                join_clauses,
-                false,
-            )?;
+        let (
+            nested_query,
+            combined_where_values,
+            combined_join_clauses,
+            combined_where_keys,
+            _offset,
+        ) = SqlDataSource::create_nested_query_recursive(
+            &vec![query_input.clone()],
+            entity,
+            dialect,
+            FilterOperator::And,
+            false,
+            None,
+            subgraph_config,
+            join_clauses,
+            false,
+        )?;
 
         for join_clause in combined_join_clauses.0 {
             query.push_str(&join_clause);

@@ -476,6 +476,7 @@ async fn find_many_with_sorting() {
                     create_dog(create_dog_input: {{ values: {{ name: "{}", age: {} }} }}) {{
                         data {{
                             _id
+                            age
                         }}
                     }}
                 }}
