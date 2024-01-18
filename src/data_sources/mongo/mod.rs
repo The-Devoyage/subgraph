@@ -299,24 +299,53 @@ impl MongoDataSource {
                 finalized.insert(key.clone(), value.clone());
             }
 
-            if key == FilterOperator::And.as_str() || key == FilterOperator::Or.as_str() {
-                debug!("AND/OR Filter");
-                let mut and_or_filters = Vec::new();
-                let filters = value.as_array().unwrap();
+            if FilterOperator::list()
+                .iter()
+                .map(|operator| operator.as_str())
+                .collect::<Vec<&str>>()
+                .contains(&key.as_str())
+            {
+                trace!("Found filter operator key: {}", key);
+                let mut recursive_filters = Vec::new();
+                let filters = match value.as_array() {
+                    Some(filters) => filters.clone(),
+                    None => {
+                        let filters = vec![value.clone()];
+                        filters
+                    }
+                };
                 for filter in filters {
                     let filter = filter.as_document().unwrap();
                     let (filter_finalized, eager_opts) =
                         MongoDataSource::finalize_input(filter.clone(), entity, subgraph_config)?;
-                    and_or_filters.push(filter_finalized);
+                    recursive_filters.push(filter_finalized);
                     eager_filters.extend(eager_opts);
                 }
                 finalized.remove(key);
-                let key = if key == FilterOperator::And.as_str() {
-                    "$and"
-                } else {
-                    "$or"
-                };
-                finalized.insert(key, and_or_filters);
+                let filter_operator = FilterOperator::from_str(key).unwrap();
+                let operator_key = FilterOperator::get_mongo_operator(&filter_operator);
+
+                match filter_operator {
+                    FilterOperator::And => {
+                        finalized.insert(operator_key, recursive_filters);
+                    }
+                    FilterOperator::Or => {
+                        finalized.insert(operator_key, recursive_filters);
+                    }
+                    _ => {
+                        // The rest of the filter operators require the reverse format.
+                        // For example { $eq: { name: "test" } } becomes { name: { $eq: "test" } }
+                        let mut new_filter = Document::new();
+                        for filter in recursive_filters {
+                            for (key, value) in filter.iter() {
+                                let mut new_value = Document::new();
+                                new_value.insert(operator_key, value.clone());
+                                new_filter.insert(key.clone(), new_value);
+                            }
+                        }
+                        finalized.insert("$and".to_string(), vec![new_filter]);
+                    }
+                }
             }
 
             // Add the options back to the filter.
