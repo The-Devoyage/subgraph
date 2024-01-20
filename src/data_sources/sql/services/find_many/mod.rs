@@ -1,5 +1,5 @@
 use async_graphql::ErrorExtensions;
-use log::{debug, error};
+use log::{debug, error, trace};
 use sqlx::{mysql::MySqlArguments, MySql, Row};
 
 use crate::data_sources::{
@@ -13,8 +13,10 @@ impl Services {
     pub async fn find_many(
         pool_enum: &PoolEnum,
         sql_query: &SqlQuery,
+        has_selection_set: &bool,
     ) -> Result<(Vec<Option<ResponseRow>>, TotalCount), async_graphql::Error> {
-        debug!("Executing Find Many Query: {:?}", sql_query);
+        debug!("Executing Find Many Query");
+        trace!("{:?}", sql_query);
 
         match pool_enum {
             PoolEnum::MySql(pool) => {
@@ -78,11 +80,15 @@ impl Services {
                     }
                 }
 
-                let rows = query.fetch_all(pool).await.map_err(|e| {
-                    error!("Error executing query: {:?}", e);
-                    async_graphql::Error::new("Error executing query.")
-                        .extend_with(|_, err| err.set("cause", e.to_string()))
-                })?;
+                let rows = if *has_selection_set {
+                    query.fetch_all(pool).await.map_err(|e| {
+                        error!("Error executing query: {:?}", e);
+                        async_graphql::Error::new("Error executing query.")
+                            .extend_with(|_, err| err.set("cause", e.to_string()))
+                    })?
+                } else {
+                    Vec::new()
+                };
 
                 let mut response_rows = Vec::new();
                 for row in rows {
@@ -96,7 +102,7 @@ impl Services {
                 })?;
 
                 let total_count = count.try_get("total_count").unwrap_or(0);
-                debug!("Total Count: {:?}", total_count);
+                trace!("Total Count: {:?}", total_count);
 
                 Ok((response_rows, TotalCount(total_count)))
             }
@@ -160,11 +166,15 @@ impl Services {
                     }
                 }
 
-                let rows = query.fetch_all(pool).await.map_err(|e| {
-                    error!("Error executing query: {:?} \n Error: {:?}", sql_query, e);
-                    async_graphql::Error::new("Error executing query.")
-                        .extend_with(|_, err| err.set("cause", e.to_string()))
-                })?;
+                let rows = if *has_selection_set {
+                    query.fetch_all(pool).await.map_err(|e| {
+                        error!("Error executing query: {:?}", e);
+                        async_graphql::Error::new("Error executing query.")
+                            .extend_with(|_, err| err.set("cause", e.to_string()))
+                    })?
+                } else {
+                    Vec::new()
+                };
 
                 let mut response_rows = Vec::new();
                 for row in rows {
@@ -181,7 +191,7 @@ impl Services {
                 })?;
 
                 let total_count = count.try_get("total_count").unwrap_or(0);
-                debug!("Total Count: {:?}", total_count);
+                trace!("Total Count: {:?}", total_count);
 
                 Ok((response_rows, TotalCount(total_count)))
             }
@@ -245,11 +255,15 @@ impl Services {
                     }
                 }
 
-                let rows = query.fetch_all(pool).await.map_err(|e| {
-                    error!("Error executing query: {:?} \n Error: {:?}", sql_query, e);
-                    async_graphql::Error::new("Error executing query.")
-                        .extend_with(|_, err| err.set("cause", e.to_string()))
-                })?;
+                let rows = if *has_selection_set {
+                    query.fetch_all(pool).await.map_err(|e| {
+                        error!("Error executing query: {:?} \n Error: {:?}", sql_query, e);
+                        async_graphql::Error::new("Error executing query.")
+                            .extend_with(|_, err| err.set("cause", e.to_string()))
+                    })?
+                } else {
+                    Vec::new()
+                };
 
                 let mut response_rows = Vec::new();
                 for row in rows {
@@ -263,7 +277,7 @@ impl Services {
                 })?;
 
                 let total_count = count.try_get("total_count").unwrap_or(0);
-                debug!("Total Count: {:?}", total_count);
+                trace!("Total Count: {:?}", total_count);
 
                 Ok((response_rows, TotalCount(total_count)))
             }

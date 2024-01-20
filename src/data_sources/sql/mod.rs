@@ -191,6 +191,7 @@ impl SqlDataSource {
         resolver_type: ResolverType,
         subgraph_config: &SubGraphConfig,
         token_data: &Option<TokenData>,
+        has_selection_set: bool,
     ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
         debug!("Executing SQL Operation");
 
@@ -252,7 +253,8 @@ impl SqlDataSource {
             }
             ResolverType::FindMany => {
                 let (entities, total_count) =
-                    services::Services::find_many(&data_source.pool, &query).await?;
+                    services::Services::find_many(&data_source.pool, &query, &has_selection_set)
+                        .await?;
                 let count = entities.len();
                 let opts_doc = if input.clone().get("opts").is_some() {
                     trace!("opts: {:?}", input.get("opts").unwrap());

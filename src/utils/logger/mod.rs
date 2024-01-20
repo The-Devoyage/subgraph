@@ -53,14 +53,8 @@ impl Logger {
                 }
             }
             None => match subgraph_config.clone().service.log_level {
-                Some(level) => {
-                    println!("Using Config Log Level: {}", level);
-                    LogLevelEnum::parse_log_level(level)
-                }
-                None => {
-                    println!("Using Default Log Level: {}", Level::Info);
-                    Level::Info
-                }
+                Some(level) => LogLevelEnum::parse_log_level(level),
+                None => Level::Info,
             },
         };
 

@@ -53,7 +53,7 @@ async fn main() -> Result<(), std::io::Error> {
             match license {
                 Ok(license) => {
                     debug!("License: {:?}", license);
-                    info!("License Validated");
+                    info!("✅ License Validated");
                 }
                 Err(e) => {
                     error!("License Error: {}", e.message);

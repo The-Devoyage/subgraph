@@ -91,16 +91,13 @@ impl ServiceResolver {
                     .into_iter()
                     .map(|f| f)
                     .collect::<Vec<SelectionField>>();
-                // Find the field that matches the entity name.
-                let entity_field = selection_fields
-                    .iter()
-                    .find(|f| f.name() == "data")
-                    .unwrap();
-                let entity_fields = entity_field
-                    .selection_set()
-                    .into_iter()
-                    .map(|f| f)
-                    .collect::<Vec<SelectionField>>();
+
+                // Get the selection set from the query if provided
+                let entity_fields = match selection_fields.iter().find(|f| f.name() == "data") {
+                    Some(f) => f.selection_set().into_iter().map(|f| f).collect::<Vec<_>>(),
+                    None => Vec::new(),
+                };
+                let has_selection_set = entity_fields.len() > 0;
 
                 let guard_context = ServiceResolver::guard_resolver_function(
                     entity_fields,
@@ -135,6 +132,7 @@ impl ServiceResolver {
                     operation_type,
                     &subgraph_config,
                     &token_data,
+                    has_selection_set.clone(),
                 )
                 .await?;
 

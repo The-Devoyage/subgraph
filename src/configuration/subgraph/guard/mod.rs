@@ -205,10 +205,12 @@ impl Guard {
 
                         for input_document in documents {
                             let json = serde_json::to_value(input_document.clone()).unwrap();
+                            trace!("Input Json Document: {:?}", json);
 
                             // If the specified input is nested, extract the nested value.
                             if is_nested {
                                 let keys: Vec<&str> = key.split(".").collect();
+                                trace!("Input Nested Keys: {:?}", keys);
                                 let mut value = &json[keys[0]];
                                 for key in keys.iter().skip(1) {
                                     trace!("Input Nested Key: {:?}", key);
@@ -219,7 +221,7 @@ impl Guard {
                                 }
 
                                 if value.is_null() {
-                                    return Ok(Value::Empty);
+                                    continue;
                                 }
 
                                 let value = value.to_string();

@@ -108,6 +108,7 @@ impl DataSources {
         resolver_type: ResolverType,
         subgraph_config: &SubGraphConfig,
         token_data: &Option<TokenData>,
+        has_selection_set: bool,
     ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
         debug!("Executing Datasource Operation");
 
@@ -139,6 +140,7 @@ impl DataSources {
                 resolver_type,
                 subgraph_config,
                 token_data,
+                has_selection_set,
             )
             .await?),
         }

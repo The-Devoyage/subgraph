@@ -260,6 +260,8 @@ impl ServiceResolver {
                 ));
             }
 
+            let has_selection_set = true;
+
             //Execute the operation to get the data.
             let results = DataSources::execute(
                 &data_sources,
@@ -268,6 +270,7 @@ impl ServiceResolver {
                 ResolverType::FindMany,
                 subgraph_config,
                 token_data,
+                has_selection_set,
             )
             .await?;
 
