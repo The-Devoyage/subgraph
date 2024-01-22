@@ -1,8 +1,9 @@
 use bson::{oid::ObjectId, Bson};
 use log::{debug, error};
 
-use crate::configuration::subgraph::entities::{
-    service_entity_field::ServiceEntityFieldConfig, ScalarOptions,
+use crate::{
+    configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
+    scalar_option::ScalarOption,
 };
 
 use super::DocumentUtils;
@@ -27,6 +28,7 @@ pub enum GetDocumentResultType {
 
 impl DocumentUtils {
     /// Get a value from a document.
+    /// Uses the scalar type to determine how to get the value.
     pub fn get_from_document(
         document: &bson::Document,
         field: &ServiceEntityFieldConfig,
@@ -37,37 +39,37 @@ impl DocumentUtils {
         );
 
         match field.scalar {
-            ScalarOptions::String => DocumentUtils::get_document_string_scalar(
+            ScalarOption::String => DocumentUtils::get_document_string_scalar(
                 document,
                 &field.name,
                 field.list.unwrap_or(false),
             ),
-            ScalarOptions::Int => DocumentUtils::get_document_int_scalar(
+            ScalarOption::Int => DocumentUtils::get_document_int_scalar(
                 document,
                 &field.name,
                 field.list.unwrap_or(false),
             ),
-            ScalarOptions::Boolean => DocumentUtils::get_document_boolean_scalar(
+            ScalarOption::Boolean => DocumentUtils::get_document_boolean_scalar(
                 document,
                 &field.name,
                 field.list.unwrap_or(false),
             ),
-            ScalarOptions::ObjectID => DocumentUtils::get_document_object_id_scalar(
+            ScalarOption::ObjectID => DocumentUtils::get_document_object_id_scalar(
                 document,
                 &field.name,
                 field.list.unwrap_or(false),
             ),
-            ScalarOptions::Object => DocumentUtils::get_document_object_scalar(
+            ScalarOption::Object => DocumentUtils::get_document_object_scalar(
                 document,
                 &field.name,
                 field.list.unwrap_or(false),
             ),
-            ScalarOptions::UUID => DocumentUtils::get_document_uuid_scalar(
+            ScalarOption::UUID => DocumentUtils::get_document_uuid_scalar(
                 document,
                 &field.name,
                 field.list.unwrap_or(false),
             ),
-            ScalarOptions::DateTime => DocumentUtils::get_document_datetime_scalar(
+            ScalarOption::DateTime => DocumentUtils::get_document_datetime_scalar(
                 document,
                 &field.name,
                 field.list.unwrap_or(false),

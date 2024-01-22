@@ -1,11 +1,9 @@
 use log::{debug, error};
 use serde::{Deserialize, Serialize};
 
-use crate::configuration::subgraph::guard::Guard;
+use crate::{configuration::subgraph::guard::Guard, scalar_option::ScalarOption};
 
 use self::exclude_from_input::ExcludeFromInput;
-
-use super::ScalarOptions;
 
 pub mod exclude_from_input;
 
@@ -13,7 +11,7 @@ pub mod exclude_from_input;
 pub struct ServiceEntityFieldConfig {
     pub name: String,
     pub guards: Option<Vec<Guard>>,
-    pub scalar: ScalarOptions,
+    pub scalar: ScalarOption,
     pub required: Option<bool>,
     pub exclude_from_input: Option<Vec<ExcludeFromInput>>,
     pub exclude_from_output: Option<bool>,

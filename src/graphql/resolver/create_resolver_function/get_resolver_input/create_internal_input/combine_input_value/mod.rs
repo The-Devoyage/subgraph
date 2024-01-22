@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use crate::{
-    configuration::subgraph::entities::ScalarOptions, filter_operator::FilterOperator,
-    graphql::resolver::ServiceResolver,
+    filter_operator::FilterOperator, graphql::resolver::ServiceResolver,
+    scalar_option::ScalarOption,
 };
 use bson::{doc, oid::ObjectId, Bson, Document};
 use log::{debug, error, trace};
@@ -13,7 +13,7 @@ impl ServiceResolver {
         parent_value: &Document,       // The parent value, with data from the ds.
         query_document: &mut Document, // The user provided input
         field_name: &str,
-        scalar: &ScalarOptions,
+        scalar: &ScalarOption,
         join_on: &str,
     ) -> Result<Document, async_graphql::Error> {
         debug!("Combining Primitive Value With Input");
@@ -50,7 +50,7 @@ impl ServiceResolver {
         // Replace the key of the input with the correct key to join on.
         // Map the value to the correct type based on the scalar.
         match scalar {
-            ScalarOptions::String | ScalarOptions::UUID | ScalarOptions::DateTime => {
+            ScalarOption::String | ScalarOption::UUID | ScalarOption::DateTime => {
                 if is_list {
                     trace!("Combining String Value With Input - Is List");
                     // Check that all values in array are of type string.
@@ -98,7 +98,7 @@ impl ServiceResolver {
                     }
                 }
             }
-            ScalarOptions::Int => {
+            ScalarOption::Int => {
                 trace!("Combining Int Value With Input");
                 if is_list {
                     trace!("Combining Int Value With Input - Is List");
@@ -146,7 +146,7 @@ impl ServiceResolver {
                     }
                 }
             }
-            ScalarOptions::Boolean => {
+            ScalarOption::Boolean => {
                 trace!("Combining Boolean Value With Input");
                 if is_list {
                     trace!("Combining Boolean Value With Input - Is List");
@@ -192,7 +192,7 @@ impl ServiceResolver {
                     }
                 }
             }
-            ScalarOptions::ObjectID => {
+            ScalarOption::ObjectID => {
                 trace!("Combining ObjectID Value With Input");
                 if is_list {
                     debug!("Combining ObjectID Value With Input - Is List");

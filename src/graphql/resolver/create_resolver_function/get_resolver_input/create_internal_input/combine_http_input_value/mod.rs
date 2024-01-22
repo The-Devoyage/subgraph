@@ -1,14 +1,14 @@
 use bson::{oid::ObjectId, Document};
 use log::{debug, error, trace};
 
-use crate::{configuration::subgraph::entities::ScalarOptions, graphql::resolver::ServiceResolver};
+use crate::{graphql::resolver::ServiceResolver, scalar_option::ScalarOption};
 
 impl ServiceResolver {
     pub fn combine_http_input_value(
         parent_value: &Document,
         query_document: &mut Document,
         field_name: &str,
-        scalar: &ScalarOptions,
+        scalar: &ScalarOption,
         join_on: &str,
     ) -> Result<Document, async_graphql::Error> {
         debug!("Combining HTTP Input Value");
@@ -22,7 +22,7 @@ impl ServiceResolver {
         // Replace the key of the input with the correct key to join on.
         // Map the value to the correct type based on the scalar
         match scalar {
-            ScalarOptions::String | ScalarOptions::UUID | ScalarOptions::DateTime => {
+            ScalarOption::String | ScalarOption::UUID | ScalarOption::DateTime => {
                 if is_list {
                     // Check that all values in array are of type string.
                     let valid_strings = parent_value
@@ -65,7 +65,7 @@ impl ServiceResolver {
                     query_document.insert(join_on, join_on_value);
                 }
             }
-            ScalarOptions::Int => {
+            ScalarOption::Int => {
                 if is_list {
                     // Check that all values in array are of type i32.
                     let valid_ints = parent_value
@@ -109,7 +109,7 @@ impl ServiceResolver {
                     query_document.insert(join_on, join_on_value);
                 }
             }
-            ScalarOptions::Boolean => {
+            ScalarOption::Boolean => {
                 if is_list {
                     // Check that all values in array are of type bool.
                     let valid_bools = parent_value
@@ -152,7 +152,7 @@ impl ServiceResolver {
                     query_document.insert(join_on, join_on_value);
                 }
             }
-            ScalarOptions::ObjectID => {
+            ScalarOption::ObjectID => {
                 if is_list {
                     // Check that all values in array are of type object id.
                     let valid_object_ids = parent_value

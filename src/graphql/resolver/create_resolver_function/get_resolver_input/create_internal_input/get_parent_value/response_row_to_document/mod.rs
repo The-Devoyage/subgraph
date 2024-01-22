@@ -4,10 +4,8 @@ use sqlx::{mysql::MySqlRow, postgres::PgRow, sqlite::SqliteRow, Row};
 use uuid::Uuid;
 
 use crate::{
-    configuration::subgraph::entities::{
-        service_entity_field::ServiceEntityFieldConfig, ScalarOptions,
-    },
-    graphql::resolver::ServiceResolver,
+    configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
+    graphql::resolver::ServiceResolver, scalar_option::ScalarOption,
 };
 
 impl ServiceResolver {
@@ -29,10 +27,10 @@ impl ServiceResolver {
         }
 
         match as_type_field.scalar {
-            ScalarOptions::String
-            | ScalarOptions::ObjectID
-            | ScalarOptions::UUID
-            | ScalarOptions::DateTime => {
+            ScalarOption::String
+            | ScalarOption::ObjectID
+            | ScalarOption::UUID
+            | ScalarOption::DateTime => {
                 trace!("Getting String Column Value");
                 let column_value: Option<&str> = sqlite_row.try_get(field_name).map_err(|e| {
                     error!("Error getting string column value: {}", e);
@@ -42,7 +40,7 @@ impl ServiceResolver {
                     document.insert(field_name, column_value);
                 }
             }
-            ScalarOptions::Int => {
+            ScalarOption::Int => {
                 trace!("Getting Int Column Value");
                 let column_value: Option<i64> = sqlite_row.try_get(field_name).map_err(|e| {
                     error!("Error getting int column value: {}", e);
@@ -52,7 +50,7 @@ impl ServiceResolver {
                     document.insert(field_name, column_value);
                 }
             }
-            ScalarOptions::Boolean => {
+            ScalarOption::Boolean => {
                 trace!("Getting Boolean Column Value");
                 let column_value: Option<bool> = sqlite_row.try_get(field_name).map_err(|e| {
                     error!("Error getting boolean column value: {}", e);
@@ -87,10 +85,10 @@ impl ServiceResolver {
         }
 
         match as_type_field.scalar {
-            ScalarOptions::String
-            | ScalarOptions::ObjectID
-            | ScalarOptions::UUID
-            | ScalarOptions::DateTime => {
+            ScalarOption::String
+            | ScalarOption::ObjectID
+            | ScalarOption::UUID
+            | ScalarOption::DateTime => {
                 let column_value: Option<&str> = mysql_row.try_get(field_name).map_err(|e| {
                     error!("Error getting string column value: {}", e);
                     async_graphql::Error::new(format!("Error getting column value: {}", e))
@@ -99,7 +97,7 @@ impl ServiceResolver {
                     document.insert(field_name, column_value);
                 }
             }
-            ScalarOptions::Int => {
+            ScalarOption::Int => {
                 let column_value: Option<i64> = mysql_row.try_get(field_name).map_err(|e| {
                     error!("Error getting int column value: {}", e);
                     async_graphql::Error::new(format!("Error getting column value: {}", e))
@@ -108,7 +106,7 @@ impl ServiceResolver {
                     document.insert(field_name, column_value);
                 }
             }
-            ScalarOptions::Boolean => {
+            ScalarOption::Boolean => {
                 let column_value: Option<bool> = mysql_row.try_get(field_name).map_err(|e| {
                     error!("Error getting boolean column value: {}", e);
                     async_graphql::Error::new(format!("Error getting column value: {}", e))
@@ -138,7 +136,7 @@ impl ServiceResolver {
         }
 
         match as_type_field.scalar {
-            ScalarOptions::String | ScalarOptions::ObjectID | ScalarOptions::DateTime => {
+            ScalarOption::String | ScalarOption::ObjectID | ScalarOption::DateTime => {
                 let column_value: Option<&str> = pg_row.try_get(field_name).map_err(|e| {
                     error!("Error getting string column value: {}", e);
                     async_graphql::Error::new(format!("Error getting column value: {}", e))
@@ -147,7 +145,7 @@ impl ServiceResolver {
                     document.insert(field_name, column_value);
                 }
             }
-            ScalarOptions::Int => {
+            ScalarOption::Int => {
                 let column_value: Option<i64> = pg_row.try_get(field_name).map_err(|e| {
                     error!("Error getting int column value: {}", e);
                     async_graphql::Error::new(format!("Error getting column value: {}", e))
@@ -157,7 +155,7 @@ impl ServiceResolver {
                 }
             }
             //TODO: Ensure nothing is added if null is received.
-            ScalarOptions::UUID => {
+            ScalarOption::UUID => {
                 let column_value: Option<Uuid> = pg_row.try_get(field_name).map_err(|e| {
                     error!("Error getting uuid column value: {}", e);
                     async_graphql::Error::new(format!("Error getting column value: {}", e))
@@ -167,7 +165,7 @@ impl ServiceResolver {
                     document.insert(field_name, column_value.to_string());
                 }
             }
-            ScalarOptions::Boolean => {
+            ScalarOption::Boolean => {
                 let column_value: Option<bool> = pg_row.try_get(field_name).map_err(|e| {
                     error!("Error getting boolean column value: {}", e);
                     async_graphql::Error::new(format!("Error getting column value: {}", e))

@@ -3,10 +3,11 @@ use log::debug;
 
 use crate::{
     configuration::subgraph::entities::{
-        service_entity_field::ServiceEntityFieldConfig, ScalarOptions, ServiceEntityConfig,
+        service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig,
     },
     data_sources::DataSources,
     graphql::entity::ServiceEntity,
+    scalar_option::ScalarOption,
 };
 
 use super::TypeRefsAndDefs;
@@ -23,35 +24,35 @@ impl ServiceEntity {
         let mut type_defs = Vec::new();
 
         let type_ref = match entity_field.scalar.clone() {
-            ScalarOptions::String => {
+            ScalarOption::String => {
                 if entity_field.list.unwrap_or(false) {
                     TypeRef::named_nn_list_nn(TypeRef::STRING)
                 } else {
                     TypeRef::named_nn(TypeRef::STRING)
                 }
             }
-            ScalarOptions::Int => {
+            ScalarOption::Int => {
                 if entity_field.list.unwrap_or(false) {
                     TypeRef::named_nn_list_nn(TypeRef::INT)
                 } else {
                     TypeRef::named_nn(TypeRef::INT)
                 }
             }
-            ScalarOptions::Boolean => {
+            ScalarOption::Boolean => {
                 if entity_field.list.unwrap_or(false) {
                     TypeRef::named_nn_list_nn(TypeRef::BOOLEAN)
                 } else {
                     TypeRef::named_nn(TypeRef::BOOLEAN)
                 }
             }
-            ScalarOptions::ObjectID => {
+            ScalarOption::ObjectID => {
                 if entity_field.list.unwrap_or(false) {
                     TypeRef::named_nn_list_nn("ObjectID")
                 } else {
                     TypeRef::named_nn("ObjectID")
                 }
             }
-            ScalarOptions::Object => {
+            ScalarOption::Object => {
                 let object_type_defs = ServiceEntity::new(
                     data_sources.clone(),
                     entity.clone(),
@@ -72,14 +73,14 @@ impl ServiceEntity {
                     TypeRef::named_nn(entity_field.name.clone())
                 }
             }
-            ScalarOptions::UUID => {
+            ScalarOption::UUID => {
                 if entity_field.list.unwrap_or(false) {
                     TypeRef::named_nn_list_nn(TypeRef::STRING)
                 } else {
                     TypeRef::named_nn(TypeRef::STRING)
                 }
             }
-            ScalarOptions::DateTime => {
+            ScalarOption::DateTime => {
                 if entity_field.list.unwrap_or(false) {
                     TypeRef::named_nn_list_nn(TypeRef::STRING)
                 } else {

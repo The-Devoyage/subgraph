@@ -7,12 +7,10 @@ use log::{debug, error, trace};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    configuration::subgraph::{
-        entities::{ScalarOptions, ServiceEntityConfig},
-        SubGraphConfig,
-    },
+    configuration::subgraph::{entities::ServiceEntityConfig, SubGraphConfig},
     filter_operator::FilterOperator,
     graphql::schema::create_auth_service::TokenData,
+    scalar_option::ScalarOption,
     utils::clean_string::clean_string,
 };
 
@@ -349,12 +347,12 @@ impl Guard {
                                         return Ok(Value::Empty);
                                     }
                                     match field.scalar {
-                                        ScalarOptions::String => Value::String(clean_string(&value.to_string(), None)),
-                                        ScalarOptions::Int => Value::Int(value.as_i64().unwrap()),
-                                        ScalarOptions::Boolean => Value::Boolean(value.as_bool().unwrap()),
-                                        ScalarOptions::DateTime => Value::String(value.to_string()),
-                                        ScalarOptions::UUID => Value::String(clean_string(&value.to_string(), None)),
-                                        ScalarOptions::ObjectID => {
+                                        ScalarOption::String => Value::String(clean_string(&value.to_string(), None)),
+                                        ScalarOption::Int => Value::Int(value.as_i64().unwrap()),
+                                        ScalarOption::Boolean => Value::Boolean(value.as_bool().unwrap()),
+                                        ScalarOption::DateTime => Value::String(value.to_string()),
+                                        ScalarOption::UUID => Value::String(clean_string(&value.to_string(), None)),
+                                        ScalarOption::ObjectID => {
                                             let object_id = value.get("$oid");
                                             if object_id.is_none() {
                                                 return Err(EvalexprError::CustomMessage("ObjectID not found.".to_string()))

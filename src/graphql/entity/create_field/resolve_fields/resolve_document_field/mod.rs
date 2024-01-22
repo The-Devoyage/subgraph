@@ -3,10 +3,9 @@ use bson::{Bson, Document};
 use log::debug;
 
 use crate::{
-    configuration::subgraph::entities::{
-        service_entity_field::ServiceEntityFieldConfig, ScalarOptions,
-    },
+    configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
     graphql::entity::ServiceEntity,
+    scalar_option::ScalarOption,
     utils::document::{get_from_document::GetDocumentResultType, DocumentUtils},
 };
 
@@ -18,17 +17,17 @@ impl ServiceEntity {
         debug!("Resolving Document Field: {:?}", field.name);
 
         match &field.scalar {
-            ScalarOptions::String => ServiceEntity::resolve_document_string_scalar(document, field),
-            ScalarOptions::ObjectID => {
+            ScalarOption::String => ServiceEntity::resolve_document_string_scalar(document, field),
+            ScalarOption::ObjectID => {
                 ServiceEntity::resolve_document_object_id_scalar(document, field)
             }
-            ScalarOptions::Int => ServiceEntity::resolve_document_int_scalar(document, field),
-            ScalarOptions::Boolean => {
+            ScalarOption::Int => ServiceEntity::resolve_document_int_scalar(document, field),
+            ScalarOption::Boolean => {
                 ServiceEntity::resolve_document_boolean_scalar(document, field)
             }
-            ScalarOptions::Object => ServiceEntity::resolve_document_object_scalar(document, field),
-            ScalarOptions::UUID => ServiceEntity::resolve_document_uuid_scalar(document, field),
-            ScalarOptions::DateTime => {
+            ScalarOption::Object => ServiceEntity::resolve_document_object_scalar(document, field),
+            ScalarOption::UUID => ServiceEntity::resolve_document_uuid_scalar(document, field),
+            ScalarOption::DateTime => {
                 ServiceEntity::resolve_document_datetime_scalar(document, field)
             }
         }

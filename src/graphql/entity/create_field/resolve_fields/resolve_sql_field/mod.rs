@@ -3,48 +3,48 @@ use log::{debug, error};
 use sqlx::Row;
 
 use crate::{
-    configuration::subgraph::entities::ScalarOptions, data_sources::sql::services::ResponseRow,
-    graphql::entity::ServiceEntity,
+    data_sources::sql::services::ResponseRow, graphql::entity::ServiceEntity,
+    scalar_option::ScalarOption,
 };
 
 impl ServiceEntity {
     pub fn resolve_sql_field(
         response_row: &ResponseRow,
         field_name: &str,
-        scalar: ScalarOptions,
+        scalar: ScalarOption,
     ) -> Result<Value, async_graphql::Error> {
         debug!("Resolving SQL Field");
 
         match scalar {
-            ScalarOptions::String => {
+            ScalarOption::String => {
                 let value = ServiceEntity::resolve_sql_string_scalar(response_row, field_name)?;
                 match value {
                     Some(value) => Ok(Value::from(value.to_string())),
                     None => Ok(Value::Null),
                 }
             }
-            ScalarOptions::Int => {
+            ScalarOption::Int => {
                 let value = ServiceEntity::resolve_sql_int_scalar(response_row, field_name)?;
                 match value {
                     Some(value) => Ok(Value::from(value)),
                     None => Ok(Value::Null),
                 }
             }
-            ScalarOptions::Boolean => {
+            ScalarOption::Boolean => {
                 let value = ServiceEntity::resolve_sql_bool_scalar(response_row, field_name)?;
                 match value {
                     Some(value) => Ok(Value::from(value)),
                     None => Ok(Value::Null),
                 }
             }
-            ScalarOptions::UUID => {
+            ScalarOption::UUID => {
                 let value = ServiceEntity::resolve_sql_uuid_scalar(response_row, field_name)?;
                 match value {
                     Some(value) => Ok(Value::from(value.to_string())),
                     None => Ok(Value::Null),
                 }
             }
-            ScalarOptions::DateTime => {
+            ScalarOption::DateTime => {
                 let value = ServiceEntity::resolve_sql_datetime_scalar(response_row, field_name)?;
                 match value {
                     Some(value) => Ok(Value::from(value.to_rfc3339())),
@@ -58,39 +58,39 @@ impl ServiceEntity {
     pub fn resolve_sql_field_json(
         response_row: &ResponseRow,
         field_name: &str,
-        scalar: ScalarOptions,
+        scalar: ScalarOption,
     ) -> Result<serde_json::Value, async_graphql::Error> {
         debug!("Resolving SQL Field");
         let field_value = match scalar {
-            ScalarOptions::String => {
+            ScalarOption::String => {
                 let value = ServiceEntity::resolve_sql_string_scalar(response_row, field_name)?;
                 match value {
                     Some(value) => Ok(serde_json::Value::String(value.to_string())),
                     None => Ok(serde_json::Value::Null),
                 }
             }
-            ScalarOptions::Int => {
+            ScalarOption::Int => {
                 let value = ServiceEntity::resolve_sql_int_scalar(response_row, field_name)?;
                 match value {
                     Some(value) => Ok(serde_json::Value::Number(serde_json::Number::from(value))),
                     None => Ok(serde_json::Value::Null),
                 }
             }
-            ScalarOptions::Boolean => {
+            ScalarOption::Boolean => {
                 let value = ServiceEntity::resolve_sql_bool_scalar(response_row, field_name)?;
                 match value {
                     Some(value) => Ok(serde_json::Value::Bool(value)),
                     None => Ok(serde_json::Value::Null),
                 }
             }
-            ScalarOptions::UUID => {
+            ScalarOption::UUID => {
                 let value = ServiceEntity::resolve_sql_uuid_scalar(response_row, field_name)?;
                 match value {
                     Some(value) => Ok(serde_json::Value::String(value.to_string())),
                     None => Ok(serde_json::Value::Null),
                 }
             }
-            ScalarOptions::DateTime => {
+            ScalarOption::DateTime => {
                 let value = ServiceEntity::resolve_sql_datetime_scalar(response_row, field_name)?;
                 match value {
                     Some(value) => Ok(serde_json::Value::String(value.to_rfc3339())),

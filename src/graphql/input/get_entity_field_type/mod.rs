@@ -2,11 +2,8 @@ use async_graphql::dynamic::{InputObject, TypeRef};
 use log::debug;
 
 use crate::{
-    configuration::subgraph::entities::{
-        service_entity_field::ServiceEntityFieldConfig, ScalarOptions,
-    },
-    data_sources::DataSource,
-    resolver_type::ResolverType,
+    configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
+    data_sources::DataSource, resolver_type::ResolverType, scalar_option::ScalarOption,
 };
 
 use super::ServiceInput;
@@ -58,19 +55,19 @@ impl ServiceInput {
         }
 
         let type_ref = match &entity_field.scalar {
-            ScalarOptions::String => {
+            ScalarOption::String => {
                 ServiceInput::get_entity_string_field_type(resolver_type, is_list, is_required)
             }
-            ScalarOptions::Int => {
+            ScalarOption::Int => {
                 ServiceInput::get_entity_int_field_type(resolver_type, is_list, is_required)
             }
-            ScalarOptions::Boolean => {
+            ScalarOption::Boolean => {
                 ServiceInput::get_entity_bool_field_type(resolver_type, is_list, is_required)
             }
-            ScalarOptions::ObjectID => {
+            ScalarOption::ObjectID => {
                 ServiceInput::get_entity_object_id_field_type(resolver_type, is_list, is_required)
             }
-            ScalarOptions::Object => {
+            ScalarOption::Object => {
                 let type_ref_with_inputs = ServiceInput::get_entity_object_field_type(
                     entity_field,
                     resolver_type,
@@ -84,10 +81,10 @@ impl ServiceInput {
 
                 type_ref_with_inputs.type_ref
             }
-            ScalarOptions::UUID => {
+            ScalarOption::UUID => {
                 ServiceInput::get_entity_string_field_type(resolver_type, is_list, is_required)
             }
-            ScalarOptions::DateTime => {
+            ScalarOption::DateTime => {
                 ServiceInput::get_entity_string_field_type(resolver_type, is_list, is_required)
             }
         };

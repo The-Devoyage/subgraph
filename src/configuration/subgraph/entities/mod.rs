@@ -1,4 +1,3 @@
-use bson::spec::ElementType;
 use log::{debug, error, trace};
 use serde::{Deserialize, Serialize};
 
@@ -17,32 +16,6 @@ pub struct ServiceEntityResolversConfig {
     pub create_one: Option<ServiceEntityResolverConfig>,
     pub update_one: Option<ServiceEntityResolverConfig>,
     pub update_many: Option<ServiceEntityResolverConfig>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum ScalarOptions {
-    String,
-    Int,
-    Boolean,
-    ObjectID,
-    Object,
-    UUID,
-    DateTime,
-}
-
-impl ScalarOptions {
-    pub fn to_bson_type(self) -> ElementType {
-        debug!("Converting Scalar To BSON Element Type: {:?}", self);
-        match self {
-            ScalarOptions::String => ElementType::String,
-            ScalarOptions::Int => ElementType::Int32,
-            ScalarOptions::Boolean => ElementType::Boolean,
-            ScalarOptions::ObjectID => ElementType::ObjectId,
-            ScalarOptions::Object => ElementType::EmbeddedDocument,
-            ScalarOptions::UUID => ElementType::String,
-            ScalarOptions::DateTime => ElementType::DateTime,
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

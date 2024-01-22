@@ -7,9 +7,7 @@ use std::str::FromStr;
 use crate::{
     configuration::subgraph::{
         data_sources::mongo::MongoDataSourceConfig,
-        entities::{
-            service_entity_field::ServiceEntityFieldConfig, ScalarOptions, ServiceEntityConfig,
-        },
+        entities::{service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig},
         SubGraphConfig,
     },
     filter_operator::FilterOperator,
@@ -18,6 +16,7 @@ use crate::{
         schema::create_options_input::{DirectionEnum, OptionsInput},
     },
     resolver_type::ResolverType,
+    scalar_option::ScalarOption,
 };
 
 use super::DataSource;
@@ -121,7 +120,7 @@ impl MongoDataSource {
             // Since searching by a single key above, the last field is guaranteed to be the field we are looking for.
             if let Some(field) = fields.last() {
                 match field.scalar {
-                    ScalarOptions::ObjectID => {
+                    ScalarOption::ObjectID => {
                         // if the value is a string, convert it to an object id.
                         if let bson::Bson::String(object_id_string) = value {
                             let object_id = ObjectId::from_str(&object_id_string).map_err(|e| {
@@ -136,7 +135,7 @@ impl MongoDataSource {
                             converted.insert(k.clone(), object_id);
                         }
                     }
-                    ScalarOptions::Object => {
+                    ScalarOption::Object => {
                         let separator = if key.is_empty() { "" } else { "." };
                         let separated = format!("{}{}", separator, k);
                         key.push_str(&separated);

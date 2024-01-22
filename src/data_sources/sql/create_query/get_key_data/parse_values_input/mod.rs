@@ -6,12 +6,11 @@ use log::{debug, error};
 use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum,
-        entities::{
-            service_entity_field::ServiceEntityFieldConfig, ScalarOptions, ServiceEntityConfig,
-        },
+        entities::{service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig},
     },
     data_sources::sql::{SqlDataSource, SqlValueEnum},
     resolver_type::ResolverType,
+    scalar_option::ScalarOption,
 };
 
 impl SqlDataSource {
@@ -78,7 +77,7 @@ impl SqlDataSource {
             let list = value.as_array().is_some();
 
             match scalar {
-                ScalarOptions::String => {
+                ScalarOption::String => {
                     if list {
                         let value = value.as_array();
                         if value.is_some() {
@@ -106,7 +105,7 @@ impl SqlDataSource {
                         }
                     }
                 }
-                ScalarOptions::Int => {
+                ScalarOption::Int => {
                     if list {
                         let value = value.as_array();
                         if value.is_some() {
@@ -142,7 +141,7 @@ impl SqlDataSource {
                         }
                     }
                 }
-                ScalarOptions::Boolean => {
+                ScalarOption::Boolean => {
                     if list {
                         let value = value.as_array();
                         if value.is_some() {
@@ -170,7 +169,7 @@ impl SqlDataSource {
                         }
                     }
                 }
-                ScalarOptions::UUID => {
+                ScalarOption::UUID => {
                     if list {
                         let value = value.as_array();
                         if value.is_some() {
@@ -213,7 +212,7 @@ impl SqlDataSource {
                         }
                     }
                 }
-                ScalarOptions::DateTime => {
+                ScalarOption::DateTime => {
                     if list {
                         let value = value.as_array();
                         if value.is_some() {
@@ -265,7 +264,7 @@ impl SqlDataSource {
                         }
                     }
                 }
-                ScalarOptions::ObjectID => {
+                ScalarOption::ObjectID => {
                     if list {
                         let value = value.as_array();
                         if value.is_some() {
