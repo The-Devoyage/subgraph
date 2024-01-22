@@ -47,7 +47,7 @@ impl ServiceEntity {
             match resolver_type {
                 ResolverType::InternalType => continue,
                 _ => {
-                    let return_type = Object::new(format!(
+                    let mut return_type = Object::new(format!(
                         "{}_{}_response",
                         resolver_type.to_string().to_lowercase(),
                         self.entity.name
@@ -55,82 +55,15 @@ impl ServiceEntity {
                     let data_source = self.data_source.clone();
 
                     // Add the "data" field to the return type
-                    let return_type = match resolver_type {
-                        ResolverType::FindOne
-                        | ResolverType::UpdateOne
-                        | ResolverType::CreateOne => return_type.field(Field::new(
-                            "data",
-                            match &self.entity.required.unwrap_or(false) {
-                                false => TypeRef::named(&self.entity.name.clone()),
-                                true => TypeRef::named_nn(&self.entity.name.clone()),
-                            },
-                            move |ctx| {
-                                let data_source = data_source.clone();
-                                FieldFuture::new(async move {
-                                    let res =
-                                        ctx.parent_value.try_downcast_ref::<ResolverResponse>()?;
-
-                                    // If the DS is a SQL DS, then we need to downcast to ResponseRow
-                                    if let DataSource::SQL(_sql_ds) = data_source.clone() {
-                                        // Return the first value in the data array.
-                                        for v in res.data.iter() {
-                                            let v = v
-                                                .try_downcast_ref::<Option<ResponseRow>>()
-                                                .map_err(|_| {
-                                                    error!("Failed to downcast to ResponseRow");
-                                                    async_graphql::Error::new(
-                                                        "Failed to downcast to ResponseRow",
-                                                    )
-                                                })?;
-                                            let fv = FieldValue::borrowed_any(v);
-                                            return Ok(Some(fv));
-                                        }
-                                    }
-
-                                    // If the DS is a Mongo DS, then we need to downcast to Document
-                                    if let DataSource::Mongo(_mongo_ds) = data_source.clone() {
-                                        // Return the first value in the data array.
-                                        for v in res.data.iter() {
-                                            let v = v
-                                                .try_downcast_ref::<Option<Document>>()
-                                                .map_err(|_| {
-                                                    error!("Failed to downcast to Document");
-                                                    async_graphql::Error::new(
-                                                        "Failed to downcast to Document",
-                                                    )
-                                                })?;
-                                            let fv = FieldValue::borrowed_any(v);
-                                            return Ok(Some(fv));
-                                        }
-                                    }
-
-                                    if let DataSource::HTTP(_http_ds) = data_source.clone() {
-                                        // Return the first value in the data array.
-                                        for v in res.data.iter() {
-                                            let v = v.try_downcast_ref::<JsonValue>().map_err(
-                                                |_| {
-                                                    error!("Failed to downcast to JsonValue");
-                                                    async_graphql::Error::new(
-                                                        "Failed to downcast to JsonValue",
-                                                    )
-                                                },
-                                            )?;
-                                            let fv = FieldValue::borrowed_any(v);
-                                            return Ok(Some(fv));
-                                        }
-                                    }
-
-                                    // If we can't downcast to the correct type, then return None.
-                                    Ok(Some(FieldValue::NULL))
-                                })
-                            },
-                        )),
-                        ResolverType::FindMany | ResolverType::UpdateMany => {
-                            return_type.field(Field::new(
+                    if !&self.entity.exclude_from_output.unwrap_or(false) {
+                        return_type = match resolver_type {
+                            ResolverType::FindOne
+                            | ResolverType::UpdateOne
+                            | ResolverType::CreateOne => return_type.field(Field::new(
                                 "data",
                                 match &self.entity.required.unwrap_or(false) {
-                                    false => TypeRef::named_list_nn(&self.entity.name.clone()),
-                                    true => TypeRef::named_nn_list_nn(&self.entity.name.clone()),
+                                    false => TypeRef::named(&self.entity.name.clone()),
+                                    true => TypeRef::named_nn(&self.entity.name.clone()),
                                 },
                                 move |ctx| {
                                     let data_source = data_source.clone();
@@ -141,102 +74,180 @@ impl ServiceEntity {
 
                                         // If the DS is a SQL DS, then we need to downcast to ResponseRow
                                         if let DataSource::SQL(_sql_ds) = data_source.clone() {
-                                            let data = res.data.iter().map(|v| {
+                                            // Return the first value in the data array.
+                                            for v in res.data.iter() {
                                                 let v = v
                                                     .try_downcast_ref::<Option<ResponseRow>>()
-                                                    .unwrap(); // Should be safe to unwrap.
+                                                    .map_err(|_| {
+                                                        error!("Failed to downcast to ResponseRow");
+                                                        async_graphql::Error::new(
+                                                            "Failed to downcast to ResponseRow",
+                                                        )
+                                                    })?;
                                                 let fv = FieldValue::borrowed_any(v);
-                                                fv
-                                            });
-
-                                            return Ok(Some(FieldValue::list(data)));
+                                                return Ok(Some(fv));
+                                            }
                                         }
 
                                         // If the DS is a Mongo DS, then we need to downcast to Document
                                         if let DataSource::Mongo(_mongo_ds) = data_source.clone() {
-                                            let data = res.data.iter().map(|v| {
+                                            // Return the first value in the data array.
+                                            for v in res.data.iter() {
+                                                let v = v
+                                                    .try_downcast_ref::<Option<Document>>()
+                                                    .map_err(|_| {
+                                                        error!("Failed to downcast to Document");
+                                                        async_graphql::Error::new(
+                                                            "Failed to downcast to Document",
+                                                        )
+                                                    })?;
+                                                let fv = FieldValue::borrowed_any(v);
+                                                return Ok(Some(fv));
+                                            }
+                                        }
+
+                                        if let DataSource::HTTP(_http_ds) = data_source.clone() {
+                                            // Return the first value in the data array.
+                                            for v in res.data.iter() {
+                                                let v = v.try_downcast_ref::<JsonValue>().map_err(
+                                                    |_| {
+                                                        error!("Failed to downcast to JsonValue");
+                                                        async_graphql::Error::new(
+                                                            "Failed to downcast to JsonValue",
+                                                        )
+                                                    },
+                                                )?;
+                                                let fv = FieldValue::borrowed_any(v);
+                                                return Ok(Some(fv));
+                                            }
+                                        }
+
+                                        // If we can't downcast to the correct type, then return None.
+                                        Ok(Some(FieldValue::NULL))
+                                    })
+                                },
+                            )),
+                            ResolverType::FindMany | ResolverType::UpdateMany => {
+                                return_type.field(Field::new(
+                                    "data",
+                                    match &self.entity.required.unwrap_or(false) {
+                                        false => TypeRef::named_list_nn(&self.entity.name.clone()),
+                                        true => {
+                                            TypeRef::named_nn_list_nn(&self.entity.name.clone())
+                                        }
+                                    },
+                                    move |ctx| {
+                                        let data_source = data_source.clone();
+                                        FieldFuture::new(async move {
+                                            let res = ctx
+                                                .parent_value
+                                                .try_downcast_ref::<ResolverResponse>()?;
+
+                                            // If the DS is a SQL DS, then we need to downcast to ResponseRow
+                                            if let DataSource::SQL(_sql_ds) = data_source.clone() {
+                                                let data = res.data.iter().map(|v| {
+                                                    let v = v
+                                                        .try_downcast_ref::<Option<ResponseRow>>()
+                                                        .unwrap(); // Should be safe to unwrap.
+                                                    let fv = FieldValue::borrowed_any(v);
+                                                    fv
+                                                });
+
+                                                return Ok(Some(FieldValue::list(data)));
+                                            }
+
+                                            // If the DS is a Mongo DS, then we need to downcast to Document
+                                            if let DataSource::Mongo(_mongo_ds) =
+                                                data_source.clone()
+                                            {
+                                                let data = res.data.iter().map(|v| {
+                                                    let v = v
+                                                        .try_downcast_ref::<Option<Document>>()
+                                                        .unwrap(); // Should be safe to unwrap.
+                                                    let fv = FieldValue::borrowed_any(v);
+                                                    fv
+                                                });
+
+                                                return Ok(Some(FieldValue::list(data)));
+                                            }
+
+                                            // If the DS is a HTTP DS, then we need to downcast to serde_json::Value
+                                            if let DataSource::HTTP(_http_ds) = data_source.clone()
+                                            {
+                                                let data = res.data.iter().map(|v| {
+                                                    let v =
+                                                        v.try_downcast_ref::<JsonValue>().unwrap(); // Should be safe to unwrap.
+                                                    let fv = FieldValue::borrowed_any(v);
+                                                    fv
+                                                });
+
+                                                return Ok(Some(FieldValue::list(data)));
+                                            }
+
+                                            // If we can't downcast to the correct type, then return
+                                            // empty list.
+                                            Ok(Some(FieldValue::NULL))
+                                        })
+                                    },
+                                ))
+                            }
+                            ResolverType::InternalType => return_type.field(Field::new(
+                                "data",
+                                match &self.entity.required.unwrap_or(false) {
+                                    false => TypeRef::named(&self.entity.name.clone()),
+                                    true => TypeRef::named_nn(&self.entity.name.clone()),
+                                },
+                                move |ctx| {
+                                    let data_source = data_source.clone();
+                                    FieldFuture::new(async move {
+                                        let res = ctx
+                                            .parent_value
+                                            .try_downcast_ref::<ResolverResponse>()?;
+
+                                        //TODO: Need to determine if resolving a list or not.
+
+                                        // If the DS is a SQL DS, then we need to downcast to ResponseRow
+                                        if let DataSource::SQL(_sql_ds) = data_source.clone() {
+                                            // Return the first value in the data array.
+                                            for v in res.data.iter() {
+                                                let v = v
+                                                    .try_downcast_ref::<Option<ResponseRow>>()
+                                                    .unwrap(); // Should be safe to unwrap.
+                                                let fv = FieldValue::borrowed_any(v);
+                                                return Ok(Some(fv));
+                                            }
+                                        }
+
+                                        // If the DS is a Mongo DS, then we need to downcast to Document
+                                        if let DataSource::Mongo(_mongo_ds) = data_source.clone() {
+                                            // Return the first value in the data array.
+                                            for v in res.data.iter() {
                                                 let v = v
                                                     .try_downcast_ref::<Option<Document>>()
                                                     .unwrap(); // Should be safe to unwrap.
                                                 let fv = FieldValue::borrowed_any(v);
-                                                fv
-                                            });
-
-                                            return Ok(Some(FieldValue::list(data)));
+                                                return Ok(Some(fv));
+                                            }
                                         }
 
-                                        // If the DS is a HTTP DS, then we need to downcast to serde_json::Value
                                         if let DataSource::HTTP(_http_ds) = data_source.clone() {
-                                            let data = res.data.iter().map(|v| {
-                                                let v = v.try_downcast_ref::<JsonValue>().unwrap(); // Should be safe to unwrap.
+                                            // Return the first value in the data array.
+                                            for v in res.data.iter() {
+                                                let v = v
+                                                    .try_downcast_ref::<Option<serde_json::Value>>()
+                                                    .unwrap(); // Should be safe to unwrap.
                                                 let fv = FieldValue::borrowed_any(v);
-                                                fv
-                                            });
-
-                                            return Ok(Some(FieldValue::list(data)));
+                                                return Ok(Some(fv));
+                                            }
                                         }
 
-                                        // If we can't downcast to the correct type, then return
-                                        // empty list.
+                                        // If we can't downcast to the correct type, then return None.
                                         Ok(Some(FieldValue::NULL))
                                     })
                                 },
-                            ))
-                        }
-                        ResolverType::InternalType => return_type.field(Field::new(
-                            "data",
-                            match &self.entity.required.unwrap_or(false) {
-                                false => TypeRef::named(&self.entity.name.clone()),
-                                true => TypeRef::named_nn(&self.entity.name.clone()),
-                            },
-                            move |ctx| {
-                                let data_source = data_source.clone();
-                                FieldFuture::new(async move {
-                                    let res =
-                                        ctx.parent_value.try_downcast_ref::<ResolverResponse>()?;
-
-                                    //TODO: Need to determine if resolving a list or not.
-
-                                    // If the DS is a SQL DS, then we need to downcast to ResponseRow
-                                    if let DataSource::SQL(_sql_ds) = data_source.clone() {
-                                        // Return the first value in the data array.
-                                        for v in res.data.iter() {
-                                            let v = v
-                                                .try_downcast_ref::<Option<ResponseRow>>()
-                                                .unwrap(); // Should be safe to unwrap.
-                                            let fv = FieldValue::borrowed_any(v);
-                                            return Ok(Some(fv));
-                                        }
-                                    }
-
-                                    // If the DS is a Mongo DS, then we need to downcast to Document
-                                    if let DataSource::Mongo(_mongo_ds) = data_source.clone() {
-                                        // Return the first value in the data array.
-                                        for v in res.data.iter() {
-                                            let v =
-                                                v.try_downcast_ref::<Option<Document>>().unwrap(); // Should be safe to unwrap.
-                                            let fv = FieldValue::borrowed_any(v);
-                                            return Ok(Some(fv));
-                                        }
-                                    }
-
-                                    if let DataSource::HTTP(_http_ds) = data_source.clone() {
-                                        // Return the first value in the data array.
-                                        for v in res.data.iter() {
-                                            let v = v
-                                                .try_downcast_ref::<Option<serde_json::Value>>()
-                                                .unwrap(); // Should be safe to unwrap.
-                                            let fv = FieldValue::borrowed_any(v);
-                                            return Ok(Some(fv));
-                                        }
-                                    }
-
-                                    // If we can't downcast to the correct type, then return None.
-                                    Ok(Some(FieldValue::NULL))
-                                })
-                            },
-                        )),
-                    };
+                            )),
+                        };
+                    }
 
                     // Add the "meta" field to the return type
                     let return_type =

@@ -74,6 +74,7 @@ pub struct ServiceEntityConfig {
     pub data_source: Option<ServiceEntityDataSourceConfig>,
     pub guards: Option<Vec<Guard>>,
     pub required: Option<bool>,
+    pub exclude_from_output: Option<bool>,
 }
 
 impl ServiceEntityConfig {

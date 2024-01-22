@@ -8,6 +8,7 @@
 - Pagination for Database related data sources.
 - Primary key identifier added to the Service Entity Field Config.
 - LIKE, GT, and LT Filter added to resolver query inputs.
+- `exclude_from_output` now available at entity level.
 
 ### Fixed
 
@@ -16,10 +17,13 @@
 - Mongo Datasource now only returns matched updated documents on find many instead of all documents that match the updated document.
 - Mongo Datasource now returns correct documents when updating one and using nested filtering.
 - Extract correct `values` input when parsing request body.
+- Create One Resolver Input - Nullable lists fixed.
 
 ### Changed
 
 - SQL Filters now allow nested filtering from root input.
+- Replace ENV variables function updated to exclude surrounding quotes.
+- HTTP error response now includes the returned error in the errors extensions.
 
 ## [v0.0.13]
 

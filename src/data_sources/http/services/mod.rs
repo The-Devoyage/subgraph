@@ -27,9 +27,10 @@ impl Services {
                 match res.status().is_success() {
                     true => res.text().await?,
                     _ => {
-                        error!("Response Status: {:?}", res.status());
+                        let res = res.text().await?;
+                        error!("Response Status: {:?}", res);
                         Err(async_graphql::Error::new("HTTP Request Failed")
-                            .extend_with(|_, e| e.set("status", res.status().as_u16())))?
+                            .extend_with(|_err, e| e.set("error", res)))?
                     }
                 }
             }
@@ -43,8 +44,10 @@ impl Services {
                 match res.status().is_success() {
                     true => res.text().await?,
                     _ => {
-                        error!("Response Status: {:?}", res.text().await?);
-                        Err(async_graphql::Error::new("HTTP Request Failed"))?
+                        let res = res.text().await?;
+                        error!("Response Status: {:?}", res);
+                        Err(async_graphql::Error::new("HTTP Request Failed")
+                            .extend_with(|_err, e| e.set("error", res)))?
                     }
                 }
             }
@@ -58,8 +61,10 @@ impl Services {
                 match res.status().is_success() {
                     true => res.text().await?,
                     _ => {
-                        error!("Response Status: {:?}", res.status());
-                        Err(async_graphql::Error::new("HTTP Request Failed"))?
+                        let res = res.text().await?;
+                        error!("Response Status: {:?}", res);
+                        Err(async_graphql::Error::new("HTTP Request Failed")
+                            .extend_with(|_err, e| e.set("error", res)))?
                     }
                 }
             }
@@ -73,8 +78,10 @@ impl Services {
                 match res.status().is_success() {
                     true => res.text().await?,
                     _ => {
-                        error!("Response Status: {:?}", res.status());
-                        Err(async_graphql::Error::new("HTTP Request Failed"))?
+                        let res = res.text().await?;
+                        error!("Response Status: {:?}", res);
+                        Err(async_graphql::Error::new("HTTP Request Failed")
+                            .extend_with(|_err, e| e.set("error", res)))?
                     }
                 }
             }

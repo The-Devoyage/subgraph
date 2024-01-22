@@ -26,7 +26,7 @@ impl Environment {
     fn replace_env_vars_in_json(json: Value, env: HashMap<String, String>) -> Value {
         let mut string = json.to_string();
         for (key, value) in env {
-            string = string.replace(&format!("\"${}\"", key), &format!("\"{}\"", &value));
+            string = string.replace(&format!("${}", key), &format!("{}", &value));
         }
         match serde_json::from_str(&string) {
             Ok(json) => json,

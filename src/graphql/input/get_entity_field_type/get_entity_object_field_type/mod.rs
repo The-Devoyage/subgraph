@@ -73,7 +73,7 @@ impl ServiceInput {
                 }
                 _ => {
                     if entity_field.list == Some(true) {
-                        TypeRef::named_nn_list_nn(input_name)
+                        TypeRef::named_nn_list(input_name)
                     } else {
                         TypeRef::named(input_name)
                     }
