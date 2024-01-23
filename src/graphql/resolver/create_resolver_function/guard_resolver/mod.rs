@@ -16,8 +16,7 @@ use crate::{
     },
     data_sources::{sql::services::ResponseRow, DataSources},
     graphql::{
-        entity::{create_return_types::ResolverResponse, ServiceEntity},
-        schema::create_auth_service::TokenData,
+        entity::create_return_types::ResolverResponse, schema::create_auth_service::TokenData,
     },
     resolver_type::ResolverType,
     utils::clean_string::clean_string,
@@ -318,11 +317,10 @@ impl ServiceResolver {
                         if field.is_virtual.unwrap_or(false) {
                             continue;
                         }
-                        let json_value = ServiceEntity::resolve_sql_field_json(
-                            response_row,
-                            &field.name.clone(),
-                            field.scalar.clone(),
-                        )?;
+                        let json_value = field
+                            .scalar
+                            .clone()
+                            .to_serde_json_value(response_row, &field.name)?;
                         json_obj[field.name.clone()] = json_value;
                     }
 

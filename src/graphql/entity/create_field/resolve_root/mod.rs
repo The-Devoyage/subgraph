@@ -98,11 +98,10 @@ impl ServiceEntity {
                 {
                     Ok(response_row) => {
                         if let Some(rr) = response_row {
-                            let value = ServiceEntity::resolve_sql_field(
-                                rr,
-                                field_name,
-                                entity_field.scalar.clone(),
-                            )?;
+                            let value = entity_field
+                                .scalar
+                                .clone()
+                                .to_async_graphql_value(rr, field_name)?;
                             Ok(Some(value))
                         } else {
                             if entity_required {
