@@ -10,7 +10,6 @@ use crate::{
     configuration::subgraph::{entities::ServiceEntityConfig, SubGraphConfig},
     filter_operator::FilterOperator,
     graphql::schema::create_auth_service::TokenData,
-    scalar_option::ScalarOption,
     utils::clean_string::clean_string,
 };
 
@@ -346,23 +345,7 @@ impl Guard {
                                     if value.is_null() {
                                         return Ok(Value::Empty);
                                     }
-                                    match field.scalar {
-                                        ScalarOption::String => Value::String(clean_string(&value.to_string(), None)),
-                                        ScalarOption::Int => Value::Int(value.as_i64().unwrap()),
-                                        ScalarOption::Boolean => Value::Boolean(value.as_bool().unwrap()),
-                                        ScalarOption::DateTime => Value::String(value.to_string()),
-                                        ScalarOption::UUID => Value::String(clean_string(&value.to_string(), None)),
-                                        ScalarOption::ObjectID => {
-                                            let object_id = value.get("$oid");
-                                            if object_id.is_none() {
-                                                return Err(EvalexprError::CustomMessage("ObjectID not found.".to_string()))
-                                            }
-                                            let object_id = object_id.unwrap().as_str().unwrap();
-                                            Value::String(object_id.to_string())
-                                        },
-                                        _ => return Err(EvalexprError::CustomMessage("Scalar is not supported in context.".to_string()))
-                                    }
-
+                                    field.scalar.to_evalexpr_type(&value)?
                                 },
                                 None => Value::Empty,
                             };

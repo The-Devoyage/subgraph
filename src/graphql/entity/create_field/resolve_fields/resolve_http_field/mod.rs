@@ -14,6 +14,7 @@ impl ServiceEntity {
 
         let value = &json_value[field_name];
 
+        // Match the scalar type and get the value json
         match scalar {
             ScalarOption::String => {
                 if value.is_null() || value == "null" {

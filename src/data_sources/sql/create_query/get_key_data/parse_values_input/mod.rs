@@ -76,6 +76,7 @@ impl SqlDataSource {
             let ServiceEntityFieldConfig { scalar, .. } = field.unwrap();
             let list = value.as_array().is_some();
 
+            // Match bson value to scalar type
             match scalar {
                 ScalarOption::String => {
                     if list {

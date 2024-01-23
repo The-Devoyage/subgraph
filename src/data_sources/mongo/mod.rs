@@ -119,9 +119,10 @@ impl MongoDataSource {
 
             // Since searching by a single key above, the last field is guaranteed to be the field we are looking for.
             if let Some(field) = fields.last() {
+                // if the bson string is an object id, convert the value to an object id.
                 match field.scalar {
                     ScalarOption::ObjectID => {
-                        // if the value is a string, convert it to an object id.
+                        // if the is a string, convert it to an object id.
                         if let bson::Bson::String(object_id_string) = value {
                             let object_id = ObjectId::from_str(&object_id_string).map_err(|e| {
                                 error!("Failed to convert string to object id. Error: {:?}", e);
