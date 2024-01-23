@@ -345,7 +345,7 @@ impl Guard {
                                     if value.is_null() {
                                         return Ok(Value::Empty);
                                     }
-                                    field.scalar.to_evalexpr_type(&value)?
+                                    field.scalar.to_evalexpr(&value)?
                                 },
                                 None => Value::Empty,
                             };
