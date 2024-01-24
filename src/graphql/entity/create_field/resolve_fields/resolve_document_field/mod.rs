@@ -6,7 +6,7 @@ use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
     graphql::entity::ServiceEntity,
     scalar_option::ScalarOption,
-    utils::document::{get_from_document::GetDocumentResultType, DocumentUtils},
+    utils::document::{get_from_document::DocumentValue, DocumentUtils},
 };
 
 impl ServiceEntity {
@@ -41,7 +41,7 @@ impl ServiceEntity {
         let resolved = DocumentUtils::get_from_document(document, field)?;
 
         match resolved {
-            GetDocumentResultType::ObjectID(object_id) => Ok(Value::from(object_id.to_string())),
+            DocumentValue::ObjectID(object_id) => Ok(Value::from(object_id.to_string())),
             _ => unreachable!("Invalid result type for object id scalar"),
         }
     }
@@ -54,8 +54,8 @@ impl ServiceEntity {
         let resolved = DocumentUtils::get_from_document(document, field)?;
 
         match resolved {
-            GetDocumentResultType::String(value) => Ok(Value::from(value)),
-            GetDocumentResultType::StringArray(values) => Ok(Value::List(
+            DocumentValue::String(value) => Ok(Value::from(value)),
+            DocumentValue::StringArray(values) => Ok(Value::List(
                 values.into_iter().map(|value| Value::from(value)).collect(),
             )),
             _ => unreachable!("Invalid result type for string scalar"),
@@ -71,8 +71,8 @@ impl ServiceEntity {
         let resolved = DocumentUtils::get_from_document(document, field)?;
 
         match resolved {
-            GetDocumentResultType::Int(value) => Ok(Value::from(value)),
-            GetDocumentResultType::IntArray(values) => Ok(Value::List(
+            DocumentValue::Int(value) => Ok(Value::from(value)),
+            DocumentValue::IntArray(values) => Ok(Value::List(
                 values.into_iter().map(|value| Value::from(value)).collect(),
             )),
             _ => unreachable!("Invalid result type for int scalar"),
@@ -88,8 +88,8 @@ impl ServiceEntity {
         let resolved = DocumentUtils::get_from_document(document, field)?;
 
         match resolved {
-            GetDocumentResultType::Boolean(value) => Ok(Value::from(value)),
-            GetDocumentResultType::BooleanArray(values) => Ok(Value::List(
+            DocumentValue::Boolean(value) => Ok(Value::from(value)),
+            DocumentValue::BooleanArray(values) => Ok(Value::List(
                 values.into_iter().map(|value| Value::from(value)).collect(),
             )),
             _ => unreachable!("Invalid result type for boolean scalar"),
@@ -105,8 +105,8 @@ impl ServiceEntity {
         let resolved = DocumentUtils::get_from_document(document, field)?;
 
         match resolved {
-            GetDocumentResultType::UUID(value) => Ok(Value::from(value.to_string())),
-            GetDocumentResultType::UUIDArray(values) => Ok(Value::List(
+            DocumentValue::UUID(value) => Ok(Value::from(value.to_string())),
+            DocumentValue::UUIDArray(values) => Ok(Value::List(
                 values
                     .into_iter()
                     .map(|value| Value::from(value.to_string()))
@@ -126,8 +126,8 @@ impl ServiceEntity {
 
         match resolved {
             // NOTE: Not sure if this is the correct format for DateTime
-            GetDocumentResultType::DateTime(value) => Ok(Value::from(value.to_rfc3339())),
-            GetDocumentResultType::DateTimeArray(values) => Ok(Value::List(
+            DocumentValue::DateTime(value) => Ok(Value::from(value.to_rfc3339())),
+            DocumentValue::DateTimeArray(values) => Ok(Value::List(
                 values
                     .into_iter()
                     .map(|value| Value::from(value.to_rfc3339()))

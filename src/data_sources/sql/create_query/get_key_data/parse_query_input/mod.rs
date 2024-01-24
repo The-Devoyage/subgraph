@@ -7,7 +7,7 @@ use crate::{
         entities::{service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig},
         SubGraphConfig,
     },
-    data_sources::sql::{create_query::JoinClauses, SqlDataSource, SqlValueEnum},
+    data_sources::sql::{create_query::JoinClauses, SqlDataSource, SqlValue},
     filter_operator::FilterOperator,
 };
 
@@ -18,12 +18,12 @@ impl SqlDataSource {
     pub fn parse_query_input(
         value: &Bson,
         mut where_keys: Vec<String>,
-        mut where_values: Vec<SqlValueEnum>,
+        mut where_values: Vec<SqlValue>,
         dialect: &DialectEnum,
         entity: &ServiceEntityConfig,
         subgraph_config: &SubGraphConfig,
         disable_eager_loading: bool,
-    ) -> Result<(Vec<String>, Vec<SqlValueEnum>, JoinClauses), async_graphql::Error> {
+    ) -> Result<(Vec<String>, Vec<SqlValue>, JoinClauses), async_graphql::Error> {
         debug!("Parse Query Input");
         trace!("Input: {:?}", value);
         let query_object = value.as_document();

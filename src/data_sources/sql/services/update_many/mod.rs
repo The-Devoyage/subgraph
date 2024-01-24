@@ -3,7 +3,7 @@ use sqlx::Row;
 
 use crate::{
     configuration::subgraph::entities::ServiceEntityConfig,
-    data_sources::sql::{PoolEnum, SqlQuery, SqlValueEnum},
+    data_sources::sql::{PoolEnum, SqlQuery, SqlValue},
     utils::clean_string::{clean_string, CleanOptions},
 };
 
@@ -42,42 +42,42 @@ impl Services {
                 let mut update_query = sqlx::query(&sql_query.query);
                 for value in &sql_query.values {
                     match value {
-                        SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
+                        SqlValue::String(v) | SqlValue::ObjectID(v) => {
                             let v = clean_string(v, Some(clean_options.clone()));
                             update_query = update_query.bind(v.clone());
                         }
-                        SqlValueEnum::Int(v) => {
+                        SqlValue::Int(v) => {
                             update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Bool(v) => {
+                        SqlValue::Bool(v) => {
                             update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
+                        SqlValue::StringList(values) | SqlValue::ObjectIDList(values) => {
                             for v in values {
                                 let v = clean_string(v, Some(clean_options.clone()));
                                 update_query = update_query.bind(v.clone());
                             }
                         }
-                        SqlValueEnum::IntList(values) => {
+                        SqlValue::IntList(values) => {
                             for int in values {
                                 update_query = update_query.bind(int);
                             }
                         }
-                        SqlValueEnum::BoolList(values) => {
+                        SqlValue::BoolList(values) => {
                             for bool in values {
                                 update_query = update_query.bind(bool);
                             }
                         }
-                        SqlValueEnum::UUID(uuid) => update_query = update_query.bind(uuid),
-                        SqlValueEnum::UUIDList(uuids) => {
+                        SqlValue::UUID(uuid) => update_query = update_query.bind(uuid),
+                        SqlValue::UUIDList(uuids) => {
                             for uuid in uuids {
                                 update_query = update_query.bind(uuid);
                             }
                         }
-                        SqlValueEnum::DateTime(date_time) => {
+                        SqlValue::DateTime(date_time) => {
                             update_query = update_query.bind(date_time);
                         }
-                        SqlValueEnum::DateTimeList(date_times) => {
+                        SqlValue::DateTimeList(date_times) => {
                             for date_time in date_times {
                                 update_query = update_query.bind(date_time);
                             }
@@ -86,50 +86,50 @@ impl Services {
                 }
                 for value in &sql_query.where_values {
                     match value {
-                        SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
+                        SqlValue::String(v) | SqlValue::ObjectID(v) => {
                             let v = clean_string(v, Some(clean_options.clone()));
                             update_query = update_query.bind(v.clone());
                             identifier_query = identifier_query.bind(v);
                         }
-                        SqlValueEnum::Int(v) => {
+                        SqlValue::Int(v) => {
                             update_query = update_query.bind(v);
                             identifier_query = identifier_query.bind(v);
                         }
-                        SqlValueEnum::Bool(v) => {
+                        SqlValue::Bool(v) => {
                             update_query = update_query.bind(v);
                             identifier_query = identifier_query.bind(v);
                         }
-                        SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
+                        SqlValue::StringList(values) | SqlValue::ObjectIDList(values) => {
                             for v in values {
                                 let v = clean_string(v, Some(clean_options.clone()));
                                 update_query = update_query.bind(v.clone());
                                 identifier_query = identifier_query.bind(v);
                             }
                         }
-                        SqlValueEnum::IntList(values) => {
+                        SqlValue::IntList(values) => {
                             for int in values {
                                 update_query = update_query.bind(int);
                                 identifier_query = identifier_query.bind(int);
                             }
                         }
-                        SqlValueEnum::BoolList(values) => {
+                        SqlValue::BoolList(values) => {
                             for bool in values {
                                 update_query = update_query.bind(bool);
                                 identifier_query = identifier_query.bind(bool);
                             }
                         }
-                        SqlValueEnum::UUID(uuid) => update_query = update_query.bind(uuid),
-                        SqlValueEnum::UUIDList(uuids) => {
+                        SqlValue::UUID(uuid) => update_query = update_query.bind(uuid),
+                        SqlValue::UUIDList(uuids) => {
                             for uuid in uuids {
                                 update_query = update_query.bind(uuid);
                                 identifier_query = identifier_query.bind(uuid);
                             }
                         }
-                        SqlValueEnum::DateTime(date_time) => {
+                        SqlValue::DateTime(date_time) => {
                             update_query = update_query.bind(date_time);
                             identifier_query = identifier_query.bind(date_time);
                         }
-                        SqlValueEnum::DateTimeList(date_times) => {
+                        SqlValue::DateTimeList(date_times) => {
                             for date_time in date_times {
                                 update_query = update_query.bind(date_time);
                                 identifier_query = identifier_query.bind(date_time);
@@ -194,42 +194,42 @@ impl Services {
                 debug!("PG VALUES: {:?}", sql_query);
                 for value in &sql_query.values {
                     match value {
-                        SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
+                        SqlValue::String(v) | SqlValue::ObjectID(v) => {
                             let v = clean_string(v, Some(clean_options.clone()));
                             update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Int(v) => {
+                        SqlValue::Int(v) => {
                             update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Bool(v) => {
+                        SqlValue::Bool(v) => {
                             update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
+                        SqlValue::StringList(values) | SqlValue::ObjectIDList(values) => {
                             for v in values {
                                 let v = clean_string(v, Some(clean_options.clone()));
                                 update_query = update_query.bind(v)
                             }
                         }
-                        SqlValueEnum::IntList(values) => {
+                        SqlValue::IntList(values) => {
                             for int in values {
                                 update_query = update_query.bind(int)
                             }
                         }
-                        SqlValueEnum::BoolList(values) => {
+                        SqlValue::BoolList(values) => {
                             for bool in values {
                                 update_query = update_query.bind(bool)
                             }
                         }
-                        SqlValueEnum::UUID(uuid) => update_query = update_query.bind(uuid),
-                        SqlValueEnum::UUIDList(uuids) => {
+                        SqlValue::UUID(uuid) => update_query = update_query.bind(uuid),
+                        SqlValue::UUIDList(uuids) => {
                             for uuid in uuids {
                                 update_query = update_query.bind(uuid)
                             }
                         }
-                        SqlValueEnum::DateTime(date_time) => {
+                        SqlValue::DateTime(date_time) => {
                             update_query = update_query.bind(date_time)
                         }
-                        SqlValueEnum::DateTimeList(date_times) => {
+                        SqlValue::DateTimeList(date_times) => {
                             for date_time in date_times {
                                 update_query = update_query.bind(date_time)
                             }
@@ -238,42 +238,42 @@ impl Services {
                 }
                 for value in &sql_query.where_values {
                     match value {
-                        SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
+                        SqlValue::String(v) | SqlValue::ObjectID(v) => {
                             let v = clean_string(v, Some(clean_options.clone()));
                             update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Int(v) => {
+                        SqlValue::Int(v) => {
                             update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Bool(v) => {
+                        SqlValue::Bool(v) => {
                             update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
+                        SqlValue::StringList(values) | SqlValue::ObjectIDList(values) => {
                             for v in values {
                                 let v = clean_string(v, Some(clean_options.clone()));
                                 update_query = update_query.bind(v)
                             }
                         }
-                        SqlValueEnum::IntList(values) => {
+                        SqlValue::IntList(values) => {
                             for int in values {
                                 update_query = update_query.bind(int)
                             }
                         }
-                        SqlValueEnum::BoolList(values) => {
+                        SqlValue::BoolList(values) => {
                             for bool in values {
                                 update_query = update_query.bind(bool)
                             }
                         }
-                        SqlValueEnum::UUID(uuid) => update_query = update_query.bind(uuid),
-                        SqlValueEnum::UUIDList(uuids) => {
+                        SqlValue::UUID(uuid) => update_query = update_query.bind(uuid),
+                        SqlValue::UUIDList(uuids) => {
                             for uuid in uuids {
                                 update_query = update_query.bind(uuid)
                             }
                         }
-                        SqlValueEnum::DateTime(date_time) => {
+                        SqlValue::DateTime(date_time) => {
                             update_query = update_query.bind(date_time)
                         }
-                        SqlValueEnum::DateTimeList(date_times) => {
+                        SqlValue::DateTimeList(date_times) => {
                             for date_time in date_times {
                                 update_query = update_query.bind(date_time)
                             }
@@ -307,42 +307,42 @@ impl Services {
                 //Bind the values first, example: SET title = ?
                 for value in &sql_query.values {
                     match value {
-                        SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
+                        SqlValue::String(v) | SqlValue::ObjectID(v) => {
                             let v = clean_string(v, Some(clean_options.clone()));
                             update_query = update_query.bind(v.clone());
                         }
-                        SqlValueEnum::Int(v) => {
+                        SqlValue::Int(v) => {
                             update_query = update_query.bind(v.clone());
                         }
-                        SqlValueEnum::Bool(v) => {
+                        SqlValue::Bool(v) => {
                             update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
+                        SqlValue::StringList(values) | SqlValue::ObjectIDList(values) => {
                             for v in values {
                                 let v = clean_string(v, Some(clean_options.clone()));
                                 update_query = update_query.bind(v.clone());
                             }
                         }
-                        SqlValueEnum::IntList(values) => {
+                        SqlValue::IntList(values) => {
                             for int in values {
                                 update_query = update_query.bind(int);
                             }
                         }
-                        SqlValueEnum::BoolList(values) => {
+                        SqlValue::BoolList(values) => {
                             for bool in values {
                                 update_query = update_query.bind(bool);
                             }
                         }
-                        SqlValueEnum::UUID(uuid) => update_query = update_query.bind(uuid),
-                        SqlValueEnum::UUIDList(uuids) => {
+                        SqlValue::UUID(uuid) => update_query = update_query.bind(uuid),
+                        SqlValue::UUIDList(uuids) => {
                             for uuid in uuids {
                                 update_query = update_query.bind(uuid);
                             }
                         }
-                        SqlValueEnum::DateTime(date_time) => {
+                        SqlValue::DateTime(date_time) => {
                             update_query = update_query.bind(date_time);
                         }
-                        SqlValueEnum::DateTimeList(date_times) => {
+                        SqlValue::DateTimeList(date_times) => {
                             for date_time in date_times {
                                 update_query = update_query.bind(date_time);
                             }
@@ -353,49 +353,49 @@ impl Services {
                 // Bind the where values, example: WHERE id = ?
                 for value in &sql_query.where_values {
                     match value {
-                        SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
+                        SqlValue::String(v) | SqlValue::ObjectID(v) => {
                             let v = clean_string(v, Some(clean_options.clone()));
                             update_query = update_query.bind(v.clone());
                             identifier_query = identifier_query.bind(v);
                         }
-                        SqlValueEnum::Int(v) => {
+                        SqlValue::Int(v) => {
                             update_query = update_query.bind(v);
                             identifier_query = identifier_query.bind(v);
                         }
-                        SqlValueEnum::Bool(v) => {
+                        SqlValue::Bool(v) => {
                             update_query = update_query.bind(v);
                             identifier_query = identifier_query.bind(v);
                         }
-                        SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
+                        SqlValue::StringList(values) | SqlValue::ObjectIDList(values) => {
                             for v in values {
                                 update_query = update_query.bind(v);
                                 identifier_query = identifier_query.bind(v);
                             }
                         }
-                        SqlValueEnum::IntList(values) => {
+                        SqlValue::IntList(values) => {
                             for int in values {
                                 update_query = update_query.bind(int);
                                 identifier_query = identifier_query.bind(int);
                             }
                         }
-                        SqlValueEnum::BoolList(values) => {
+                        SqlValue::BoolList(values) => {
                             for bool in values {
                                 update_query = update_query.bind(bool);
                                 identifier_query = identifier_query.bind(bool);
                             }
                         }
-                        SqlValueEnum::UUID(uuid) => update_query = update_query.bind(uuid),
-                        SqlValueEnum::UUIDList(uuids) => {
+                        SqlValue::UUID(uuid) => update_query = update_query.bind(uuid),
+                        SqlValue::UUIDList(uuids) => {
                             for uuid in uuids {
                                 update_query = update_query.bind(uuid);
                                 identifier_query = identifier_query.bind(uuid);
                             }
                         }
-                        SqlValueEnum::DateTime(date_time) => {
+                        SqlValue::DateTime(date_time) => {
                             update_query = update_query.bind(date_time);
                             identifier_query = identifier_query.bind(date_time);
                         }
-                        SqlValueEnum::DateTimeList(date_times) => {
+                        SqlValue::DateTimeList(date_times) => {
                             for date_time in date_times {
                                 update_query = update_query.bind(date_time);
                                 identifier_query = identifier_query.bind(date_time);

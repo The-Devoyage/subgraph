@@ -4,16 +4,14 @@ use bson::Bson;
 use log::{debug, error, trace};
 
 use super::ScalarOption;
-use crate::{
-    configuration::subgraph::data_sources::sql::DialectEnum, data_sources::sql::SqlValueEnum,
-};
+use crate::{configuration::subgraph::data_sources::sql::DialectEnum, data_sources::sql::SqlValue};
 
 impl ScalarOption {
-    pub fn to_sql_value_enum(
+    pub fn to_sql_value(
         self,
         value: &Bson,
         dialect: Option<&DialectEnum>,
-    ) -> Result<SqlValueEnum, async_graphql::Error> {
+    ) -> Result<SqlValue, async_graphql::Error> {
         debug!(
             "Converting BSON To SQL Value Enum By Scalar Option: {:?}",
             self
@@ -45,7 +43,7 @@ impl ScalarOption {
                         .map(|x| x.as_str().unwrap().to_string())
                         .collect();
 
-                    SqlValueEnum::StringList(values)
+                    SqlValue::StringList(values)
                 } else {
                     let value = value.as_str();
 
@@ -56,7 +54,7 @@ impl ScalarOption {
                         ));
                     }
 
-                    SqlValueEnum::String(value.unwrap().to_string())
+                    SqlValue::String(value.unwrap().to_string())
                 }
             }
             ScalarOption::Int => {
@@ -69,7 +67,7 @@ impl ScalarOption {
 
                     if is_ints_valid {
                         let values = value.unwrap().iter().map(|x| x.as_i32().unwrap()).collect();
-                        sql_value_enum = Some(SqlValueEnum::IntList(values));
+                        sql_value_enum = Some(SqlValue::IntList(values));
                     } else {
                         // Check that all values in the array are i64
                         let is_ints_valid = value.unwrap().iter().all(|x| x.as_i64().is_some());
@@ -81,7 +79,7 @@ impl ScalarOption {
                                 .map(|x| x.as_i64().unwrap() as i32)
                                 .collect();
 
-                            sql_value_enum = Some(SqlValueEnum::IntList(values));
+                            sql_value_enum = Some(SqlValue::IntList(values));
                         }
                     }
 
@@ -96,7 +94,7 @@ impl ScalarOption {
                 } else {
                     let value_i32 = value.as_i32();
                     if value_i32.is_some() {
-                        SqlValueEnum::Int(value_i32.unwrap())
+                        SqlValue::Int(value_i32.unwrap())
                     } else {
                         let value = value.as_i64();
                         if value.is_none() {
@@ -105,7 +103,7 @@ impl ScalarOption {
                                 "Expected int value is not an int.",
                             ));
                         }
-                        SqlValueEnum::Int(value.unwrap() as i32)
+                        SqlValue::Int(value.unwrap() as i32)
                     }
                 }
             }
@@ -129,7 +127,7 @@ impl ScalarOption {
                         .map(|x| x.as_bool().unwrap())
                         .collect();
 
-                    SqlValueEnum::BoolList(values)
+                    SqlValue::BoolList(values)
                 } else {
                     let value = value.as_bool();
                     if value.is_none() {
@@ -138,7 +136,7 @@ impl ScalarOption {
                             "Expected boolean value is not a boolean.",
                         ));
                     }
-                    SqlValueEnum::Bool(value.unwrap())
+                    SqlValue::Bool(value.unwrap())
                 }
             }
             ScalarOption::UUID => {
@@ -168,7 +166,7 @@ impl ScalarOption {
                         })
                         .collect();
 
-                    SqlValueEnum::UUIDList(values)
+                    SqlValue::UUIDList(values)
                 } else {
                     let mut sql_value_enum = None;
                     let string_value = value.as_str();
@@ -184,7 +182,7 @@ impl ScalarOption {
                         match dialect {
                             DialectEnum::SQLITE | DialectEnum::MYSQL => {
                                 sql_value_enum =
-                                    Some(SqlValueEnum::String(string_value.unwrap().to_string()));
+                                    Some(SqlValue::String(string_value.unwrap().to_string()));
                             }
                             _ => {}
                         }
@@ -193,7 +191,7 @@ impl ScalarOption {
                     if sql_value_enum.is_none() {
                         let value = uuid::Uuid::parse_str(string_value.unwrap())
                             .map_err(|_| async_graphql::Error::new("Invalid UUID"))?;
-                        sql_value_enum = Some(SqlValueEnum::UUID(value));
+                        sql_value_enum = Some(SqlValue::UUID(value));
                     }
 
                     sql_value_enum.unwrap()
@@ -227,7 +225,7 @@ impl ScalarOption {
                         })
                         .collect();
 
-                    SqlValueEnum::DateTimeList(values)
+                    SqlValue::DateTimeList(values)
                 } else {
                     let date_time_string = match value.as_str() {
                         Some(dt) => dt,
@@ -245,7 +243,7 @@ impl ScalarOption {
                         }
                     };
 
-                    SqlValueEnum::DateTime(date_time)
+                    SqlValue::DateTime(date_time)
                 }
             }
             ScalarOption::ObjectID => {
@@ -276,7 +274,7 @@ impl ScalarOption {
                         })
                         .collect();
 
-                    SqlValueEnum::ObjectIDList(values)
+                    SqlValue::ObjectIDList(values)
                 } else {
                     let string_value = value.as_str().unwrap_or("");
                     let value = bson::oid::ObjectId::from_str(string_value);
@@ -284,7 +282,7 @@ impl ScalarOption {
                         error!("Invalid ObjectID String");
                         return Err(async_graphql::Error::new("Invalid ObjectID String"));
                     }
-                    SqlValueEnum::ObjectID(value.unwrap().to_string())
+                    SqlValue::ObjectID(value.unwrap().to_string())
                 }
             }
             _ => {

@@ -44,7 +44,7 @@ pub enum PoolEnum {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum SqlValueEnum {
+pub enum SqlValue {
     String(String),
     Int(i32),
     Bool(bool),
@@ -64,8 +64,8 @@ pub struct SqlQuery {
     query: String,
     count_query: Option<String>,
     identifier_query: Option<String>,
-    values: Vec<SqlValueEnum>,
-    where_values: Vec<SqlValueEnum>,
+    values: Vec<SqlValue>,
+    where_values: Vec<SqlValue>,
     table: String,
 }
 
@@ -80,10 +80,10 @@ impl SqlDataSource {
         // Create the pool
         let pool: PoolEnum = match sql_data_source_config.dialect {
             DialectEnum::SQLITE => {
-                debug!("Creating SQLite Pool: {:?}", &sql_data_source_config.uri);
+                trace!("Creating SQLite Pool: {:?}", &sql_data_source_config.uri);
 
                 let options = if let Some(extensions) = &sql_data_source_config.sqlite_extensions {
-                    debug!("Creating SQLite Pool with Extensions: {:?}", &extensions);
+                    trace!("Creating SQLite Pool with Extensions: {:?}", &extensions);
                     let mut options = SqliteConnectOptions::from_str(&sql_data_source_config.uri)
                         .expect("Failed to create SqliteConnectOptions with extensions");
                     for extension in extensions {
@@ -104,7 +104,7 @@ impl SqlDataSource {
                 PoolEnum::SqLite(pool)
             }
             DialectEnum::POSTGRES => {
-                debug!("Creating Postgres Pool: {:?}", &sql_data_source_config.uri);
+                trace!("Creating Postgres Pool: {:?}", &sql_data_source_config.uri);
                 let pool = sqlx::postgres::PgPoolOptions::new()
                     .max_connections(5)
                     .connect(&sql_data_source_config.uri)
@@ -113,7 +113,7 @@ impl SqlDataSource {
                 PoolEnum::Postgres(pool)
             }
             DialectEnum::MYSQL => {
-                debug!("Creating MySql Pool: {:?}", &sql_data_source_config.uri);
+                trace!("Creating MySql Pool: {:?}", &sql_data_source_config.uri);
                 let pool = sqlx::mysql::MySqlPoolOptions::new()
                     .max_connections(5)
                     .connect(&sql_data_source_config.uri)

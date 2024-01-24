@@ -5,7 +5,7 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    data_sources::sql::{SqlDataSource, SqlValueEnum},
+    data_sources::sql::{SqlDataSource, SqlValue},
     resolver_type::ResolverType,
 };
 
@@ -28,9 +28,9 @@ impl SqlDataSource {
     ) -> Result<
         (
             Vec<String>,
-            Vec<SqlValueEnum>,
+            Vec<SqlValue>,
             Vec<String>,
-            Vec<SqlValueEnum>,
+            Vec<SqlValue>,
             JoinClauses,
         ),
         async_graphql::Error,

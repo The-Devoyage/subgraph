@@ -7,7 +7,7 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    data_sources::sql::{SqlDataSource, SqlValueEnum},
+    data_sources::sql::{SqlDataSource, SqlValue},
     filter_operator::FilterOperator,
     graphql::schema::create_options_input::{DirectionEnum, SortInput},
 };
@@ -23,7 +23,7 @@ impl SqlDataSource {
         subgraph_config: &SubGraphConfig,
         join_clauses: Option<JoinClauses>,
         disable_eager_loading: bool,
-    ) -> Result<(String, Vec<SqlValueEnum>, String, Vec<String>), async_graphql::Error> {
+    ) -> Result<(String, Vec<SqlValue>, String, Vec<String>), async_graphql::Error> {
         debug!("Creating Find Many Query");
 
         let mut query = String::new();

@@ -3,7 +3,7 @@ use sqlx::Row;
 
 use crate::{
     configuration::subgraph::entities::ServiceEntityConfig,
-    data_sources::sql::{PoolEnum, SqlQuery, SqlValueEnum},
+    data_sources::sql::{PoolEnum, SqlQuery, SqlValue},
 };
 
 use super::{ResponseRow, Services};
@@ -33,42 +33,42 @@ impl Services {
 
                 for value in &sql_query.values {
                     match value {
-                        SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
+                        SqlValue::String(v) | SqlValue::ObjectID(v) => {
                             update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Int(v) => {
+                        SqlValue::Int(v) => {
                             update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::Bool(v) => {
+                        SqlValue::Bool(v) => {
                             update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
+                        SqlValue::StringList(values) | SqlValue::ObjectIDList(values) => {
                             for string in values {
                                 update_query = update_query.bind(string)
                             }
                         }
-                        SqlValueEnum::IntList(values) => {
+                        SqlValue::IntList(values) => {
                             for int in values {
                                 update_query = update_query.bind(int)
                             }
                         }
-                        SqlValueEnum::BoolList(values) => {
+                        SqlValue::BoolList(values) => {
                             for bool in values {
                                 update_query = update_query.bind(bool)
                             }
                         }
-                        SqlValueEnum::UUID(v) => {
+                        SqlValue::UUID(v) => {
                             update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::UUIDList(values) => {
+                        SqlValue::UUIDList(values) => {
                             for uuid in values {
                                 update_query = update_query.bind(uuid)
                             }
                         }
-                        SqlValueEnum::DateTime(v) => {
+                        SqlValue::DateTime(v) => {
                             update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::DateTimeList(values) => {
+                        SqlValue::DateTimeList(values) => {
                             for datetime in values {
                                 update_query = update_query.bind(datetime)
                             }
@@ -78,50 +78,50 @@ impl Services {
 
                 for value in &sql_query.where_values {
                     match value {
-                        SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
+                        SqlValue::String(v) | SqlValue::ObjectID(v) => {
                             update_query = update_query.bind(v);
                             identifier_query = identifier_query.bind(v);
                         }
-                        SqlValueEnum::Int(v) => {
+                        SqlValue::Int(v) => {
                             update_query = update_query.bind(v);
                             identifier_query = identifier_query.bind(v);
                         }
-                        SqlValueEnum::Bool(v) => {
+                        SqlValue::Bool(v) => {
                             update_query = update_query.bind(v);
                             identifier_query = identifier_query.bind(v);
                         }
-                        SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
+                        SqlValue::StringList(values) | SqlValue::ObjectIDList(values) => {
                             for string in values {
                                 update_query = update_query.bind(string);
                                 identifier_query = identifier_query.bind(string);
                             }
                         }
-                        SqlValueEnum::IntList(values) => {
+                        SqlValue::IntList(values) => {
                             for int in values {
                                 update_query = update_query.bind(int);
                                 identifier_query = identifier_query.bind(int);
                             }
                         }
-                        SqlValueEnum::BoolList(values) => {
+                        SqlValue::BoolList(values) => {
                             for bool in values {
                                 update_query = update_query.bind(bool);
                                 identifier_query = identifier_query.bind(bool);
                             }
                         }
-                        SqlValueEnum::UUID(v) => {
+                        SqlValue::UUID(v) => {
                             update_query = update_query.bind(v);
                         }
-                        SqlValueEnum::UUIDList(values) => {
+                        SqlValue::UUIDList(values) => {
                             for uuid in values {
                                 update_query = update_query.bind(uuid);
                                 identifier_query = identifier_query.bind(uuid);
                             }
                         }
-                        SqlValueEnum::DateTime(v) => {
+                        SqlValue::DateTime(v) => {
                             update_query = update_query.bind(v);
                             identifier_query = identifier_query.bind(v);
                         }
-                        SqlValueEnum::DateTimeList(values) => {
+                        SqlValue::DateTimeList(values) => {
                             for datetime in values {
                                 update_query = update_query.bind(datetime);
                                 identifier_query = identifier_query.bind(datetime);

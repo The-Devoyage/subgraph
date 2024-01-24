@@ -5,7 +5,7 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    data_sources::sql::{SqlDataSource, SqlValueEnum},
+    data_sources::sql::{SqlDataSource, SqlValue},
     filter_operator::FilterOperator,
     resolver_type::ResolverType,
 };
@@ -26,7 +26,7 @@ impl SqlDataSource {
     ) -> Result<
         (
             Option<String>,
-            Vec<SqlValueEnum>,
+            Vec<SqlValue>,
             JoinClauses,
             Vec<String>,
             Option<i32>,

@@ -5,7 +5,7 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    data_sources::sql::{SqlDataSource, SqlValueEnum},
+    data_sources::sql::{SqlDataSource, SqlValue},
     filter_operator::FilterOperator,
 };
 
@@ -19,7 +19,7 @@ impl SqlDataSource {
         input: &Document,
         subgraph_config: &SubGraphConfig,
         join_clauses: Option<JoinClauses>,
-    ) -> Result<(String, Vec<SqlValueEnum>, Vec<String>), async_graphql::Error> {
+    ) -> Result<(String, Vec<SqlValue>, Vec<String>), async_graphql::Error> {
         let mut query = String::new();
         let entity_table_name = if let Some(entity_ds) = entity.data_source.clone() {
             if entity_ds.table.is_some() {

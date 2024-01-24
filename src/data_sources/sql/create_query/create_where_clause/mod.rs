@@ -1,6 +1,6 @@
 use crate::{
     configuration::subgraph::data_sources::sql::DialectEnum,
-    data_sources::sql::{SqlDataSource, SqlValueEnum},
+    data_sources::sql::{SqlDataSource, SqlValue},
     filter_operator::FilterOperator,
 };
 use log::{debug, error, trace};
@@ -10,7 +10,7 @@ impl SqlDataSource {
         where_keys: &Vec<String>,
         dialect: &DialectEnum,
         mut pg_param_offset: Option<i32>,
-        where_values: &Vec<SqlValueEnum>,
+        where_values: &Vec<SqlValue>,
         filter_operator: FilterOperator,
     ) -> Result<(String, i32), async_graphql::Error> {
         debug!("Creating Where Clause");
@@ -31,9 +31,7 @@ impl SqlDataSource {
                 }
 
                 let is_list = match where_values[i] {
-                    SqlValueEnum::StringList(_)
-                    | SqlValueEnum::IntList(_)
-                    | SqlValueEnum::BoolList(_) => true,
+                    SqlValue::StringList(_) | SqlValue::IntList(_) | SqlValue::BoolList(_) => true,
                     _ => false,
                 };
 
@@ -55,15 +53,13 @@ impl SqlDataSource {
                 };
 
                 match where_values[i] {
-                    SqlValueEnum::StringList(_)
-                    | SqlValueEnum::IntList(_)
-                    | SqlValueEnum::BoolList(_) => {
+                    SqlValue::StringList(_) | SqlValue::IntList(_) | SqlValue::BoolList(_) => {
                         let placeholder_count = match where_values[i] {
-                            SqlValueEnum::StringList(ref list) => list.len(),
-                            SqlValueEnum::IntList(ref list) => list.len(),
-                            SqlValueEnum::BoolList(ref list) => list.len(),
-                            SqlValueEnum::UUIDList(ref list) => list.len(),
-                            SqlValueEnum::DateTimeList(ref list) => list.len(),
+                            SqlValue::StringList(ref list) => list.len(),
+                            SqlValue::IntList(ref list) => list.len(),
+                            SqlValue::BoolList(ref list) => list.len(),
+                            SqlValue::UUIDList(ref list) => list.len(),
+                            SqlValue::DateTimeList(ref list) => list.len(),
                             _ => 0,
                         };
 

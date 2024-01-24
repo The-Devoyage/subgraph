@@ -1,12 +1,12 @@
 use bson::Bson;
-use log::{debug, error};
+use log::{debug, error, trace};
 
 use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum,
         entities::{service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig},
     },
-    data_sources::sql::{SqlDataSource, SqlValueEnum},
+    data_sources::sql::{SqlDataSource, SqlValue},
     resolver_type::ResolverType,
 };
 
@@ -15,21 +15,14 @@ impl SqlDataSource {
     pub fn parse_values_input(
         value: &Bson,
         mut where_keys: Vec<String>,
-        mut where_values: Vec<SqlValueEnum>,
+        mut where_values: Vec<SqlValue>,
         mut value_keys: Vec<String>,
-        mut values: Vec<SqlValueEnum>,
+        mut values: Vec<SqlValue>,
         entity: &ServiceEntityConfig,
         resolver_type: &ResolverType,
         dialect: &DialectEnum,
-    ) -> Result<
-        (
-            Vec<String>,
-            Vec<SqlValueEnum>,
-            Vec<String>,
-            Vec<SqlValueEnum>,
-        ),
-        async_graphql::Error,
-    > {
+    ) -> Result<(Vec<String>, Vec<SqlValue>, Vec<String>, Vec<SqlValue>), async_graphql::Error>
+    {
         debug!("Parsing Values Input: {:?}", value);
         let values_object = value.as_document();
 
@@ -38,8 +31,8 @@ impl SqlDataSource {
         }
 
         for (key, value) in values_object.unwrap().iter() {
-            debug!("Processing Key: {:?}", key);
-            debug!("Processing Value: {:?}", value.to_string());
+            trace!("Processing Key: {:?}", key);
+            trace!("Processing Value: {:?}", value.to_string());
 
             //If value == null, skip
             if value.as_null().is_some() {
@@ -72,8 +65,7 @@ impl SqlDataSource {
             };
             let ServiceEntityFieldConfig { scalar, .. } = field.unwrap();
 
-            //TODO: Deal with the custom dialect enum stuff below.
-            let sql_value_enum = scalar.to_sql_value_enum(value, Some(dialect))?;
+            let sql_value_enum = scalar.to_sql_value(value, Some(dialect))?;
 
             if is_where_clause {
                 where_keys.push(key.to_string());
@@ -84,10 +76,10 @@ impl SqlDataSource {
             }
         }
 
-        debug!("Where Keys: {:?}", where_keys);
-        debug!("Where Values: {:?}", where_values);
-        debug!("Value Keys: {:?}", value_keys);
-        debug!("Values: {:?}", values);
+        trace!("Where Keys: {:?}", where_keys);
+        trace!("Where Values: {:?}", where_values);
+        trace!("Value Keys: {:?}", value_keys);
+        trace!("Values: {:?}", values);
 
         Ok((where_keys, where_values, value_keys, values))
     }

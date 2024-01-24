@@ -5,7 +5,7 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    data_sources::sql::{PoolEnum, SqlDataSource, SqlQuery, SqlValueEnum},
+    data_sources::sql::{PoolEnum, SqlDataSource, SqlQuery, SqlValue},
 };
 
 use super::{ResponseRow, Services};
@@ -26,42 +26,42 @@ impl Services {
 
                 for value in &sql_query.values {
                     match value {
-                        SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
+                        SqlValue::String(v) | SqlValue::ObjectID(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::Int(v) => {
+                        SqlValue::Int(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::Bool(v) => {
+                        SqlValue::Bool(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
+                        SqlValue::StringList(values) | SqlValue::ObjectIDList(values) => {
                             for string in values {
                                 query = query.bind(string)
                             }
                         }
-                        SqlValueEnum::IntList(values) => {
+                        SqlValue::IntList(values) => {
                             for int in values {
                                 query = query.bind(int)
                             }
                         }
-                        SqlValueEnum::BoolList(values) => {
+                        SqlValue::BoolList(values) => {
                             for bool in values {
                                 query = query.bind(bool)
                             }
                         }
-                        SqlValueEnum::UUID(v) => {
+                        SqlValue::UUID(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::UUIDList(values) => {
+                        SqlValue::UUIDList(values) => {
                             for uuid in values {
                                 query = query.bind(uuid)
                             }
                         }
-                        SqlValueEnum::DateTime(v) => {
+                        SqlValue::DateTime(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::DateTimeList(values) => {
+                        SqlValue::DateTimeList(values) => {
                             for datetime in values {
                                 query = query.bind(datetime)
                             }
@@ -98,42 +98,42 @@ impl Services {
 
                 for value in &sql_query.values {
                     match value {
-                        SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
+                        SqlValue::String(v) | SqlValue::ObjectID(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::Int(v) => {
+                        SqlValue::Int(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::Bool(v) => {
+                        SqlValue::Bool(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
+                        SqlValue::StringList(values) | SqlValue::ObjectIDList(values) => {
                             for string in values {
                                 query = query.bind(string)
                             }
                         }
-                        SqlValueEnum::IntList(values) => {
+                        SqlValue::IntList(values) => {
                             for int in values {
                                 query = query.bind(int)
                             }
                         }
-                        SqlValueEnum::BoolList(values) => {
+                        SqlValue::BoolList(values) => {
                             for bool in values {
                                 query = query.bind(bool)
                             }
                         }
-                        SqlValueEnum::UUID(v) => {
+                        SqlValue::UUID(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::UUIDList(values) => {
+                        SqlValue::UUIDList(values) => {
                             for uuid in values {
                                 query = query.bind(uuid)
                             }
                         }
-                        SqlValueEnum::DateTime(v) => {
+                        SqlValue::DateTime(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::DateTimeList(values) => {
+                        SqlValue::DateTimeList(values) => {
                             for datetime in values {
                                 query = query.bind(datetime)
                             }
@@ -150,42 +150,42 @@ impl Services {
 
                 for value in &sql_query.values {
                     match value {
-                        SqlValueEnum::String(v) | SqlValueEnum::ObjectID(v) => {
+                        SqlValue::String(v) | SqlValue::ObjectID(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::Int(v) => {
+                        SqlValue::Int(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::Bool(v) => {
+                        SqlValue::Bool(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::StringList(values) | SqlValueEnum::ObjectIDList(values) => {
+                        SqlValue::StringList(values) | SqlValue::ObjectIDList(values) => {
                             for string in values {
                                 query = query.bind(string)
                             }
                         }
-                        SqlValueEnum::IntList(values) => {
+                        SqlValue::IntList(values) => {
                             for int in values {
                                 query = query.bind(int)
                             }
                         }
-                        SqlValueEnum::BoolList(values) => {
+                        SqlValue::BoolList(values) => {
                             for bool in values {
                                 query = query.bind(bool)
                             }
                         }
-                        SqlValueEnum::UUID(v) => {
+                        SqlValue::UUID(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::UUIDList(values) => {
+                        SqlValue::UUIDList(values) => {
                             for uuid in values {
                                 query = query.bind(uuid)
                             }
                         }
-                        SqlValueEnum::DateTime(v) => {
+                        SqlValue::DateTime(v) => {
                             query = query.bind(v);
                         }
-                        SqlValueEnum::DateTimeList(values) => {
+                        SqlValue::DateTimeList(values) => {
                             for datetime in values {
                                 query = query.bind(datetime)
                             }

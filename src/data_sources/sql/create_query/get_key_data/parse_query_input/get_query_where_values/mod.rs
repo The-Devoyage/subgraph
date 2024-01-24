@@ -7,7 +7,7 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    data_sources::sql::{create_query::JoinClauses, SqlDataSource, SqlValueEnum},
+    data_sources::sql::{create_query::JoinClauses, SqlDataSource, SqlValue},
     utils::clean_string::clean_string,
 };
 
@@ -23,7 +23,7 @@ impl SqlDataSource {
         subgraph_config: &SubGraphConfig,
         parent_alias: Option<String>,
         disable_eager_loading: bool,
-    ) -> Result<(Vec<String>, Vec<SqlValueEnum>, JoinClauses), async_graphql::Error> {
+    ) -> Result<(Vec<String>, Vec<SqlValue>, JoinClauses), async_graphql::Error> {
         debug!("Getting Query Where Values");
         trace!("From Value: {:?}", value);
         trace!("Parent Key: {:?}", parent_key);
@@ -83,13 +83,13 @@ impl SqlDataSource {
                     // SQLX
                     match dialect {
                         DialectEnum::SQLITE => {
-                            where_values.push(SqlValueEnum::StringList(
+                            where_values.push(SqlValue::StringList(
                                 values.iter().map(|x| x.to_string()).collect(),
                             ));
                             where_keys.push(parent_key.to_string());
                         }
                         _ => {
-                            where_values.push(SqlValueEnum::UUIDList(values));
+                            where_values.push(SqlValue::UUIDList(values));
                             where_keys.push(parent_key.to_string());
                         }
                     }
@@ -110,11 +110,11 @@ impl SqlDataSource {
                                 chrono::DateTime::from_str(&cleaned_value).unwrap()
                             })
                             .collect();
-                        where_values.push(SqlValueEnum::DateTimeList(values));
+                        where_values.push(SqlValue::DateTimeList(values));
                         where_keys.push(parent_key.to_string());
                     } else {
                         trace!("Parsing Values as Strings");
-                        where_values.push(SqlValueEnum::StringList(
+                        where_values.push(SqlValue::StringList(
                             value
                                 .iter()
                                 .map(|x| clean_string(&x.to_string(), None))
@@ -125,11 +125,11 @@ impl SqlDataSource {
                 }
             } else if value[0].as_i32().is_some() || value[0].as_i64().is_some() {
                 let values = value.iter().map(|x| x.as_i32().unwrap()).collect();
-                where_values.push(SqlValueEnum::IntList(values));
+                where_values.push(SqlValue::IntList(values));
                 where_keys.push(parent_key.to_string());
             } else if value[0].as_bool().is_some() {
                 let values = value.iter().map(|x| x.as_bool().unwrap()).collect();
-                where_values.push(SqlValueEnum::BoolList(values));
+                where_values.push(SqlValue::BoolList(values));
                 where_keys.push(parent_key.to_string());
             }
         } else if value.as_document().is_some() {
@@ -205,11 +205,11 @@ impl SqlDataSource {
                         // Sqlite does not support UUIDs
                         match dialect {
                             DialectEnum::SQLITE | DialectEnum::MYSQL => {
-                                where_values.push(SqlValueEnum::String(cleaned_value));
+                                where_values.push(SqlValue::String(cleaned_value));
                                 where_keys.push(parent_key.to_string());
                             }
                             _ => {
-                                where_values.push(SqlValueEnum::UUID(uuid));
+                                where_values.push(SqlValue::UUID(uuid));
                                 where_keys.push(parent_key.to_string());
                             }
                         }
@@ -217,29 +217,27 @@ impl SqlDataSource {
                     Err(_) => match chrono::DateTime::from_str(&cleaned_value) {
                         Ok(date) => {
                             trace!("Parsed Date: {:?}", date);
-                            where_values.push(SqlValueEnum::DateTime(date));
+                            where_values.push(SqlValue::DateTime(date));
                             where_keys.push(parent_key.to_string());
                         }
                         Err(_) => {
                             trace!("Parsed String: {:?}", cleaned_value);
-                            where_values.push(SqlValueEnum::String(cleaned_value));
+                            where_values.push(SqlValue::String(cleaned_value));
                             where_keys.push(parent_key.to_string());
                         }
                     },
                 }
             } else if value.as_i32().is_some() {
-                where_values.push(SqlValueEnum::Int(value.as_i32().unwrap()));
+                where_values.push(SqlValue::Int(value.as_i32().unwrap()));
                 where_keys.push(parent_key.to_string());
             } else if value.as_i64().is_some() {
-                where_values.push(SqlValueEnum::Int(value.as_i64().unwrap() as i32));
+                where_values.push(SqlValue::Int(value.as_i64().unwrap() as i32));
                 where_keys.push(parent_key.to_string());
             } else if value.as_bool().is_some() {
-                where_values.push(SqlValueEnum::Bool(value.as_bool().unwrap()));
+                where_values.push(SqlValue::Bool(value.as_bool().unwrap()));
                 where_keys.push(parent_key.to_string());
             } else if value.as_datetime().is_some() {
-                where_values.push(SqlValueEnum::DateTime(
-                    value.as_datetime().unwrap().to_chrono(),
-                ));
+                where_values.push(SqlValue::DateTime(value.as_datetime().unwrap().to_chrono()));
                 where_keys.push(parent_key.to_string());
             }
         };

@@ -2,7 +2,7 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    data_sources::sql::{SqlDataSource, SqlValueEnum},
+    data_sources::sql::{SqlDataSource, SqlValue},
     filter_operator::FilterOperator,
 };
 use bson::Document;
@@ -16,7 +16,7 @@ impl SqlDataSource {
         dialect: &DialectEnum,
         input: &Document,
         subgraph_config: &SubGraphConfig,
-    ) -> Result<(String, Vec<SqlValueEnum>, Vec<String>, String), async_graphql::Error> {
+    ) -> Result<(String, Vec<SqlValue>, Vec<String>, String), async_graphql::Error> {
         debug!("Creating Update Many Query");
 
         let mut query = String::new();
