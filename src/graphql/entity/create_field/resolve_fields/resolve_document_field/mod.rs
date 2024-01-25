@@ -4,9 +4,8 @@ use log::debug;
 
 use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
-    graphql::entity::ServiceEntity,
-    scalar_option::ScalarOption,
-    utils::document::{get_from_document::DocumentValue, DocumentUtils},
+    graphql::entity::ServiceEntity, scalar_option::ScalarOption,
+    utils::document::get_from_document::DocumentValue,
 };
 
 impl ServiceEntity {
@@ -38,7 +37,7 @@ impl ServiceEntity {
         field: &ServiceEntityFieldConfig,
     ) -> Result<Value, async_graphql::Error> {
         debug!("Resolving Object ID Scalar");
-        let resolved = DocumentUtils::get_from_document(document, field)?;
+        let resolved = ScalarOption::get_from_document(document, field)?;
 
         match resolved {
             DocumentValue::ObjectID(object_id) => Ok(Value::from(object_id.to_string())),
@@ -51,7 +50,7 @@ impl ServiceEntity {
         field: &ServiceEntityFieldConfig,
     ) -> Result<Value, async_graphql::Error> {
         debug!("Resolving String Scalar");
-        let resolved = DocumentUtils::get_from_document(document, field)?;
+        let resolved = ScalarOption::get_from_document(document, field)?;
 
         match resolved {
             DocumentValue::String(value) => Ok(Value::from(value)),
@@ -68,7 +67,7 @@ impl ServiceEntity {
     ) -> Result<Value, async_graphql::Error> {
         debug!("Resolving Int Scalar");
 
-        let resolved = DocumentUtils::get_from_document(document, field)?;
+        let resolved = ScalarOption::get_from_document(document, field)?;
 
         match resolved {
             DocumentValue::Int(value) => Ok(Value::from(value)),
@@ -85,7 +84,7 @@ impl ServiceEntity {
     ) -> Result<Value, async_graphql::Error> {
         debug!("Resolving Boolean Scalar");
 
-        let resolved = DocumentUtils::get_from_document(document, field)?;
+        let resolved = ScalarOption::get_from_document(document, field)?;
 
         match resolved {
             DocumentValue::Boolean(value) => Ok(Value::from(value)),
@@ -102,7 +101,7 @@ impl ServiceEntity {
     ) -> Result<Value, async_graphql::Error> {
         debug!("Resolving UUID Scalar");
 
-        let resolved = DocumentUtils::get_from_document(document, field)?;
+        let resolved = ScalarOption::get_from_document(document, field)?;
 
         match resolved {
             DocumentValue::UUID(value) => Ok(Value::from(value.to_string())),
@@ -122,7 +121,7 @@ impl ServiceEntity {
     ) -> Result<Value, async_graphql::Error> {
         debug!("Resolving DateTime Scalar");
 
-        let resolved = DocumentUtils::get_from_document(document, field)?;
+        let resolved = ScalarOption::get_from_document(document, field)?;
 
         match resolved {
             // NOTE: Not sure if this is the correct format for DateTime

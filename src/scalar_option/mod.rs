@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+pub mod get_from_document;
 pub mod mysql_response_row_to_input_doc;
 pub mod postgres_response_row_to_input_doc;
 pub mod sqlite_response_row_to_input_doc;

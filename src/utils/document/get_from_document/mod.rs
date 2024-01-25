@@ -1,13 +1,9 @@
 use bson::{oid::ObjectId, Bson};
 use log::{debug, error};
 
-use crate::{
-    configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
-    scalar_option::ScalarOption,
-};
-
 use super::DocumentUtils;
 
+#[derive(Debug)]
 pub enum DocumentValue {
     String(String),
     StringArray(Vec<String>),
@@ -27,56 +23,6 @@ pub enum DocumentValue {
 }
 
 impl DocumentUtils {
-    /// Get a value from a document.
-    /// Uses the scalar type to determine how to get the value.
-    pub fn get_from_document(
-        document: &bson::Document,
-        field: &ServiceEntityFieldConfig,
-    ) -> Result<DocumentValue, async_graphql::Error> {
-        debug!(
-            "Resolving Mongo Field {}, of type {:?} in {:?}",
-            field.name, field.scalar, document
-        );
-
-        match field.scalar {
-            ScalarOption::String => DocumentUtils::get_document_string_scalar(
-                document,
-                &field.name,
-                field.list.unwrap_or(false),
-            ),
-            ScalarOption::Int => DocumentUtils::get_document_int_scalar(
-                document,
-                &field.name,
-                field.list.unwrap_or(false),
-            ),
-            ScalarOption::Boolean => DocumentUtils::get_document_boolean_scalar(
-                document,
-                &field.name,
-                field.list.unwrap_or(false),
-            ),
-            ScalarOption::ObjectID => DocumentUtils::get_document_object_id_scalar(
-                document,
-                &field.name,
-                field.list.unwrap_or(false),
-            ),
-            ScalarOption::Object => DocumentUtils::get_document_object_scalar(
-                document,
-                &field.name,
-                field.list.unwrap_or(false),
-            ),
-            ScalarOption::UUID => DocumentUtils::get_document_uuid_scalar(
-                document,
-                &field.name,
-                field.list.unwrap_or(false),
-            ),
-            ScalarOption::DateTime => DocumentUtils::get_document_datetime_scalar(
-                document,
-                &field.name,
-                field.list.unwrap_or(false),
-            ),
-        }
-    }
-
     pub fn get_document_string_scalar(
         document: &bson::Document,
         field_name: &str,
