@@ -9,29 +9,6 @@ use crate::{
 };
 
 impl ServiceEntity {
-    pub fn resolve_document_field(
-        document: &Document,
-        field: &ServiceEntityFieldConfig,
-    ) -> Result<Value, async_graphql::Error> {
-        debug!("Resolving Document Field: {:?}", field.name);
-
-        match &field.scalar {
-            ScalarOption::String => ServiceEntity::resolve_document_string_scalar(document, field),
-            ScalarOption::ObjectID => {
-                ServiceEntity::resolve_document_object_id_scalar(document, field)
-            }
-            ScalarOption::Int => ServiceEntity::resolve_document_int_scalar(document, field),
-            ScalarOption::Boolean => {
-                ServiceEntity::resolve_document_boolean_scalar(document, field)
-            }
-            ScalarOption::Object => ServiceEntity::resolve_document_object_scalar(document, field),
-            ScalarOption::UUID => ServiceEntity::resolve_document_uuid_scalar(document, field),
-            ScalarOption::DateTime => {
-                ServiceEntity::resolve_document_datetime_scalar(document, field)
-            }
-        }
-    }
-
     pub fn resolve_document_object_id_scalar(
         document: &Document,
         field: &ServiceEntityFieldConfig,
@@ -155,7 +132,7 @@ impl ServiceEntity {
                 field.fields.clone().unwrap_or(Vec::new()),
                 key.clone(),
             )?;
-            let value = ServiceEntity::resolve_document_field(document, &field)?;
+            let value = ScalarOption::resolve_document_field(document, &field)?;
             index_map.insert(name, value);
         }
         Ok(index_map)

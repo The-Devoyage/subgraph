@@ -7,6 +7,7 @@ use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
     data_sources::{sql::services::ResponseRow, DataSource},
     graphql::entity::ServiceEntity,
+    scalar_option::ScalarOption,
 };
 
 impl ServiceEntity {
@@ -25,7 +26,7 @@ impl ServiceEntity {
                 let doc = match ctx.parent_value.try_downcast_ref::<Option<Document>>() {
                     Ok(doc) => {
                         if let Some(doc) = doc {
-                            let value = ServiceEntity::resolve_document_field(doc, entity_field)?;
+                            let value = ScalarOption::resolve_document_field(doc, entity_field)?;
                             Ok(Some(value))
                         } else {
                             if entity_required {

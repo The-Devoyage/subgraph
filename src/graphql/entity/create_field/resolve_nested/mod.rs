@@ -3,7 +3,7 @@ use log::debug;
 
 use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
-    graphql::entity::ServiceEntity, utils::document::DocumentUtils,
+    graphql::entity::ServiceEntity, scalar_option::ScalarOption, utils::document::DocumentUtils,
 };
 
 mod get_parent_value;
@@ -30,7 +30,7 @@ impl ServiceEntity {
 
         let document = DocumentUtils::json_to_document(&parent_value)?;
 
-        let value = ServiceEntity::resolve_document_field(&document, &entity_field)?;
+        let value = ScalarOption::resolve_document_field(&document, &entity_field)?;
 
         debug!("Resolved Nested Value: {:?}", value,);
 
