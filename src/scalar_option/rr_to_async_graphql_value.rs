@@ -5,7 +5,8 @@ use log::{debug, error, trace};
 use super::ScalarOption;
 
 impl ScalarOption {
-    pub fn to_async_graphql_value(
+    // needs to accept response row or json value
+    pub fn rr_to_async_graphql_value(
         self,
         response_row: &ResponseRow,
         field_name: &str,

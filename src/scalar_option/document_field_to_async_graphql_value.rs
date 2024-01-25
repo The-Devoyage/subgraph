@@ -10,7 +10,8 @@ use crate::{
 use super::ScalarOption;
 
 impl ScalarOption {
-    pub fn resolve_document_field(
+    /// Converts a document field to a async_graphql Value
+    pub fn document_field_to_async_graphql_value(
         document: &Document,
         field: &ServiceEntityFieldConfig,
     ) -> Result<Value, async_graphql::Error> {

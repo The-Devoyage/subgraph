@@ -132,7 +132,7 @@ impl ServiceEntity {
                 field.fields.clone().unwrap_or(Vec::new()),
                 key.clone(),
             )?;
-            let value = ScalarOption::resolve_document_field(document, &field)?;
+            let value = ScalarOption::document_field_to_async_graphql_value(document, &field)?;
             index_map.insert(name, value);
         }
         Ok(index_map)

@@ -1,21 +1,21 @@
+use super::ScalarOption;
 use async_graphql::Value;
 use json::JsonValue;
-use log::debug;
+use log::{debug, trace};
 
-use crate::{graphql::entity::ServiceEntity, scalar_option::ScalarOption};
-
-impl ServiceEntity {
-    pub fn resolve_http_field(
+impl ScalarOption {
+    pub fn json_to_async_graphql_value(
         json_value: &JsonValue,
         field_name: &str,
         scalar: ScalarOption,
     ) -> Result<Value, async_graphql::Error> {
         debug!("Resolving HTTP Field");
+        trace!("json_value: {:?}", json_value);
 
         let value = &json_value[field_name];
 
         // Match the scalar type and get the value json
-        match scalar {
+        let value = match scalar {
             ScalarOption::String => {
                 if value.is_null() || value == "null" {
                     return Ok(Value::Null);
@@ -53,6 +53,10 @@ impl ServiceEntity {
                 let value = value.to_string();
                 Ok(Value::from(value))
             }
-        }
+        };
+
+        trace!("{:?}", value);
+
+        value
     }
 }

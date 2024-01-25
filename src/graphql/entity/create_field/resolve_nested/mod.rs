@@ -30,7 +30,7 @@ impl ServiceEntity {
 
         let document = DocumentUtils::json_to_document(&parent_value)?;
 
-        let value = ScalarOption::resolve_document_field(&document, &entity_field)?;
+        let value = ScalarOption::document_field_to_async_graphql_value(&document, &entity_field)?;
 
         debug!("Resolved Nested Value: {:?}", value,);
 

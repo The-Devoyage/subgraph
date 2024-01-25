@@ -10,7 +10,7 @@ impl ScalarOption {
     /// Converts a response row into a document, or returns empty document.
     /// This document is to create a internal input.
     /// Types converted are specifc to the sqlite database.
-    pub fn sqlite_response_row_to_input_doc(
+    pub fn sqlite_rr_to_input_doc(
         sqlite_row: &SqliteRow,
         as_type_field: &ServiceEntityFieldConfig,
         field_name: &str,

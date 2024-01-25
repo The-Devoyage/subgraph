@@ -36,13 +36,11 @@ impl ServiceResolver {
                         // field.
                         // Map the value into a Document, which is what the resolver expects.
                         Some(response_row) => match response_row {
-                            ResponseRow::SqLite(rr) => {
-                                Some(ScalarOption::sqlite_response_row_to_input_doc(
-                                    rr,
-                                    as_type_field,
-                                    field_name,
-                                )?)
-                            }
+                            ResponseRow::SqLite(rr) => Some(ScalarOption::sqlite_rr_to_input_doc(
+                                rr,
+                                as_type_field,
+                                field_name,
+                            )?),
                             ResponseRow::MySql(rr) => {
                                 Some(ScalarOption::mysql_response_row_to_input_doc(
                                     rr,

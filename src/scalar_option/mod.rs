@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 
+pub mod document_field_to_async_graphql_value;
 pub mod get_from_document;
+pub mod json_to_async_graphql_value;
 pub mod mysql_response_row_to_input_doc;
 pub mod postgres_response_row_to_input_doc;
-pub mod resolve_document_field;
-pub mod sqlite_response_row_to_input_doc;
-pub mod to_async_graphql_value;
+pub mod rr_to_async_graphql_value;
+pub mod sqlite_rr_to_input_doc;
 pub mod to_bson_element_type;
 pub mod to_evalexpr;
 pub mod to_serde_json_value;

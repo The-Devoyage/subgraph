@@ -26,7 +26,10 @@ impl ServiceEntity {
                 let doc = match ctx.parent_value.try_downcast_ref::<Option<Document>>() {
                     Ok(doc) => {
                         if let Some(doc) = doc {
-                            let value = ScalarOption::resolve_document_field(doc, entity_field)?;
+                            let value = ScalarOption::document_field_to_async_graphql_value(
+                                doc,
+                                entity_field,
+                            )?;
                             Ok(Some(value))
                         } else {
                             if entity_required {
@@ -86,7 +89,7 @@ impl ServiceEntity {
                     }
                 };
 
-                let value = ServiceEntity::resolve_http_field(
+                let value = ScalarOption::json_to_async_graphql_value(
                     json_value,
                     field_name,
                     entity_field.scalar.clone(),
@@ -102,7 +105,7 @@ impl ServiceEntity {
                             let value = entity_field
                                 .scalar
                                 .clone()
-                                .to_async_graphql_value(rr, field_name)?;
+                                .rr_to_async_graphql_value(rr, field_name)?;
                             Ok(Some(value))
                         } else {
                             if entity_required {
