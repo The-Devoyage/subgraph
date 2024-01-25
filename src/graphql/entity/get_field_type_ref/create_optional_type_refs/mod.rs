@@ -1,4 +1,3 @@
-use async_graphql::dynamic::TypeRef;
 use log::debug;
 
 use crate::{
@@ -22,35 +21,9 @@ impl ServiceEntity {
         debug!("Creating Optional Type Refs");
         let mut type_defs = Vec::new();
 
-        let type_ref = match entity_field.scalar.clone() {
-            ScalarOption::String => {
-                if entity_field.list.unwrap_or(false) {
-                    TypeRef::named_list_nn(TypeRef::STRING)
-                } else {
-                    TypeRef::named(TypeRef::STRING)
-                }
-            }
-            ScalarOption::Int => {
-                if entity_field.list.unwrap_or(false) {
-                    TypeRef::named_list_nn(TypeRef::INT)
-                } else {
-                    TypeRef::named(TypeRef::INT)
-                }
-            }
-            ScalarOption::Boolean => {
-                if entity_field.list.unwrap_or(false) {
-                    TypeRef::named_list_nn(TypeRef::BOOLEAN)
-                } else {
-                    TypeRef::named(TypeRef::BOOLEAN)
-                }
-            }
-            ScalarOption::ObjectID => {
-                if entity_field.list.unwrap_or(false) {
-                    TypeRef::named_list_nn("ObjectID")
-                } else {
-                    TypeRef::named("ObjectID")
-                }
-            }
+        let type_ref = entity_field.scalar.get_nullable_type_ref(entity_field);
+
+        match entity_field.scalar.clone() {
             ScalarOption::Object => {
                 let object_type_defs = ServiceEntity::new(
                     data_sources.clone(),
@@ -65,27 +38,8 @@ impl ServiceEntity {
                 for object in object_type_defs {
                     type_defs.push(object)
                 }
-
-                if entity_field.list.unwrap_or(false) {
-                    TypeRef::named_list_nn(entity_field.name.clone())
-                } else {
-                    TypeRef::named(entity_field.name.clone())
-                }
             }
-            ScalarOption::UUID => {
-                if entity_field.list.unwrap_or(false) {
-                    TypeRef::named_list_nn(TypeRef::STRING)
-                } else {
-                    TypeRef::named(TypeRef::STRING)
-                }
-            }
-            ScalarOption::DateTime => {
-                if entity_field.list.unwrap_or(false) {
-                    TypeRef::named_list_nn(TypeRef::STRING)
-                } else {
-                    TypeRef::named(TypeRef::STRING)
-                }
-            }
+            _ => {}
         };
 
         TypeRefsAndDefs {

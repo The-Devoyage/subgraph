@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod document_field_to_async_graphql_value;
 pub mod get_from_document;
+pub mod get_nullable_type_ref;
 pub mod json_to_async_graphql_value;
 pub mod mysql_response_row_to_input_doc;
 pub mod postgres_response_row_to_input_doc;

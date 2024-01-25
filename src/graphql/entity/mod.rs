@@ -12,7 +12,7 @@ use crate::{
 mod create_as_type_field;
 mod create_field;
 pub mod create_return_types;
-mod get_field_type_ref;
+pub mod get_field_type_ref;
 
 pub struct ServiceEntity {
     data_sources: DataSources,
