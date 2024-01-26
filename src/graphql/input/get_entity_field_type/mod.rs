@@ -13,11 +13,7 @@ pub struct TypeRefWithInputs {
     pub inputs: Vec<InputObject>,
 }
 
-mod get_entity_bool_field_type;
-mod get_entity_int_field_type;
-mod get_entity_object_field_type;
-mod get_entity_object_id_field_type;
-mod get_entity_string_field_type;
+mod get_entity_object_nested_inputs;
 
 impl ServiceInput {
     /// Get the type ref for the entity field.
@@ -55,37 +51,36 @@ impl ServiceInput {
         }
 
         let type_ref = match &entity_field.scalar {
-            ScalarOption::String => {
-                ServiceInput::get_entity_string_field_type(resolver_type, is_list, is_required)
-            }
-            ScalarOption::Int => {
-                ServiceInput::get_entity_int_field_type(resolver_type, is_list, is_required)
-            }
-            ScalarOption::Boolean => {
-                ServiceInput::get_entity_bool_field_type(resolver_type, is_list, is_required)
-            }
-            ScalarOption::ObjectID => {
-                ServiceInput::get_entity_object_id_field_type(resolver_type, is_list, is_required)
-            }
             ScalarOption::Object => {
-                let type_ref_with_inputs = ServiceInput::get_entity_object_field_type(
+                let type_ref_with_inputs = ServiceInput::get_entity_object_nested_inputs(
                     entity_field,
                     resolver_type,
                     parent_input_prefix,
                     entity_data_source,
                 );
 
-                for input in type_ref_with_inputs.inputs {
+                for input in type_ref_with_inputs {
                     inputs.push(input);
                 }
 
-                type_ref_with_inputs.type_ref
+                let input_name = ServiceInput::format_child_field_name(
+                    parent_input_prefix,
+                    &entity_field.name,
+                    resolver_type,
+                );
+
+                let type_ref = entity_field
+                    .scalar
+                    .to_input_type_ref(is_list, is_required, resolver_type, Some(&input_name))
+                    .unwrap(); //HACK: should return a Result
+                type_ref
             }
-            ScalarOption::UUID => {
-                ServiceInput::get_entity_string_field_type(resolver_type, is_list, is_required)
-            }
-            ScalarOption::DateTime => {
-                ServiceInput::get_entity_string_field_type(resolver_type, is_list, is_required)
+            _ => {
+                let type_ref = entity_field
+                    .scalar
+                    .to_input_type_ref(is_list, is_required, resolver_type, None)
+                    .unwrap(); //HACK: should return a Result
+                type_ref
             }
         };
 

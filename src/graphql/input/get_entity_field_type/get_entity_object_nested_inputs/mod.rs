@@ -1,14 +1,12 @@
-use async_graphql::dynamic::TypeRef;
+use async_graphql::dynamic::InputObject;
 
 use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
     data_sources::DataSource, graphql::input::ServiceInput, resolver_type::ResolverType,
 };
 
-use super::TypeRefWithInputs;
-
 impl ServiceInput {
-    fn format_child_field_name(
+    pub fn format_child_field_name(
         parent_field_name: &str,
         child_field_name: &str,
         resolver_type: &ResolverType,
@@ -25,12 +23,12 @@ impl ServiceInput {
         }
     }
 
-    pub fn get_entity_object_field_type(
+    pub fn get_entity_object_nested_inputs(
         entity_field: &ServiceEntityFieldConfig,
         resolver_type: &ResolverType,
         parent_input_prefix: &str,
         entity_data_source: &DataSource,
-    ) -> TypeRefWithInputs {
+    ) -> Vec<InputObject> {
         let mut inputs = Vec::new();
 
         let input_name = ServiceInput::format_child_field_name(
@@ -52,36 +50,6 @@ impl ServiceInput {
             inputs.push(input);
         }
 
-        let type_ref = match resolver_type {
-            ResolverType::FindOne
-            | ResolverType::FindMany
-            | ResolverType::UpdateOne
-            | ResolverType::UpdateMany => {
-                if entity_field.list == Some(true) {
-                    TypeRef::named_nn_list(input_name)
-                } else {
-                    TypeRef::named(input_name)
-                }
-            }
-            ResolverType::CreateOne => match entity_field.required {
-                Some(true) => {
-                    if entity_field.list == Some(true) {
-                        TypeRef::named_nn_list_nn(input_name)
-                    } else {
-                        TypeRef::named_nn(input_name)
-                    }
-                }
-                _ => {
-                    if entity_field.list == Some(true) {
-                        TypeRef::named_nn_list(input_name)
-                    } else {
-                        TypeRef::named(input_name)
-                    }
-                }
-            },
-            _ => panic!("Invalid resolver type"),
-        };
-
-        TypeRefWithInputs { type_ref, inputs }
+        inputs
     }
 }

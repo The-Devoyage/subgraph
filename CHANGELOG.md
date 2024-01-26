@@ -24,6 +24,7 @@
 - SQL Filters now allow nested filtering from root input.
 - Replace ENV variables function updated to exclude surrounding quotes.
 - HTTP error response now includes the returned error in the errors extensions.
+- Refactored Scalar Option which allows easier addition to future scalars.
 
 ## [v0.0.13]
 
