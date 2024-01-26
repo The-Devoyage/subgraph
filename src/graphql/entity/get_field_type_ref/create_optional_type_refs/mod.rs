@@ -21,7 +21,9 @@ impl ServiceEntity {
         debug!("Creating Optional Type Refs");
         let mut type_defs = Vec::new();
 
-        let type_ref = entity_field.scalar.get_nullable_type_ref(entity_field);
+        let type_ref = entity_field
+            .scalar
+            .to_nullable_type_ref(entity_field.list.unwrap_or(false), Some(&entity_field.name));
 
         match entity_field.scalar.clone() {
             ScalarOption::Object => {

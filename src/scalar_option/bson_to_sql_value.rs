@@ -7,7 +7,7 @@ use super::ScalarOption;
 use crate::{configuration::subgraph::data_sources::sql::DialectEnum, data_sources::sql::SqlValue};
 
 impl ScalarOption {
-    pub fn to_sql_value(
+    pub fn bson_to_sql_value(
         self,
         value: &Bson,
         dialect: Option<&DialectEnum>,

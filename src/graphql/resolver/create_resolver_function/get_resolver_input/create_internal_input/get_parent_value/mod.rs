@@ -5,7 +5,6 @@ use log::debug;
 use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
     data_sources::sql::services::ResponseRow, graphql::resolver::ServiceResolver,
-    scalar_option::ScalarOption,
 };
 
 impl ServiceResolver {
@@ -36,20 +35,22 @@ impl ServiceResolver {
                         // field.
                         // Map the value into a Document, which is what the resolver expects.
                         Some(response_row) => match response_row {
-                            ResponseRow::SqLite(rr) => Some(ScalarOption::sqlite_rr_to_input_doc(
-                                rr,
-                                as_type_field,
-                                field_name,
-                            )?),
+                            ResponseRow::SqLite(rr) => {
+                                Some(as_type_field.scalar.clone().sqlite_rr_to_input_doc(
+                                    rr,
+                                    as_type_field,
+                                    field_name,
+                                )?)
+                            }
                             ResponseRow::MySql(rr) => {
-                                Some(ScalarOption::mysql_response_row_to_input_doc(
+                                Some(as_type_field.scalar.clone().mysql_rr_to_input_doc(
                                     rr,
                                     as_type_field,
                                     field_name,
                                 )?)
                             }
                             ResponseRow::Postgres(rr) => {
-                                Some(ScalarOption::postgres_response_row_to_input_doc(
+                                Some(as_type_field.scalar.clone().pg_rr_to_input_doc(
                                     rr,
                                     as_type_field,
                                     field_name,

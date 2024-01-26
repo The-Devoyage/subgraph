@@ -5,9 +5,9 @@ use log::{debug, trace};
 
 impl ScalarOption {
     pub fn json_to_async_graphql_value(
+        &self,
         json_value: &JsonValue,
         field_name: &str,
-        scalar: ScalarOption,
     ) -> Result<Value, async_graphql::Error> {
         debug!("Resolving HTTP Field");
         trace!("json_value: {:?}", json_value);
@@ -15,7 +15,7 @@ impl ScalarOption {
         let value = &json_value[field_name];
 
         // Match the scalar type and get the value json
-        let value = match scalar {
+        let value = match self {
             ScalarOption::String => {
                 if value.is_null() || value == "null" {
                     return Ok(Value::Null);

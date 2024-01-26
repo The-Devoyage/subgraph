@@ -320,7 +320,7 @@ impl ServiceResolver {
                         let json_value = field
                             .scalar
                             .clone()
-                            .to_serde_json_value(response_row, &field.name)?;
+                            .rr_to_serde_json_value(response_row, &field.name)?;
                         json_obj[field.name.clone()] = json_value;
                     }
 

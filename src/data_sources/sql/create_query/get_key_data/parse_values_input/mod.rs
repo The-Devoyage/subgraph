@@ -65,7 +65,7 @@ impl SqlDataSource {
             };
             let ServiceEntityFieldConfig { scalar, .. } = field.unwrap();
 
-            let sql_value_enum = scalar.to_sql_value(value, Some(dialect))?;
+            let sql_value_enum = scalar.bson_to_sql_value(value, Some(dialect))?;
 
             if is_where_clause {
                 where_keys.push(key.to_string());

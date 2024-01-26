@@ -11,6 +11,7 @@ impl ScalarOption {
     /// This document is to create a internal input.
     /// Types converted are specifc to the sqlite database.
     pub fn sqlite_rr_to_input_doc(
+        &self,
         sqlite_row: &SqliteRow,
         as_type_field: &ServiceEntityFieldConfig,
         field_name: &str,
@@ -26,7 +27,7 @@ impl ScalarOption {
             return Ok(document);
         }
 
-        match as_type_field.scalar {
+        match self {
             ScalarOption::String
             | ScalarOption::ObjectID
             | ScalarOption::UUID

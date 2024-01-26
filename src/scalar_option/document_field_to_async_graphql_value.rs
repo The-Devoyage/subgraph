@@ -12,12 +12,13 @@ use super::ScalarOption;
 impl ScalarOption {
     /// Converts a document field to a async_graphql Value
     pub fn document_field_to_async_graphql_value(
+        self,
         document: &Document,
         field: &ServiceEntityFieldConfig,
     ) -> Result<Value, async_graphql::Error> {
         debug!("Resolving Document Field: {:?}", field.name);
 
-        let value = match &field.scalar {
+        let value = match self {
             ScalarOption::String => ServiceEntity::resolve_document_string_scalar(document, field),
             ScalarOption::ObjectID => {
                 ServiceEntity::resolve_document_object_id_scalar(document, field)

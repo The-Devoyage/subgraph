@@ -7,7 +7,6 @@ use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
     data_sources::{sql::services::ResponseRow, DataSource},
     graphql::entity::ServiceEntity,
-    scalar_option::ScalarOption,
 };
 
 impl ServiceEntity {
@@ -26,10 +25,10 @@ impl ServiceEntity {
                 let doc = match ctx.parent_value.try_downcast_ref::<Option<Document>>() {
                     Ok(doc) => {
                         if let Some(doc) = doc {
-                            let value = ScalarOption::document_field_to_async_graphql_value(
-                                doc,
-                                entity_field,
-                            )?;
+                            let value = entity_field
+                                .scalar
+                                .clone()
+                                .document_field_to_async_graphql_value(doc, entity_field)?;
                             Ok(Some(value))
                         } else {
                             if entity_required {
@@ -89,11 +88,9 @@ impl ServiceEntity {
                     }
                 };
 
-                let value = ScalarOption::json_to_async_graphql_value(
-                    json_value,
-                    field_name,
-                    entity_field.scalar.clone(),
-                )?;
+                let value = entity_field
+                    .scalar
+                    .json_to_async_graphql_value(json_value, field_name)?;
 
                 Ok(Some(value))
             }
