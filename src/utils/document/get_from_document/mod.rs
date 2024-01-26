@@ -1,5 +1,5 @@
 use bson::{oid::ObjectId, Bson};
-use log::{debug, error};
+use log::{debug, error, trace};
 
 use super::DocumentUtils;
 
@@ -30,20 +30,20 @@ impl DocumentUtils {
     ) -> Result<DocumentValue, async_graphql::Error> {
         debug!("Resolving String Scalar");
         if is_list {
-            debug!("---Is List: {:?}", is_list);
+            trace!("---Is List: {:?}", is_list);
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 let values = documents
                     .into_iter()
                     .map(|value| value.as_str().unwrap().to_string())
                     .collect::<Vec<String>>();
-                debug!("Found String Values: {:?}", values);
+                trace!("Found String Values: {:?}", values);
                 return Ok(DocumentValue::StringArray(values));
             } else {
                 return Ok(DocumentValue::StringArray(vec![]));
             }
         }
         let value = document.get_str(field_name)?;
-        debug!("Found String Value: {:?}", value);
+        trace!("Found String Value: {:?}", value);
         Ok(DocumentValue::String(value.to_string()))
     }
 
@@ -93,7 +93,7 @@ impl DocumentUtils {
                         return i32_value.unwrap();
                     })
                     .collect::<Vec<i32>>();
-                debug!("Found Int Values: {:?}", values);
+                trace!("Found Int Values: {:?}", values);
                 return Ok(DocumentValue::IntArray(values));
             } else {
                 return Ok(DocumentValue::IntArray(vec![]));
@@ -114,7 +114,7 @@ impl DocumentUtils {
                 )));
             }
         }
-        debug!("Found Int Value: {:?}", value);
+        trace!("Found Int Value: {:?}", value);
         Ok(DocumentValue::Int(i32_value.unwrap()))
     }
 
@@ -129,12 +129,12 @@ impl DocumentUtils {
                 .into_iter()
                 .map(|value| value.as_bool().unwrap())
                 .collect::<Vec<bool>>();
-            debug!("Found Boolean Value: {:?}", values);
+            trace!("Found Boolean Value: {:?}", values);
             return Ok(DocumentValue::BooleanArray(values));
         }
 
         let value = document.get_bool(field_name)?;
-        debug!("Found Boolean Value: {:?}", value);
+        trace!("Found Boolean Value: {:?}", value);
         Ok(DocumentValue::Boolean(value))
     }
 
@@ -157,7 +157,7 @@ impl DocumentUtils {
                         }
                     })
                     .collect();
-                debug!("Found UUID Values: {:?}", values);
+                trace!("Found UUID Values: {:?}", values);
                 return Ok(DocumentValue::UUIDArray(values));
             } else {
                 return Ok(DocumentValue::UUIDArray(vec![]));
@@ -165,7 +165,7 @@ impl DocumentUtils {
         }
 
         let value = document.get_str(field_name)?;
-        debug!("Found UUID Value: {:?}", value);
+        trace!("Found UUID Value: {:?}", value);
         Ok(DocumentValue::UUID(uuid::Uuid::parse_str(value).unwrap()))
     }
 
@@ -194,7 +194,7 @@ impl DocumentUtils {
                         value.to_chrono()
                     })
                     .collect();
-                debug!("Found DateTime Values: {:?}", values);
+                trace!("Found DateTime Values: {:?}", values);
                 return Ok(DocumentValue::DateTimeArray(values));
             } else {
                 return Ok(DocumentValue::DateTimeArray(vec![]));
@@ -203,7 +203,7 @@ impl DocumentUtils {
 
         let value = document.get_datetime(field_name)?;
         // convert bson datetime to chrono datetime
-        debug!("Found DateTime Value: {:?}", value);
+        trace!("Found DateTime Value: {:?}", value);
         Ok(DocumentValue::DateTime(value.to_chrono()))
     }
 
@@ -218,7 +218,7 @@ impl DocumentUtils {
                     .into_iter()
                     .map(|value| value.as_object_id().unwrap())
                     .collect::<Vec<ObjectId>>();
-                debug!("Found ObjectID Value: {:?}", value);
+                trace!("Found ObjectID Value: {:?}", value);
                 return Ok(DocumentValue::ObjectIDArray(value));
             } else {
                 return Ok(DocumentValue::ObjectIDArray(vec![]));
@@ -226,7 +226,7 @@ impl DocumentUtils {
         }
 
         let value = document.get_object_id(field_name)?;
-        debug!("Found ObjectID Value: {:?}", value);
+        trace!("Found ObjectID Value: {:?}", value);
         Ok(DocumentValue::ObjectID(value))
     }
 
@@ -235,14 +235,14 @@ impl DocumentUtils {
         field_name: &str,
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
-        debug!("Resolving Object Scalar");
+        trace!("Resolving Object Scalar");
         let value = document.get(field_name);
 
         if value.is_none() {
             return Err(async_graphql::Error::new("No Object Value Found"));
         }
 
-        debug!("Found Object Value: {:?}", value);
+        trace!("Found Object Value: {:?}", value);
 
         let value = value.unwrap();
         if is_list {
@@ -251,7 +251,7 @@ impl DocumentUtils {
                     .into_iter()
                     .map(|value| value.as_document().unwrap().clone())
                     .collect::<Vec<bson::Document>>();
-                debug!("Found Object Values: {:?}", values);
+                trace!("Found Object Values: {:?}", values);
                 return Ok(DocumentValue::DocumentArray(values));
             } else {
                 return Ok(DocumentValue::DocumentArray(vec![]));
