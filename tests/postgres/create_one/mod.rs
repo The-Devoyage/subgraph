@@ -20,18 +20,21 @@ async fn create_one() {
 
 #[tokio::test]
 async fn create_one_with_default_value() {
-    let request = async_graphql::Request::new(
+    let uuid = uuid::Uuid::new_v4().to_string();
+    let datetime = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    let request = async_graphql::Request::new(format!(
         r#"
-        mutation {
-            create_reaction(create_reaction_input: { values: { status: true } }) {
-                data {
-                    id
-                    content
-                }
-            }
-        }
-        "#,
-    );
+            mutation {{
+                create_reaction(create_reaction_input: {{ values: {{ status: true, uuid: "{}", reaction_date: "{}" }} }}) {{
+                    data {{
+                        id
+                        content
+                    }}
+                }}
+            }}
+            "#,
+        uuid, datetime
+    ));
 
     let response = execute(request, None).await;
     assert!(response.is_ok());

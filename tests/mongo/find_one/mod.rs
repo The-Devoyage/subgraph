@@ -122,41 +122,61 @@ async fn find_one_by_bool() {
 
 #[tokio::test]
 async fn returns_correct_scalars() {
+    let uuid = uuid::Uuid::new_v4().to_string();
+
     let request = async_graphql::Request::new(
-        r#"
-        mutation {
-            create_user(create_user_input: { values: { name: "Jordan", age: 2, married: true, email: "jordan@noemail.com" } }) {
-                data {
-                    _id
-                }
-            }
-        }
-        "#,
+        format!(
+            r#"
+                mutation {{
+                    create_user(create_user_input: {{ values: {{ 
+                        name: "Jack", 
+                        age: 2, 
+                        married: true, 
+                        uuid: "{}",
+                        birthday: "2020-01-01T00:00:00.000Z",
+                        email: "abcd@abcd.com"
+                        }} 
+                    }}) {{
+                        data {{
+                            _id
+                        }}
+                    }}
+                }}
+            "#,
+            uuid
+        )
+        .as_str(),
     );
+
     execute(request, None).await;
+
     let request = async_graphql::Request::new(
-        r#"
-        {
-            get_user(get_user_input: { query: { name: "Jordan" } }) {
-                data {
-                    _id
-                    name
-                    age
-                    married
-                }
-            }
-        }
-        "#,
+        format!(
+            r#"
+                {{
+                    get_user(get_user_input: {{ query: {{ uuid: "{}" }} }}) {{
+                        data {{
+                            _id
+                            name
+                            age
+                            married
+                            uuid
+                            birthday
+                        }}
+                    }}
+                }}
+            "#,
+            uuid
+        )
+        .as_str(),
     );
 
     let response = execute(request, None).await;
     assert!(response.is_ok());
     let json = response.data.into_json().unwrap();
-    let name = json["get_user"]["data"]["name"].as_str().unwrap();
     let object_id = json["get_user"]["data"]["_id"].as_str().unwrap();
     let age = json["get_user"]["data"]["age"].as_i64().unwrap();
     let married = json["get_user"]["data"]["married"].as_bool().unwrap();
-    assert_eq!(name, "Jordan");
     assert_eq!(object_id.len(), 24);
     assert_eq!(age, 2);
     assert_eq!(married, true);

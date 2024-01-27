@@ -46,14 +46,6 @@ impl Services {
                     let is_filter_operator =
                         FilterOperator::list_mongo_operators().contains(sub_key);
                     if is_filter_operator {
-                        // let filter = doc! {
-                        //     sub_key.clone(): Regex {
-                        //         pattern: sub_value.as_str().unwrap().to_string(),
-                        //         options: "i".to_string()
-                        //     }
-                        // };
-                        // trace!("Inserted Filter: {:?}", filter);
-                        // find_doc.insert(key.clone(), filter);
                         let filter_operator = FilterOperator::from_str(sub_key).unwrap();
                         let filter = FilterOperator::convert_value_to_mongo(
                             &filter_operator,

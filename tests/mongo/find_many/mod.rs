@@ -597,60 +597,6 @@ async fn find_many_with_like_filter() {
         assert!(dog_name.contains("with_like_filter"));
     }
 }
-// #[tokio::test]
-// async fn find_many_with_lt_gt_filters() {
-//     // Create several coffees that that a price that is less than 50 but greater than 40
-//     let prices = vec![41, 42, 43, 44, 45, 46, 47, 48, 49];
-//     for price in prices {
-//         let request = async_graphql::Request::new(format!(
-//             r#"
-//                 mutation {{
-//                     create_coffee(create_coffee_input: {{ values: {{ name: "lt_gt_filter", price: {}, available: true, created_by: "6510865e93142f6d61b10dd8" }} }}) {{
-//                         data {{
-//                             id
-//                         }}
-//                     }}
-//                 }}
-//             "#,
-//             price
-//         ));
-//         let response = execute(request, None).await;
-//         assert!(response.is_ok());
-//     }
-
-//     let request = async_graphql::Request::new(
-//         r#"
-//         query {
-//             get_coffees(get_coffees_input: { query: { AND: [{ GT: { price: 40 } }, { LT: { price: 50 } }] } }) {
-//                 data {
-//                     id
-//                     name
-//                     price
-//                 }
-//             }
-//         }
-//         "#,
-//     );
-
-//     let response = execute(request, None).await;
-//     let json = response.data.into_json().unwrap();
-//     let coffees = json
-//         .get("get_coffees")
-//         .unwrap()
-//         .get("data")
-//         .unwrap()
-//         .as_array()
-//         .unwrap();
-
-//     // Make sure there are at least 9 coffees returned
-//     assert!(coffees.len() >= 9);
-
-//     // Make sure all the coffees returned have prices between 40 and 50
-//     for coffee in coffees {
-//         let price = coffee.get("price").unwrap().as_i64().unwrap();
-//         assert!(price > 40 && price < 50);
-//     }
-// }
 
 #[tokio::test]
 async fn find_many_with_lt_gt_filters() {

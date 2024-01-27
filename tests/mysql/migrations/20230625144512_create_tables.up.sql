@@ -14,7 +14,9 @@ CREATE TABLE IF NOT EXISTS orders (
     buyer VARCHAR(255) NOT NULL,
     price INT NOT NULL,
     status VARCHAR(255) NOT NULL DEFAULT 'pending',
+    uuid CHAR(36) NOT NULL,
+    order_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (car_id) REFERENCES cars (id) ON DELETE CASCADE
 );
 
-INSERT INTO orders (car_id, buyer, price) VALUES (1, 'John Doe', 10000);
+INSERT INTO orders (car_id, buyer, price, uuid) VALUES (1, 'John Doe', 10000, '77ad72bc-1c3b-4966-98be-828da9888c71');

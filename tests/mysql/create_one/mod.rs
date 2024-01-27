@@ -20,22 +20,25 @@ async fn create_one() {
 
 #[tokio::test]
 async fn create_one_with_default_value() {
-    let request = async_graphql::Request::new(
+    let uuid = uuid::Uuid::new_v4().to_string();
+    let order_date = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    let request = async_graphql::Request::new(format!(
         r#"
-        mutation {
-            create_car_purchase(create_car_purchase_input: { values: { price: 101010, buyer: "iggy", status: "pending" } }) {
-                data {
-                    id
-                    car_id(car_id: { query: {} }) {
-                        data {
-                            id
-                        }
-                    }
-                }
-            }
-        }
-        "#,
-    );
+            mutation {{
+                create_car_purchase(create_car_purchase_input: {{ values: {{ price: 101010, buyer: "iggy", status: "pending", uuid: "{}", order_date: "{}" }} }}) {{
+                    data {{
+                        id
+                        car_id(car_id: {{ query: {{}} }}) {{
+                            data {{
+                                id
+                            }}
+                        }}
+                    }}
+                }}
+            }}
+            "#,
+        uuid, order_date
+    ));
 
     let response = execute(request, None).await;
     assert!(response.is_ok());

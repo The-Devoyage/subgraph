@@ -105,6 +105,55 @@ async fn returns_correct_scalars() {
 }
 
 #[tokio::test]
+async fn returns_correct_scalars_date_uuid() {
+    // Create new coffee order
+    let uuid = uuid::Uuid::new_v4().to_string();
+    let request = async_graphql::Request::new(format!(
+        r#"
+            mutation {{
+                create_coffee_order(create_coffee_order_input: {{ values: {{  created_by: "6510865e93142f6d61b10dd8", uuid: "{}" }} }}) {{
+                    data {{
+                        id
+                    }}
+                }}
+            }}
+            "#,
+        uuid
+    ));
+    let response = execute(request, None).await;
+    assert!(response.is_ok());
+    let id = response.data.into_json().unwrap()["create_coffee_order"]["data"]["id"]
+        .as_i64()
+        .unwrap();
+
+    // Get coffee order
+    let request = async_graphql::Request::new(format!(
+        r#"
+            query {{
+                get_coffee_order(get_coffee_order_input: {{ query: {{ uuid: "{}" }} }}) {{
+                    data {{
+                        id
+                        uuid
+                        order_date
+                    }}
+                }}
+            }}
+            "#,
+        uuid
+    ));
+
+    let response = execute(request, None).await;
+    let json = response.data.into_json().unwrap();
+    let coffee_order = json.get("get_coffee_order").unwrap();
+    assert_eq!(coffee_order["data"].get("id").unwrap(), id);
+    assert_eq!(
+        coffee_order["data"].get("uuid").unwrap(),
+        &serde_json::json!(uuid)
+    );
+    assert!(coffee_order["data"].get("order_date").unwrap().is_string());
+}
+
+#[tokio::test]
 async fn join_sqlite_to_mongo() {
     //Find any user to get a valid uuid
     let request = async_graphql::Request::new(

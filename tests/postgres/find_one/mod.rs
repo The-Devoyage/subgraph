@@ -152,6 +152,63 @@ async fn returns_correct_scalars() {
 }
 
 #[tokio::test]
+async fn returns_correct_scalars_uuid_datetime() {
+    let uuid = uuid::Uuid::new_v4().to_string();
+    let datetime = chrono::Utc::now();
+    let request = async_graphql::Request::new(format!(
+        r#"
+            mutation {{
+                create_reaction(create_reaction_input: {{ values: {{ status: true, uuid: "{}", reaction_date: "{}" }} }}) {{
+                    data {{
+                        id
+                        content
+                    }}
+                }}
+            }}
+            "#,
+        uuid,
+        datetime.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+    ));
+
+    execute(request, None).await;
+
+    let request = async_graphql::Request::new(format!(
+        r#"
+            query {{
+                get_reaction(get_reaction_input: {{ query: {{ uuid: "{}" }} }}) {{
+                    data {{
+                        id
+                        content
+                        status
+                        uuid
+                        reaction_date
+                    }}
+                }}
+            }}
+            "#,
+        uuid
+    ));
+
+    let response = execute(request, None).await;
+
+    let json = response.data.into_json().unwrap();
+    let reaction = json.get("get_reaction").unwrap();
+    let reaction_date_str = reaction["data"]
+        .get("reaction_date")
+        .unwrap()
+        .as_str()
+        .unwrap();
+    assert_eq!(
+        reaction["data"].get("uuid").unwrap().as_str().unwrap(),
+        uuid
+    );
+    assert_eq!(
+        reaction_date_str,
+        datetime.to_rfc3339_opts(chrono::SecondsFormat::Secs, false)
+    );
+}
+
+#[tokio::test]
 async fn find_one_with_or_filter() {
     let request = async_graphql::Request::new(
         r#"

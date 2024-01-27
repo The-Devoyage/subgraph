@@ -22,7 +22,7 @@ async fn create_one_with_default_value() {
     let request = async_graphql::Request::new(
         r#"
         mutation {
-            create_coffee_order(create_coffee_order_input: { values: {  created_by: "6510865e93142f6d61b10dd8" } }) {
+            create_coffee_order(create_coffee_order_input: { values: {  created_by: "6510865e93142f6d61b10dd8", uuid: "af2e25cf-14bc-4e42-9ff1-93a6d3e222af" } }) {
                 data {
                     id
                     status

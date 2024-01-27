@@ -1,8 +1,7 @@
 use async_graphql::dynamic::FieldValue;
-use bson::{doc, oid::ObjectId, to_document, Document};
+use bson::{doc, to_document, Document};
 use log::{debug, error, trace};
 use mongodb::{options::ClientOptions, Client, Database};
-use std::str::FromStr;
 
 use crate::{
     configuration::subgraph::{
@@ -16,7 +15,7 @@ use crate::{
         schema::create_options_input::{DirectionEnum, OptionsInput},
     },
     resolver_type::ResolverType,
-    scalar_option::ScalarOption,
+    scalar_option::{to_mongo::MongoValue, ScalarOption},
 };
 
 use super::DataSource;
@@ -119,23 +118,29 @@ impl MongoDataSource {
 
             // Since searching by a single key above, the last field is guaranteed to be the field we are looking for.
             if let Some(field) = fields.last() {
-                // if the bson string is an object id, convert the value to an object id.
-                match field.scalar {
-                    ScalarOption::ObjectID => {
-                        // if the is a string, convert it to an object id.
-                        if let bson::Bson::String(object_id_string) = value {
-                            let object_id = ObjectId::from_str(&object_id_string).map_err(|e| {
-                                error!("Failed to convert string to object id. Error: {:?}", e);
-                                async_graphql::Error::new(format!(
-                                    "Failed to convert string to object id. Error: {:?}",
-                                    e
-                                ))
-                            })?;
-
-                            //update the cooresponding value in converted
-                            converted.insert(k.clone(), object_id);
+                // Certain scalars need to be converted to mongo types.
+                // If they do, replace them in the doc.
+                match field.scalar.bson_to_mongo_value(value) {
+                    Ok(mongo_value) => {
+                        if mongo_value.is_some() {
+                            match mongo_value.unwrap() {
+                                MongoValue::ObjectID(object_id) => {
+                                    //update the cooresponding value in converted
+                                    converted.insert(k.clone(), object_id);
+                                }
+                                MongoValue::DateTime(date_time) => {
+                                    //update the cooresponding value in converted
+                                    converted.insert(k.clone(), date_time);
+                                }
+                                _ => {}
+                            }
                         }
                     }
+                    Err(_) => {}
+                };
+
+                // Handle object types and eager loaded fields
+                match field.scalar {
                     ScalarOption::Object => {
                         let separator = if key.is_empty() { "" } else { "." };
                         let separated = format!("{}{}", separator, k);
