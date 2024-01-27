@@ -23,7 +23,7 @@ impl ServiceEntity {
 
         let type_ref = entity_field
             .scalar
-            .to_nullable_type_ref(entity_field.list.unwrap_or(false), Some(&entity_field.name));
+            .to_nullable_type_ref(entity_field.list.unwrap_or(false), &entity_field.name);
 
         match entity_field.scalar.clone() {
             ScalarOption::Object => {
