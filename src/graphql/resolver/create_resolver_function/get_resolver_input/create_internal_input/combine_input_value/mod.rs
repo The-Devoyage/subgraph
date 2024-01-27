@@ -2,10 +2,10 @@ use std::str::FromStr;
 
 use crate::{
     filter_operator::FilterOperator, graphql::resolver::ServiceResolver,
-    scalar_option::ScalarOption,
+    scalar_option::ScalarOption, utils::document::get_from_document::DocumentValue,
 };
 use bson::{doc, oid::ObjectId, Bson, Document};
-use log::{debug, error, trace};
+use log::{debug, trace};
 
 impl ServiceResolver {
     /// Extracts the primitive value from the input query and combines it with the parent value.
@@ -47,210 +47,145 @@ impl ServiceResolver {
             Err(_) => false,
         };
 
-        // Replace the key of the input with the correct key to join on.
-        // Map the value to the correct type based on the scalar.
-        match scalar {
-            ScalarOption::String | ScalarOption::UUID | ScalarOption::DateTime => {
-                if is_list {
-                    trace!("Combining String Value With Input - Is List");
-                    // Check that all values in array are of type string.
-                    let valid_strings = parent_value
-                        .get_array(&field_name)
-                        .unwrap()
-                        .iter()
-                        .all(|v| v.as_str().is_some());
+        let join_on_value = scalar
+            .get_from_document(parent_value, field_name, is_list)
+            .ok();
 
-                    if !valid_strings {
-                        error!(
-                            "Invalid value provided for field: {}. Value is not of type `string`.",
-                            field_name
-                        );
-                        return Err(async_graphql::Error::from(format!(
-                            "Invalid value provided for field: {}. All values are not of type `string`.",
-                            field_name
-                        )));
-                    }
-
-                    let join_on_value = parent_value
-                        .get_array(&field_name)
-                        .unwrap()
-                        .iter()
-                        .map(|v| v.as_str().unwrap().to_string())
-                        .collect::<Vec<String>>();
-                    for value in join_on_value {
-                        let join_query = doc! { join_on: value };
-                        let bson = bson::to_bson(&join_query).unwrap();
-                        query_input
-                            .get_array_mut(FilterOperator::Or.as_str())
-                            .unwrap()
-                            .push(bson);
-                    }
-                } else {
-                    let join_on_value =
-                        ServiceResolver::get_string_value(parent_value, field_name)?;
-                    if join_on_value.is_some() {
-                        let join_query = doc! { join_on: join_on_value };
-                        let bson = bson::to_bson(&join_query).unwrap();
-                        query_input
-                            .get_array_mut(FilterOperator::And.as_str())
-                            .unwrap()
-                            .push(bson);
-                    }
-                }
-            }
-            ScalarOption::Int => {
-                trace!("Combining Int Value With Input");
-                if is_list {
-                    trace!("Combining Int Value With Input - Is List");
-                    // Check that all values in array are of type int.
-                    let valid_ints = parent_value
-                        .get_array(&field_name)
-                        .unwrap()
-                        .iter()
-                        .all(|v| v.as_i32().is_some());
-
-                    if !valid_ints {
-                        error!("Invalid value provided for field: {}. All values are not of type `int`.", field_name);
-                        return Err(async_graphql::Error::from(format!(
-                            "Invalid value provided for field: {}. All values are not of type `int`.",
-                            field_name
-                        )));
-                    }
-
-                    let join_on_value = parent_value
-                        .get_array(&field_name)
-                        .unwrap()
-                        .iter()
-                        .map(|v| v.as_i32().unwrap() as i64)
-                        .collect::<Vec<i64>>();
-
-                    for value in join_on_value {
-                        let join_query = doc! { join_on: value };
-                        let bson = bson::to_bson(&join_query).unwrap();
-                        query_input
-                            .get_array_mut(FilterOperator::Or.as_str())
-                            .unwrap()
-                            .push(bson);
-                    }
-                } else {
-                    trace!("Combining Int Value With Input - Is Not List");
-                    let join_on_value = ServiceResolver::get_int_value(parent_value, field_name)?;
-                    if join_on_value.is_some() {
-                        let join_query = doc! { join_on: join_on_value };
-                        let bson = bson::to_bson(&join_query).unwrap();
-                        query_input
-                            .get_array_mut(FilterOperator::And.as_str())
-                            .unwrap()
-                            .push(bson);
-                        trace!("Join Query: {:?}", query_input);
-                    }
-                }
-            }
-            ScalarOption::Boolean => {
-                trace!("Combining Boolean Value With Input");
-                if is_list {
-                    trace!("Combining Boolean Value With Input - Is List");
-                    // Check that all values in array are of type bool.
-                    let valid_bools = parent_value
-                        .get_array(&field_name)
-                        .unwrap()
-                        .iter()
-                        .all(|v| v.as_bool().is_some());
-
-                    if !valid_bools {
-                        error!("Invalid value provided for field: {}. All values are not of type `bool`.", field_name);
-                        return Err(async_graphql::Error::from(format!(
-                            "Invalid value provided for field: {}. All values are not of type `bool`.",
-                            field_name
-                        )));
-                    }
-
-                    let join_on_value = parent_value
-                        .get_array(&field_name)
-                        .unwrap()
-                        .iter()
-                        .map(|v| if v.as_bool().unwrap() { true } else { false })
-                        .collect::<Vec<bool>>();
-
-                    for value in join_on_value {
-                        let join_query = doc! { join_on: value };
-                        let bson = bson::to_bson(&join_query).unwrap();
-                        query_input
-                            .get_array_mut(FilterOperator::Or.as_str())
-                            .unwrap()
-                            .push(bson);
-                    }
-                } else {
-                    let join_on_value = ServiceResolver::get_bool_value(parent_value, field_name)?;
-                    if join_on_value.is_some() {
-                        let join_query = doc! { join_on: join_on_value };
-                        let bson = bson::to_bson(&join_query).unwrap();
-                        query_input
-                            .get_array_mut(FilterOperator::And.as_str())
-                            .unwrap()
-                            .push(bson);
-                    }
-                }
-            }
+        // If the scalar is ObjectID and the join_on_value is none,
+        // it might need to be deserialized from a string as sql does not
+        // support ObjectID.
+        let join_on_value = match scalar {
             ScalarOption::ObjectID => {
-                trace!("Combining ObjectID Value With Input");
-                if is_list {
-                    debug!("Combining ObjectID Value With Input - Is List");
+                if join_on_value.is_none() {
+                    let value = parent_value.get_str(field_name).unwrap();
+                    let value = ObjectId::from_str(value).unwrap();
+                    Some(DocumentValue::ObjectID(value))
+                } else {
+                    join_on_value
+                }
+            }
+            _ => join_on_value,
+        };
 
-                    // Check that all values in array are of type ObjectID.
-                    let valid_object_ids = parent_value
-                        .get_array(&field_name)
+        if join_on_value.is_some() {
+            match join_on_value.unwrap() {
+                DocumentValue::String(v) => {
+                    let join_query = doc! { join_on: Some(v) };
+                    let bson = bson::to_bson(&join_query).unwrap();
+                    query_input
+                        .get_array_mut(FilterOperator::And.as_str())
                         .unwrap()
-                        .iter()
-                        .all(|v| v.as_object_id().is_some());
-
-                    if !valid_object_ids {
-                        error!("Invalid value provided for field: {}. All values are not of type `ObjectID`.", field_name);
-                        return Err(async_graphql::Error::from(format!(
-                            "Invalid value provided for field: {}. All values are not of type `ObjectID`.",
-                            field_name
-                        )));
-                    }
-
-                    let join_on_value = parent_value
-                        .get_array(&field_name)
-                        .unwrap() // Safe to unwrap, already checked.
-                        .iter()
-                        .map(|v| {
-                            v.as_object_id()
-                                .unwrap() // Safe to unwrap, already checked.
-                                .clone()
-                        })
-                        .collect::<Vec<ObjectId>>();
-
-                    for value in join_on_value {
-                        let join_query = doc! { join_on: value };
+                        .push(bson);
+                }
+                DocumentValue::UUID(v) => {
+                    // Needs to be converted to String for input type.
+                    let join_query = doc! { join_on: Some(v.to_string()) };
+                    let bson = bson::to_bson(&join_query).unwrap();
+                    query_input
+                        .get_array_mut(FilterOperator::And.as_str())
+                        .unwrap()
+                        .push(bson);
+                }
+                DocumentValue::DateTime(v) => {
+                    // Needs to be converted to String for input type.
+                    let join_query = doc! { join_on: Some(v.to_string()) };
+                    let bson = bson::to_bson(&join_query).unwrap();
+                    query_input
+                        .get_array_mut(FilterOperator::And.as_str())
+                        .unwrap()
+                        .push(bson);
+                }
+                DocumentValue::StringArray(v) => {
+                    for value in v {
+                        let join_query = doc! { join_on: Some(value) };
                         let bson = bson::to_bson(&join_query).unwrap();
                         query_input
                             .get_array_mut(FilterOperator::Or.as_str())
                             .unwrap()
                             .push(bson);
                     }
-                } else {
-                    let join_on_value =
-                        ServiceResolver::get_object_id_value(parent_value, field_name)?;
-                    if join_on_value.is_some() {
-                        let join_query = doc! { join_on: join_on_value };
+                }
+                DocumentValue::UUIDArray(v) => {
+                    for value in v {
+                        // Needs to be converted to String for input type.
+                        let join_query = doc! { join_on: Some(value.to_string()) };
                         let bson = bson::to_bson(&join_query).unwrap();
                         query_input
-                            .get_array_mut(FilterOperator::And.as_str())
+                            .get_array_mut(FilterOperator::Or.as_str())
                             .unwrap()
                             .push(bson);
                     }
                 }
+                DocumentValue::DateTimeArray(v) => {
+                    for value in v {
+                        // Needs to be converted to String for input type.
+                        let join_query = doc! { join_on: Some(value.to_string()) };
+                        let bson = bson::to_bson(&join_query).unwrap();
+                        query_input
+                            .get_array_mut(FilterOperator::Or.as_str())
+                            .unwrap()
+                            .push(bson);
+                    }
+                }
+                DocumentValue::Int(v) => {
+                    // Needs to be converted to i64 for input type.
+                    let join_query = doc! { join_on: Some(v as i64) };
+                    let bson = bson::to_bson(&join_query).unwrap();
+                    query_input
+                        .get_array_mut(FilterOperator::And.as_str())
+                        .unwrap()
+                        .push(bson);
+                }
+                DocumentValue::IntArray(v) => {
+                    for value in v {
+                        // Needs to be converted to i64 for input type.
+                        let join_query = doc! { join_on: Some(value as i64) };
+                        let bson = bson::to_bson(&join_query).unwrap();
+                        query_input
+                            .get_array_mut(FilterOperator::Or.as_str())
+                            .unwrap()
+                            .push(bson);
+                    }
+                }
+                DocumentValue::ObjectID(v) => {
+                    let join_query = doc! { join_on: Some(v) };
+                    let bson = bson::to_bson(&join_query).unwrap();
+                    query_input
+                        .get_array_mut(FilterOperator::And.as_str())
+                        .unwrap()
+                        .push(bson);
+                }
+                DocumentValue::ObjectIDArray(v) => {
+                    for value in v {
+                        let join_query = doc! { join_on: Some(value) };
+                        let bson = bson::to_bson(&join_query).unwrap();
+                        query_input
+                            .get_array_mut(FilterOperator::Or.as_str())
+                            .unwrap()
+                            .push(bson);
+                    }
+                }
+                DocumentValue::Boolean(v) => {
+                    let join_query = doc! { join_on: Some(v) };
+                    let bson = bson::to_bson(&join_query).unwrap();
+                    query_input
+                        .get_array_mut(FilterOperator::And.as_str())
+                        .unwrap()
+                        .push(bson);
+                }
+                DocumentValue::BooleanArray(v) => {
+                    for value in v {
+                        let join_query = doc! { join_on: Some(value) };
+                        let bson = bson::to_bson(&join_query).unwrap();
+                        query_input
+                            .get_array_mut(FilterOperator::Or.as_str())
+                            .unwrap()
+                            .push(bson);
+                    }
+                }
+                _ => {}
             }
-            _ => {
-                error!("Unsupported scalar type: {:?}", scalar);
-                return Err(async_graphql::Error::new(
-                    "Failed to create internally joined query. Unsupported scalar type.",
-                ));
-            }
-        };
+        }
 
         // If there are no values to join on, return empty document.
         if query_input
@@ -272,19 +207,6 @@ impl ServiceResolver {
         Ok(query_input.clone())
     }
 
-    pub fn get_string_value(
-        parent_value: &Document,
-        field_name: &str,
-    ) -> Result<Option<String>, async_graphql::Error> {
-        debug!("Getting string value for field: {}", field_name);
-        let value = match parent_value.get_str(field_name) {
-            Ok(value) => Some(value.to_string()),
-            Err(_) => None,
-        };
-        trace!("String value: {:?}", value);
-        Ok(value)
-    }
-
     pub fn get_int_value(
         parent_value: &Document,
         field_name: &str,
@@ -300,33 +222,6 @@ impl ServiceResolver {
             },
         };
         trace!("Int value: {:?}", value);
-        Ok(value)
-    }
-
-    pub fn get_bool_value(
-        parent_value: &Document,
-        field_name: &str,
-    ) -> Result<Option<bool>, async_graphql::Error> {
-        debug!("Getting bool value for field: {}", field_name);
-        let value = parent_value.get_bool(field_name).ok();
-        trace!("Bool value: {:?}", value);
-        Ok(value)
-    }
-
-    pub fn get_object_id_value(
-        parent_value: &Document,
-        field_name: &str,
-    ) -> Result<Option<ObjectId>, async_graphql::Error> {
-        debug!("Getting ObjectID value for field: {}", field_name);
-        let mut value = parent_value.get_object_id(field_name).ok();
-        if value.is_none() {
-            // If coming from a SQL dialect, the ObjectID may be stored as a string.
-            let string_obj_id = parent_value.get_str(field_name).ok();
-            if string_obj_id.is_some() {
-                value = ObjectId::from_str(string_obj_id.unwrap()).ok();
-            }
-        }
-        trace!("ObjectID value: {:?}", value);
         Ok(value)
     }
 }

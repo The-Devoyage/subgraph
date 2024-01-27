@@ -28,21 +28,36 @@ impl DocumentUtils {
         field_name: &str,
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
-        debug!("Resolving String Scalar");
+        debug!("Getting Document String Scalar: {}", field_name);
         if is_list {
-            trace!("---Is List: {:?}", is_list);
             if let Some(Bson::Array(documents)) = document.get(field_name) {
+                let valid_strings = documents.iter().all(|value| value.as_str().is_some());
+
+                if !valid_strings {
+                    error!("Not all values are strings for field {}", field_name);
+                    return Err(async_graphql::Error::new(format!(
+                        "Not all values are strings for field {}",
+                        field_name
+                    )));
+                }
+
                 let values = documents
                     .into_iter()
                     .map(|value| value.as_str().unwrap().to_string())
                     .collect::<Vec<String>>();
-                trace!("Found String Values: {:?}", values);
+                trace!("Document Value String Array: {:?}", values);
                 return Ok(DocumentValue::StringArray(values));
             } else {
+                trace!("Document Value String Array: Empty Vec");
                 return Ok(DocumentValue::StringArray(vec![]));
             }
         }
-        let value = document.get_str(field_name)?;
+
+        let value = document.get_str(field_name).map_err(|err| {
+            error!("Value is not a string: {}", err);
+            async_graphql::Error::new(format!("Value is not a string: {}", err))
+        })?;
+
         trace!("Found String Value: {:?}", value);
         Ok(DocumentValue::String(value.to_string()))
     }
@@ -52,6 +67,7 @@ impl DocumentUtils {
         field_name: &str,
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
+        debug!("Getting Document Int Scalar: {}", field_name);
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 // Check that all values are i32 or i64
@@ -69,10 +85,10 @@ impl DocumentUtils {
                 });
 
                 if !valid {
-                    error!("Could not parse int value: {:?}", documents);
+                    error!("Not all values are ints for field {}", field_name);
                     return Err(async_graphql::Error::new(format!(
-                        "Could not parse int value: {:?}",
-                        documents
+                        "Not all values are ints for field {}",
+                        field_name
                     )));
                 }
 
@@ -93,9 +109,10 @@ impl DocumentUtils {
                         return i32_value.unwrap();
                     })
                     .collect::<Vec<i32>>();
-                trace!("Found Int Values: {:?}", values);
+                trace!("Document Value Int Array: {:?}", values);
                 return Ok(DocumentValue::IntArray(values));
             } else {
+                trace!("Document Value Int Array: Empty Vec");
                 return Ok(DocumentValue::IntArray(vec![]));
             }
         }
@@ -103,7 +120,7 @@ impl DocumentUtils {
         let value = document.get(field_name).unwrap();
         let i32_value = value.as_i32();
         if i32_value.is_none() {
-            let i64_value = value.as_f64();
+            let i64_value = value.as_i64();
             if i64_value.is_some() {
                 return Ok(DocumentValue::Int(i64_value.unwrap() as i32));
             } else {
@@ -123,17 +140,34 @@ impl DocumentUtils {
         field_name: &str,
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
+        debug!("Getting Document Boolean Scalar: {}", field_name);
         if is_list {
+            let valid_bools = document
+                .get_array(field_name)?
+                .into_iter()
+                .all(|value| value.as_bool().is_some());
+
+            if !valid_bools {
+                error!("Not all values are booleans for field {}", field_name);
+                return Err(async_graphql::Error::new(format!(
+                    "Not all values are booleans for field {}",
+                    field_name
+                )));
+            }
+
             let values = document
                 .get_array(field_name)?
                 .into_iter()
                 .map(|value| value.as_bool().unwrap())
                 .collect::<Vec<bool>>();
-            trace!("Found Boolean Value: {:?}", values);
+            trace!("Document Value Boolean Array: {:?}", values);
             return Ok(DocumentValue::BooleanArray(values));
         }
 
-        let value = document.get_bool(field_name)?;
+        let value = document.get_bool(field_name).map_err(|err| {
+            error!("Value is not a boolean: {}", err);
+            async_graphql::Error::new(format!("Value is not a boolean: {}", err))
+        })?;
         trace!("Found Boolean Value: {:?}", value);
         Ok(DocumentValue::Boolean(value))
     }
@@ -143,8 +177,27 @@ impl DocumentUtils {
         field_name: &str,
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
+        debug!("Getting Document UUID Scalar: {}", field_name);
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
+                let valid_uuids = documents.iter().all(|value| {
+                    let value = value.as_str().unwrap_or("");
+                    let uuid = uuid::Uuid::parse_str(value);
+                    if uuid.is_err() {
+                        return false;
+                    } else {
+                        return true;
+                    }
+                });
+
+                if !valid_uuids {
+                    error!("Not all values are uuids for field {}", field_name);
+                    return Err(async_graphql::Error::new(format!(
+                        "Not all values are uuids for field {}",
+                        field_name
+                    )));
+                }
+
                 let values = documents
                     .into_iter()
                     .map(|value| {
@@ -157,15 +210,20 @@ impl DocumentUtils {
                         }
                     })
                     .collect();
-                trace!("Found UUID Values: {:?}", values);
+                trace!("Document Value UUID Array: {:?}", values);
                 return Ok(DocumentValue::UUIDArray(values));
             } else {
+                trace!("Document Value UUID Array: Empty Vec");
                 return Ok(DocumentValue::UUIDArray(vec![]));
             }
         }
 
-        let value = document.get_str(field_name)?;
-        trace!("Found UUID Value: {:?}", value);
+        let value = document.get_str(field_name).map_err(|err| {
+            error!("Value is not a uuid: {}", err);
+            async_graphql::Error::new(format!("Value is not a uuid: {}", err))
+        })?;
+
+        trace!("Document Value UUID: {:?}", value);
         Ok(DocumentValue::UUID(uuid::Uuid::parse_str(value).unwrap()))
     }
 
@@ -174,6 +232,7 @@ impl DocumentUtils {
         field_name: &str,
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
+        debug!("Getting Document DateTime Scalar: {}", field_name);
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 // Check all values are valid dates
@@ -185,6 +244,7 @@ impl DocumentUtils {
                     true
                 });
                 if !is_valid {
+                    error!("Not all values are valid dates for field {}", field_name);
                     return Err(async_graphql::Error::new("Invalid DateTime"));
                 }
                 let values = documents
@@ -194,16 +254,20 @@ impl DocumentUtils {
                         value.to_chrono()
                     })
                     .collect();
-                trace!("Found DateTime Values: {:?}", values);
+                trace!("Document Value DateTime Array: {:?}", values);
                 return Ok(DocumentValue::DateTimeArray(values));
             } else {
+                trace!("Document Value DateTime Array: Empty Vec");
                 return Ok(DocumentValue::DateTimeArray(vec![]));
             }
         }
 
-        let value = document.get_datetime(field_name)?;
+        let value = document.get_datetime(field_name).map_err(|err| {
+            error!("Value is not a datetime: {}", err);
+            async_graphql::Error::new(format!("Value is not a datetime: {}", err))
+        })?;
         // convert bson datetime to chrono datetime
-        trace!("Found DateTime Value: {:?}", value);
+        trace!("Document Value DateTime: {:?}", value);
         Ok(DocumentValue::DateTime(value.to_chrono()))
     }
 
@@ -212,21 +276,41 @@ impl DocumentUtils {
         field_name: &str,
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
+        debug!("Getting Document ObjectID Scalar: {}", field_name);
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
+                let valid_object_ids = documents.iter().all(|value| {
+                    let value = value.as_object_id();
+                    if value.is_none() {
+                        return false;
+                    }
+                    true
+                });
+
+                if !valid_object_ids {
+                    error!("Not all values are object ids for field {}", field_name);
+                    return Err(async_graphql::Error::new(format!(
+                        "Not all values are object ids for field {}",
+                        field_name
+                    )));
+                }
+
                 let value = documents
                     .into_iter()
                     .map(|value| value.as_object_id().unwrap())
                     .collect::<Vec<ObjectId>>();
-                trace!("Found ObjectID Value: {:?}", value);
+                trace!("Document Value ObjectID Array: {:?}", value);
                 return Ok(DocumentValue::ObjectIDArray(value));
             } else {
+                trace!("Document Value ObjectID Array: Empty Vec");
                 return Ok(DocumentValue::ObjectIDArray(vec![]));
             }
         }
-
-        let value = document.get_object_id(field_name)?;
-        trace!("Found ObjectID Value: {:?}", value);
+        let value = document.get_object_id(field_name).map_err(|err| {
+            error!("Value is not an object id: {}", err);
+            async_graphql::Error::new(format!("Value is not an object id: {}", err))
+        })?;
+        trace!("Document Value ObjectID: {:?}", value);
         Ok(DocumentValue::ObjectID(value))
     }
 
@@ -235,28 +319,44 @@ impl DocumentUtils {
         field_name: &str,
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
-        trace!("Resolving Object Scalar");
+        debug!("Resolving Object Scalar");
         let value = document.get(field_name);
 
         if value.is_none() {
             return Err(async_graphql::Error::new("No Object Value Found"));
         }
 
-        trace!("Found Object Value: {:?}", value);
-
         let value = value.unwrap();
         if is_list {
             if let Some(bson_array) = value.as_array() {
+                let valid_docs = bson_array.iter().all(|value| {
+                    let value = value.as_document();
+                    if value.is_none() {
+                        return false;
+                    }
+                    true
+                });
+
+                if !valid_docs {
+                    error!("Not all values are documents for field {}", field_name);
+                    return Err(async_graphql::Error::new(format!(
+                        "Not all values are documents for field {}",
+                        field_name
+                    )));
+                }
+
                 let values = bson_array
                     .into_iter()
                     .map(|value| value.as_document().unwrap().clone())
                     .collect::<Vec<bson::Document>>();
-                trace!("Found Object Values: {:?}", values);
+                trace!("Document Value Object Array: {:?}", values);
                 return Ok(DocumentValue::DocumentArray(values));
             } else {
+                trace!("Document Value Object Array: Empty Vec");
                 return Ok(DocumentValue::DocumentArray(vec![]));
             }
         } else {
+            trace!("Document Value Object: {:?}", value);
             Ok(DocumentValue::Document(
                 value.as_document().unwrap().clone(),
             ))
