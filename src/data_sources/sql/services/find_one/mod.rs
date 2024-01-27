@@ -1,6 +1,9 @@
 use log::{debug, error, trace, warn};
 
-use crate::data_sources::sql::{PoolEnum, SqlQuery, SqlValue};
+use crate::{
+    data_sources::sql::{PoolEnum, SqlQuery},
+    sql_value::SqlValue,
+};
 
 use super::{ResponseRow, Services};
 

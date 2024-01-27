@@ -4,7 +4,7 @@ use bson::Bson;
 use log::{debug, error, trace};
 
 use super::ScalarOption;
-use crate::{configuration::subgraph::data_sources::sql::DialectEnum, data_sources::sql::SqlValue};
+use crate::{configuration::subgraph::data_sources::sql::DialectEnum, sql_value::SqlValue};
 
 impl ScalarOption {
     pub fn bson_to_sql_value(

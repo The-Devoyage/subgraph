@@ -5,7 +5,8 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    data_sources::sql::{PoolEnum, SqlDataSource, SqlQuery, SqlValue},
+    data_sources::sql::{PoolEnum, SqlDataSource, SqlQuery},
+    sql_value::SqlValue,
 };
 
 use super::{ResponseRow, Services};

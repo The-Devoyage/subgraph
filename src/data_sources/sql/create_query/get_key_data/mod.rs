@@ -5,8 +5,9 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    data_sources::sql::{SqlDataSource, SqlValue},
+    data_sources::sql::SqlDataSource,
     resolver_type::ResolverType,
+    sql_value::SqlValue,
 };
 
 use super::JoinClauses;

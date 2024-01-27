@@ -1,7 +1,6 @@
 use crate::{
-    configuration::subgraph::data_sources::sql::DialectEnum,
-    data_sources::sql::{SqlDataSource, SqlValue},
-    filter_operator::FilterOperator,
+    configuration::subgraph::data_sources::sql::DialectEnum, data_sources::sql::SqlDataSource,
+    filter_operator::FilterOperator, sql_value::SqlValue,
 };
 use log::{debug, error, trace};
 

@@ -7,7 +7,8 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    data_sources::sql::{create_query::JoinClauses, SqlDataSource, SqlValue},
+    data_sources::sql::{create_query::JoinClauses, SqlDataSource},
+    sql_value::SqlValue,
     utils::clean_string::clean_string,
 };
 

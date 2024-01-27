@@ -7,8 +7,9 @@ use crate::{
         entities::{service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig},
         SubGraphConfig,
     },
-    data_sources::sql::{create_query::JoinClauses, SqlDataSource, SqlValue},
+    data_sources::sql::{create_query::JoinClauses, SqlDataSource},
     filter_operator::FilterOperator,
+    sql_value::SqlValue,
 };
 
 mod get_query_where_values;

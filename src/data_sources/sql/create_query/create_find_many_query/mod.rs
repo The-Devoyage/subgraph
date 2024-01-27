@@ -7,9 +7,10 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    data_sources::sql::{SqlDataSource, SqlValue},
+    data_sources::sql::SqlDataSource,
     filter_operator::FilterOperator,
     graphql::schema::create_options_input::{DirectionEnum, SortInput},
+    sql_value::SqlValue,
 };
 
 use super::JoinClauses;

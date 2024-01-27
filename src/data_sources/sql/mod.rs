@@ -17,6 +17,7 @@ use crate::{
         schema::create_auth_service::TokenData,
     },
     resolver_type::ResolverType,
+    sql_value::SqlValue,
 };
 
 use super::DataSource;
@@ -41,22 +42,6 @@ pub enum PoolEnum {
     MySql(Pool<MySql>),
     Postgres(Pool<Postgres>),
     SqLite(Pool<Sqlite>),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum SqlValue {
-    String(String),
-    Int(i32),
-    Bool(bool),
-    StringList(Vec<String>),
-    IntList(Vec<i32>),
-    BoolList(Vec<bool>),
-    UUID(uuid::Uuid),
-    UUIDList(Vec<uuid::Uuid>),
-    DateTime(chrono::DateTime<chrono::Utc>),
-    DateTimeList(Vec<chrono::DateTime<chrono::Utc>>),
-    ObjectID(String),
-    ObjectIDList(Vec<String>),
 }
 
 #[derive(Debug, Clone)]

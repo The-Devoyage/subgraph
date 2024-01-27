@@ -3,7 +3,8 @@ use sqlx::Row;
 
 use crate::{
     configuration::subgraph::entities::ServiceEntityConfig,
-    data_sources::sql::{PoolEnum, SqlQuery, SqlValue},
+    data_sources::sql::{PoolEnum, SqlQuery},
+    sql_value::SqlValue,
     utils::clean_string::{clean_string, CleanOptions},
 };
 

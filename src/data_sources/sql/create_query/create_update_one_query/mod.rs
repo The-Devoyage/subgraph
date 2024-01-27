@@ -5,8 +5,9 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    data_sources::sql::{SqlDataSource, SqlValue},
+    data_sources::sql::SqlDataSource,
     filter_operator::FilterOperator,
+    sql_value::SqlValue,
 };
 
 impl SqlDataSource {

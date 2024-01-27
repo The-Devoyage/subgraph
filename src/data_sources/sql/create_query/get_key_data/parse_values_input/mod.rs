@@ -6,8 +6,9 @@ use crate::{
         data_sources::sql::DialectEnum,
         entities::{service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig},
     },
-    data_sources::sql::{SqlDataSource, SqlValue},
+    data_sources::sql::SqlDataSource,
     resolver_type::ResolverType,
+    sql_value::SqlValue,
 };
 
 impl SqlDataSource {

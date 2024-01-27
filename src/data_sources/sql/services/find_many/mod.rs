@@ -2,9 +2,12 @@ use async_graphql::ErrorExtensions;
 use log::{debug, error, trace};
 use sqlx::{mysql::MySqlArguments, MySql, Row};
 
-use crate::data_sources::{
-    sql::{PoolEnum, SqlQuery, SqlValue},
-    TotalCount,
+use crate::{
+    data_sources::{
+        sql::{PoolEnum, SqlQuery},
+        TotalCount,
+    },
+    sql_value::SqlValue,
 };
 
 use super::{ResponseRow, Services};
