@@ -206,22 +206,4 @@ impl ServiceResolver {
         trace!("Joined Query: {:?}", query_input);
         Ok(query_input.clone())
     }
-
-    pub fn get_int_value(
-        parent_value: &Document,
-        field_name: &str,
-    ) -> Result<Option<i64>, async_graphql::Error> {
-        debug!("Getting int value for field: {}", field_name);
-        let value = parent_value.get_i64(field_name).ok();
-        // If not an i64, try getting it as an i32.
-        let value = match value {
-            Some(value) => Some(value),
-            None => match parent_value.get_i32(field_name) {
-                Ok(value) => Some(value as i64),
-                Err(_) => None,
-            },
-        };
-        trace!("Int value: {:?}", value);
-        Ok(value)
-    }
 }
