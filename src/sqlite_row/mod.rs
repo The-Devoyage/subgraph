@@ -1,19 +1,19 @@
 use log::{debug, error, trace};
-use sqlx::{mysql::MySqlRow, Column, Row, TypeInfo};
+use sqlx::{sqlite::SqliteRow, Column, Row, TypeInfo};
 
-pub trait FromMySqlRow {
+pub trait FromSqliteRow {
     fn to_document(
         &self,
         fields: Option<Vec<&str>>,
     ) -> Result<bson::Document, async_graphql::Error>;
 }
 
-impl FromMySqlRow for MySqlRow {
+impl FromSqliteRow for SqliteRow {
     fn to_document(
         &self,
         fields: Option<Vec<&str>>,
     ) -> Result<bson::Document, async_graphql::Error> {
-        debug!("Converting MySqlRow to Document");
+        debug!("Converting SqliteRow to Document");
 
         let mut document = bson::Document::new();
 
@@ -33,6 +33,26 @@ impl FromMySqlRow for MySqlRow {
                     let value: Option<&str> = self.try_get(column_name)?;
                     document.insert(column_name, value);
                 }
+                "CHAR" => {
+                    let value: Option<&str> = self.try_get(column_name)?;
+                    document.insert(column_name, value);
+                }
+                "UUID" => {
+                    let value: Option<&str> = self.try_get(column_name)?;
+                    document.insert(column_name, value);
+                }
+                "TEXT" => {
+                    let value: Option<&str> = self.try_get(column_name)?;
+                    document.insert(column_name, value);
+                }
+                "DATETIME" => {
+                    let value: Option<&str> = self.try_get(column_name)?;
+                    document.insert(column_name, value);
+                }
+                "TIMESTAMP" => {
+                    let value: Option<&str> = self.try_get(column_name)?;
+                    document.insert(column_name, value);
+                }
                 "INT" => {
                     let value: Option<i64> = self.try_get(column_name)?;
                     document.insert(column_name, value);
@@ -45,41 +65,17 @@ impl FromMySqlRow for MySqlRow {
                     let value: Option<bool> = self.try_get(column_name)?;
                     document.insert(column_name, value);
                 }
-                "UUID" => {
-                    let value: Option<&str> = self.try_get(column_name)?;
-                    document.insert(column_name, value);
-                }
-                "DATETIME" => {
-                    let value: Option<&str> = self.try_get(column_name)?;
-                    document.insert(column_name, value);
-                }
-                "TEXT" => {
-                    let value: Option<&str> = self.try_get(column_name)?;
-                    document.insert(column_name, value);
-                }
-                "TIMESTAMP" => {
-                    let value: Option<chrono::DateTime<chrono::Utc>> = self.try_get(column_name)?;
-                    document.insert(column_name, value);
-                }
-                "BIGINT" => {
-                    let value: Option<i64> = self.try_get(column_name)?;
-                    document.insert(column_name, value);
-                }
-                "CHAR" => {
-                    let value: Option<&str> = self.try_get(column_name)?;
-                    document.insert(column_name, value);
-                }
                 _ => {
-                    error!("Column type not supported: {}", column_type);
+                    error!("Unsupported column type: {}", column_type);
                     return Err(async_graphql::Error::new(format!(
-                        "Column type not supported: {}",
+                        "Unsupported column type: {}",
                         column_type
                     )));
                 }
             }
         }
 
-        trace!("Document: {:?}", document);
+        trace!("{:?}", document);
 
         Ok(document)
     }
