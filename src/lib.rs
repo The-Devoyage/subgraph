@@ -14,11 +14,10 @@ pub mod configuration;
 pub mod data_sources;
 pub mod filter_operator;
 pub mod graphql;
-pub mod mysql_row;
 pub mod resolver_type;
 pub mod scalar_option;
 pub mod sql_value;
-pub mod sqlite_row;
+pub mod sqlx;
 pub mod utils;
 
 /// Starts the Subgraph Service. Initializes the DataSources and builds the GraphQL Schema.

@@ -4,8 +4,9 @@ use log::debug;
 
 use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
-    data_sources::sql::services::ResponseRow, graphql::resolver::ServiceResolver,
-    mysql_row::FromMySqlRow, sqlite_row::FromSqliteRow,
+    data_sources::sql::services::ResponseRow,
+    graphql::resolver::ServiceResolver,
+    sqlx::{mysql_row::FromMySqlRow, sqlite_row::FromSqliteRow},
 };
 
 impl ServiceResolver {
