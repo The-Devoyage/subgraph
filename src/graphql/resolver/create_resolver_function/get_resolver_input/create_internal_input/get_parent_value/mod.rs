@@ -3,10 +3,9 @@ use bson::Document;
 use log::debug;
 
 use crate::{
-    configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
     data_sources::sql::services::ResponseRow,
     graphql::resolver::ServiceResolver,
-    sqlx::{mysql_row::FromMySqlRow, sqlite_row::FromSqliteRow},
+    sqlx::{mysql_row::FromMySqlRow, postgres_row::FromPostgresRow, sqlite_row::FromSqliteRow},
 };
 
 impl ServiceResolver {
@@ -15,7 +14,6 @@ impl ServiceResolver {
     pub fn get_parent_value(
         ctx: &ResolverContext,
         field_name: &str,
-        as_type_field: &ServiceEntityFieldConfig,
     ) -> Result<Option<Document>, async_graphql::Error> {
         debug!("Getting Parent Value");
 
@@ -38,22 +36,13 @@ impl ServiceResolver {
                         // Map the value into a Document, which is what the resolver expects.
                         Some(response_row) => match response_row {
                             ResponseRow::SqLite(rr) => {
-                                // Some(as_type_field.scalar.clone().sqlite_rr_to_input_doc(
-                                //     rr,
-                                //     as_type_field,
-                                //     field_name,
-                                // )?)
                                 Some(rr.to_document(Some(vec![field_name]))?)
                             }
                             ResponseRow::MySql(mysql_row) => {
                                 Some(mysql_row.to_document(Some(vec![field_name]))?)
                             }
                             ResponseRow::Postgres(rr) => {
-                                Some(as_type_field.scalar.clone().pg_rr_to_input_doc(
-                                    rr,
-                                    as_type_field,
-                                    field_name,
-                                )?)
+                                Some(rr.to_document(Some(vec![field_name]))?)
                             }
                         },
                         None => {

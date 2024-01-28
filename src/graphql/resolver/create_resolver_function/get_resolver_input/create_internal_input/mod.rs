@@ -49,8 +49,8 @@ impl ServiceResolver {
         let scalar = as_type_field.scalar.clone();
 
         // Get parent value, which may come from various data sources. May or may not exists.
-        let parent_value = ServiceResolver::get_parent_value(ctx, &field_name, &as_type_field)
-            .map(|parent_value| {
+        let parent_value =
+            ServiceResolver::get_parent_value(ctx, &field_name).map(|parent_value| {
                 if let Some(parent_value) = parent_value {
                     parent_value
                 } else {
