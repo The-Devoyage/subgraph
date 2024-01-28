@@ -5,6 +5,7 @@ use log::debug;
 use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
     data_sources::sql::services::ResponseRow, graphql::resolver::ServiceResolver,
+    mysql_row::FromMySqlRow,
 };
 
 impl ServiceResolver {
@@ -42,12 +43,8 @@ impl ServiceResolver {
                                     field_name,
                                 )?)
                             }
-                            ResponseRow::MySql(rr) => {
-                                Some(as_type_field.scalar.clone().mysql_rr_to_input_doc(
-                                    rr,
-                                    as_type_field,
-                                    field_name,
-                                )?)
+                            ResponseRow::MySql(mysql_row) => {
+                                Some(mysql_row.to_document(Some(vec![field_name]))?)
                             }
                             ResponseRow::Postgres(rr) => {
                                 Some(as_type_field.scalar.clone().pg_rr_to_input_doc(
