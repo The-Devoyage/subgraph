@@ -2,13 +2,10 @@ use bson::Bson;
 use log::{debug, error, trace};
 
 use crate::{
-    configuration::subgraph::{
-        data_sources::sql::DialectEnum,
-        entities::{service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig},
-    },
+    configuration::subgraph::{data_sources::sql::DialectEnum, entities::ServiceEntityConfig},
     data_sources::sql::SqlDataSource,
     resolver_type::ResolverType,
-    sql_value::SqlValue,
+    sql_value::{FromBson, SqlValue},
 };
 
 impl SqlDataSource {
@@ -64,16 +61,15 @@ impl SqlDataSource {
                     )));
                 }
             };
-            let ServiceEntityFieldConfig { scalar, .. } = field.unwrap();
 
-            let sql_value_enum = scalar.bson_to_sql_value(value, Some(dialect))?;
+            let sql_value = value.to_sql_value(Some(dialect))?;
 
             if is_where_clause {
                 where_keys.push(key.to_string());
-                where_values.push(sql_value_enum);
+                where_values.push(sql_value);
             } else {
                 value_keys.push(key.to_string());
-                values.push(sql_value_enum);
+                values.push(sql_value);
             }
         }
 
