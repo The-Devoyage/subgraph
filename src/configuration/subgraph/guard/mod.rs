@@ -7,9 +7,8 @@ use log::{debug, error, trace};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    configuration::subgraph::{entities::ServiceEntityConfig, SubGraphConfig},
-    filter_operator::FilterOperator,
-    graphql::schema::create_auth_service::TokenData,
+    configuration::subgraph::SubGraphConfig, filter_operator::FilterOperator,
+    graphql::schema::create_auth_service::TokenData, traits::evalexpr::FromSerdeJson,
     utils::clean_string::clean_string,
 };
 
@@ -298,7 +297,6 @@ impl Guard {
                 if entity.is_none() {
                     return Err(EvalexprError::CustomMessage("Entity not found.".to_string()))
                 }
-                let entity = entity.unwrap();
 
                 // Root value should be a vector of entities, loop through each one and extract the
                 // value. Add the value to the values_tuple.
@@ -331,13 +329,6 @@ impl Guard {
                         } else {
                             debug!("Context Key: {:?}", cleaned_key.clone());
                             let value = value.get(cleaned_key.clone());
-                            let field = match ServiceEntityConfig::get_field(entity.clone(), cleaned_key.clone()) {
-                                Ok(field) => field,
-                                Err(e)=> {
-                                    error!("Field not found: {:?}", e);
-                                    return Err(EvalexprError::CustomMessage("Failed to parse context: Field not found.".to_string()))
-                                }
-                            };
 
                             debug!("Context Value: {:?}", value);
                             let value = match value {
@@ -345,7 +336,9 @@ impl Guard {
                                     if value.is_null() {
                                         return Ok(Value::Empty);
                                     }
-                                    field.scalar.to_evalexpr(&value)?
+                                    // field.scalar.to_evalexpr(&value)?
+                                    value.to_evalalexpr_value()?
+
                                 },
                                 None => Value::Empty,
                             };

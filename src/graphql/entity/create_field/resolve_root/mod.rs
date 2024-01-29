@@ -4,10 +4,10 @@ use json::JsonValue;
 use log::{debug, error};
 
 use crate::{
-    async_graphql_value::FromJson,
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
     data_sources::{sql::services::ResponseRow, DataSource},
     graphql::entity::ServiceEntity,
+    traits::async_graphql::FromJson,
 };
 
 impl ServiceEntity {

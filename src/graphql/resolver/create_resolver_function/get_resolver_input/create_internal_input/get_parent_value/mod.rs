@@ -5,7 +5,9 @@ use log::debug;
 use crate::{
     data_sources::sql::services::ResponseRow,
     graphql::resolver::ServiceResolver,
-    sqlx::{mysql_row::FromMySqlRow, postgres_row::FromPostgresRow, sqlite_row::FromSqliteRow},
+    traits::sqlx::{
+        mysql_row::FromMySqlRow, postgres_row::FromPostgresRow, sqlite_row::FromSqliteRow,
+    },
 };
 
 impl ServiceResolver {

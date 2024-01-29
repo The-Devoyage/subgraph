@@ -6,6 +6,7 @@ use crate::resolver_type::ResolverType;
 use super::ScalarOption;
 
 impl ScalarOption {
+    /// Converts a ScalarOption to a TypeRef
     pub fn to_input_type_ref(
         &self,
         list: bool,
