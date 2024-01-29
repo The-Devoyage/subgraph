@@ -4,6 +4,7 @@ use json::JsonValue;
 use log::{debug, error};
 
 use crate::{
+    async_graphql_value::FromJson,
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
     data_sources::{sql::services::ResponseRow, DataSource},
     graphql::entity::ServiceEntity,
@@ -88,9 +89,7 @@ impl ServiceEntity {
                     }
                 };
 
-                let value = entity_field
-                    .scalar
-                    .json_to_async_graphql_value(json_value, field_name)?;
+                let value = json_value.to_async_graphql_value();
 
                 Ok(Some(value))
             }

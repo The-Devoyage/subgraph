@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 
 pub mod document_field_to_async_graphql_value;
 pub mod get_from_document;
-pub mod json_to_async_graphql_value;
 pub mod rr_to_async_graphql_value;
 pub mod rr_to_serde_json_value;
 pub mod to_bson_element_type;

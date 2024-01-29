@@ -9,6 +9,7 @@ use log::{info, trace};
 use std::convert::Infallible;
 use warp::{http::Response as HttpResponse, Filter, Future, Rejection};
 
+pub mod async_graphql_value;
 pub mod cli_args;
 pub mod configuration;
 pub mod data_sources;
