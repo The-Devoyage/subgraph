@@ -177,9 +177,11 @@ async fn returns_correct_scalars() {
     let object_id = json["get_user"]["data"]["_id"].as_str().unwrap();
     let age = json["get_user"]["data"]["age"].as_i64().unwrap();
     let married = json["get_user"]["data"]["married"].as_bool().unwrap();
+    let uuid_identifier = json["get_user"]["data"]["uuid"].as_str().unwrap();
     assert_eq!(object_id.len(), 24);
     assert_eq!(age, 2);
     assert_eq!(married, true);
+    assert_eq!(uuid_identifier, uuid);
 }
 
 #[tokio::test]

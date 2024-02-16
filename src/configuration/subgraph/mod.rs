@@ -18,6 +18,7 @@ pub struct ServiceConfig {
     pub version: Option<String>,
     pub license_key: Option<String>,
     pub port: Option<u16>,
+    pub host: Option<bool>,
     pub log_level: Option<LogLevelEnum>,
     pub auth: Option<auth::ServiceAuth>,
     pub guards: Option<Vec<Guard>>,

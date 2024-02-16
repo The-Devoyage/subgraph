@@ -9,6 +9,7 @@
 - Primary key identifier added to the Service Entity Field Config.
 - LIKE, GT, and LT Filter added to resolver query inputs.
 - `exclude_from_output` now available at entity level.
+- Add `host` option to config file to allow service to be hosted on 0.0.0.0.
 
 ### Fixed
 
@@ -18,6 +19,7 @@
 - Mongo Datasource now returns correct documents when updating one and using nested filtering.
 - Extract correct `values` input when parsing request body.
 - Create One Resolver Input - Nullable lists fixed.
+- Errors on mongo user registration and authenticastion propegated.
 
 ### Changed
 
@@ -25,6 +27,7 @@
 - Replace ENV variables function updated to exclude surrounding quotes.
 - HTTP error response now includes the returned error in the errors extensions.
 - Refactored Scalar Option which allows easier addition to future scalars.
+- Update the Environment variable parser to look for exact matches in values only.
 
 ## [v0.0.13]
 

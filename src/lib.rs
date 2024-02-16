@@ -5,6 +5,7 @@ use async_graphql::{
 };
 use async_graphql_warp::{GraphQLBadRequest, GraphQLResponse};
 use http::{HeaderMap, StatusCode};
+use local_ip_address::local_ip;
 use log::{info, trace};
 use std::convert::Infallible;
 use warp::{http::Response as HttpResponse, Filter, Future, Rejection};
@@ -93,16 +94,35 @@ pub async fn run(
         },
     };
 
-    info!("❇️  Subgraph Service Started");
-    info!("🛝 Playground: http://localhost:{:?}", port);
-
     // Create Graceful Shutdown Channel
     let (tx, rx) = tokio::sync::oneshot::channel::<()>();
 
+    // If host is true, bind to 0.0.0.0
+    let host = match args.host.clone() {
+        true => {
+            let ip = local_ip().expect("Failed to get local IP address");
+            info!("🛝 Playground: http://{:?}:{:?}", ip, port);
+            [0, 0, 0, 0]
+        }
+        false => match subgraph_config.clone().service.host {
+            Some(_host) => {
+                let ip = local_ip().expect("Failed to get local IP address");
+                info!("🛝 Playground: http://{:?}:{:?}", ip, port);
+                [0, 0, 0, 0]
+            }
+            None => {
+                info!("🛝 Playground: http://localhost:{:?}", port);
+                [127, 0, 0, 1]
+            }
+        },
+    };
+
     // Return Server, Schema and Graceful Shutdown Channel
-    let (_addr, server) =
-        warp::serve(routes).bind_with_graceful_shutdown(([127, 0, 0, 1], port), async {
-            rx.await.ok();
-        });
+    let (_addr, server) = warp::serve(routes).bind_with_graceful_shutdown((host, port), async {
+        rx.await.ok();
+    });
+
+    info!("❇️  Subgraph Service Started");
+
     Ok((server, schema, tx))
 }

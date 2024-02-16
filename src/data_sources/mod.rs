@@ -75,7 +75,7 @@ impl DataSources {
                             DataSource::HTTP(ds) => &ds.config.name == ds_name,
                             DataSource::SQL(ds) => &ds.config.name == ds_name,
                         })
-                        .unwrap();
+                        .unwrap(); //TODO: Unwrap here needs error handling
                     data_source
                 }
                 _ => panic!("Data source specified for entity but not found."),

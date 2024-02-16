@@ -1,8 +1,11 @@
+use std::str::FromStr;
+
 use super::ServiceSchema;
 use base64::{engine::general_purpose, Engine as _};
 use biscuit_auth::{KeyPair, PrivateKey};
 use log::{debug, error, info, trace};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
+use uuid::Uuid;
 use webauthn_rs::prelude::{Passkey, PasskeyAuthentication, PasskeyRegistration};
 
 pub mod build_webauthn;
@@ -16,6 +19,7 @@ pub mod update_user;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ServiceUser {
+    #[serde(deserialize_with = "deserialize_uuid")]
     uuid: uuid::Uuid,
     identifier: String,
     #[serde(deserialize_with = "deserialize_registration_state")]
@@ -24,6 +28,25 @@ pub struct ServiceUser {
     passkey: Option<Passkey>,
     #[serde(deserialize_with = "deserialize_authentication_state")]
     authentication_state: Option<PasskeyAuthentication>,
+}
+
+fn deserialize_uuid<'de, D>(deserializer: D) -> Result<Uuid, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    debug!("Deserializing UUID");
+    let s = String::deserialize(deserializer)?;
+    trace!("Parsing UUID: {}", &s);
+    match Uuid::from_str(&s) {
+        Ok(uuid) => {
+            trace!("Parsed UUID: {}", &uuid);
+            Ok(uuid)
+        }
+        Err(_) => {
+            trace!("Failed to parse UUID: {}", &s);
+            Uuid::from_str(&s).map_err(serde::de::Error::custom)
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,8 +59,10 @@ fn deserialize_registration_state<'de, D>(deserializer: D) -> Result<PasskeyRegi
 where
     D: serde::Deserializer<'de>,
 {
+    debug!("Deserializing registration state");
     let s = String::deserialize(deserializer)?;
     let reg_state = serde_json::from_str(&s).unwrap();
+    trace!("Deserialized registration state: {:?}", &reg_state);
     Ok(reg_state)
 }
 
@@ -45,9 +70,16 @@ fn deserialize_passkey<'de, D>(deserializer: D) -> Result<Option<Passkey>, D::Er
 where
     D: serde::Deserializer<'de>,
 {
-    let s = String::deserialize(deserializer)?;
-    let passkey = serde_json::from_str(&s).unwrap();
-    Ok(passkey)
+    debug!("Deserializing passkey");
+    let s = String::deserialize(deserializer);
+    match s {
+        Ok(s) => {
+            let passkey = serde_json::from_str(&s).unwrap();
+            trace!("Deserialized passkey: {:?}", &passkey);
+            Ok(Some(passkey))
+        }
+        Err(_) => Ok(None),
+    }
 }
 
 fn deserialize_authentication_state<'de, D>(
@@ -56,9 +88,16 @@ fn deserialize_authentication_state<'de, D>(
 where
     D: serde::Deserializer<'de>,
 {
-    let s = String::deserialize(deserializer)?;
-    let auth_state = serde_json::from_str(&s).unwrap();
-    Ok(auth_state)
+    debug!("Deserializing authentication state");
+    let s = String::deserialize(deserializer);
+    match s {
+        Ok(s) => {
+            let auth_state = serde_json::from_str(&s).unwrap();
+            trace!("Deserialized authentication state: {:?}", &auth_state);
+            Ok(Some(auth_state))
+        }
+        Err(_) => Ok(None),
+    }
 }
 
 impl ServiceSchema {
