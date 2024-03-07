@@ -19,14 +19,17 @@ impl FromSqliteRow for SqliteRow {
 
         for column in self.columns() {
             let column_name = column.name();
+            trace!("Column: {}", column_name);
 
             if let Some(fields) = &fields {
                 if !fields.contains(&column_name) {
+                    trace!("Skipping column: {}", column_name);
                     continue;
                 }
             }
 
             let column_type = column.type_info().name();
+            trace!("Column type: {}", column_type);
 
             match column_type {
                 "VARCHAR" => {
