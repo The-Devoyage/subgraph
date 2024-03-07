@@ -10,6 +10,8 @@
 - LIKE, GT, and LT Filter added to resolver query inputs.
 - `exclude_from_output` now available at entity level.
 - Add `host` option to config file to allow service to be hosted on 0.0.0.0.
+- New built in function, `now` to generate current date time.
+- New build in function `uuid` to generate unique uuids.
 
 ### Fixed
 

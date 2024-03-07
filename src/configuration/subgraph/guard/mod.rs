@@ -428,6 +428,17 @@ impl Guard {
                 } else {
                     Ok(Value::Boolean(false))
                 }
+            }),
+            // Returns the current date time.
+            "now" => Function::new(move |_| {
+                debug!("Guard Function - Now");
+                let now = chrono::Utc::now();
+                Ok(Value::String(now.to_rfc3339()))
+            }),
+            "uuid" => Function::new(move |_| {
+                debug!("Guard Function - UUID");
+                let uuid = uuid::Uuid::new_v4();
+                Ok(Value::String(uuid.to_string()))
             })
         };
         debug!("Guard Context: {:?}", context);

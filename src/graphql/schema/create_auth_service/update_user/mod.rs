@@ -47,7 +47,7 @@ impl ServiceSchema {
     ) -> Result<(), async_graphql::Error> {
         debug!("Updating user: {:?}", &service_user);
 
-        let user: Result<(), async_graphql::Error> = match &data_source {
+        let updated: Result<(), async_graphql::Error> = match &data_source {
             DataSource::Mongo(mongo_ds) => {
                 let identifer_regex = Regex {
                     pattern: service_user.identifier.to_string(),
@@ -219,8 +219,8 @@ impl ServiceSchema {
             _ => Err(async_graphql::Error::new(format!("Failed to find user."))),
         };
 
-        debug!("Updated user: {:?}", &user);
+        debug!("Updated user");
 
-        user
+        updated
     }
 }

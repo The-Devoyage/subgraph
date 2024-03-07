@@ -64,6 +64,7 @@ impl MongoDataSource {
         filter: Document,
         entity: &ServiceEntityConfig,
         subgraph_config: &SubGraphConfig,
+        resolver_type: &ResolverType,
     ) -> Result<(Document, Vec<EagerLoadOptions>), async_graphql::Error> {
         debug!("Serialize String Object IDs to Object IDs");
 
@@ -94,6 +95,7 @@ impl MongoDataSource {
                         document.clone(),
                         entity,
                         subgraph_config,
+                        resolver_type,
                     ) {
                         Ok(nested) => nested,
                         Err(e) => {
@@ -120,24 +122,30 @@ impl MongoDataSource {
             if let Some(field) = fields.last() {
                 // Certain scalars need to be converted to mongo types.
                 // If they do, replace them in the doc.
-                match field.scalar.bson_to_mongo_value(value) {
-                    Ok(mongo_value) => {
-                        if mongo_value.is_some() {
-                            match mongo_value.unwrap() {
-                                MongoValue::ObjectID(object_id) => {
-                                    //update the cooresponding value in converted
-                                    converted.insert(k.clone(), object_id);
+                if !field.eager.unwrap_or(false)
+                    || resolver_type == &ResolverType::CreateOne
+                    || resolver_type == &ResolverType::UpdateOne
+                    || resolver_type == &ResolverType::UpdateMany
+                {
+                    match field.scalar.bson_to_mongo_value(value) {
+                        Ok(mongo_value) => {
+                            if mongo_value.is_some() {
+                                match mongo_value.unwrap() {
+                                    MongoValue::ObjectID(object_id) => {
+                                        //update the cooresponding value in converted
+                                        converted.insert(k.clone(), object_id);
+                                    }
+                                    MongoValue::DateTime(date_time) => {
+                                        //update the cooresponding value in converted
+                                        converted.insert(k.clone(), date_time);
+                                    }
+                                    _ => {}
                                 }
-                                MongoValue::DateTime(date_time) => {
-                                    //update the cooresponding value in converted
-                                    converted.insert(k.clone(), date_time);
-                                }
-                                _ => {}
                             }
                         }
-                    }
-                    Err(_) => {}
-                };
+                        Err(_) => {}
+                    };
+                }
 
                 // Handle object types and eager loaded fields
                 match field.scalar {
@@ -150,6 +158,7 @@ impl MongoDataSource {
                                 value.as_document().unwrap().clone(),
                                 entity,
                                 subgraph_config,
+                                resolver_type,
                             ) {
                                 Ok(nested) => nested,
                                 Err(e) => {
@@ -166,6 +175,13 @@ impl MongoDataSource {
                     _ => (),
                 }
 
+                // If the resolver type is not find one or find many, we don't need to handle eager loaded fields.
+                if resolver_type != &ResolverType::FindOne
+                    && resolver_type != &ResolverType::FindMany
+                {
+                    continue;
+                }
+
                 // Handle eager loaded fields
                 let eager_load_options =
                     match MongoDataSource::handle_eager_fields(field, entity, subgraph_config) {
@@ -175,6 +191,7 @@ impl MongoDataSource {
                             return Err(e);
                         }
                     };
+
                 if let Some((eager_load_option, eager_entity)) = eager_load_options {
                     // Send through recursive function to convert the object id string to object id
                     // for eager loaded fields.
@@ -183,6 +200,7 @@ impl MongoDataSource {
                             value.as_document().unwrap().clone(), // If eager, this will always be a document.
                             &eager_entity,
                             subgraph_config,
+                            resolver_type,
                         ) {
                             Ok(nested) => nested,
                             Err(e) => {
@@ -215,6 +233,7 @@ impl MongoDataSource {
         debug!("Handle eager fields");
         // Since searching by a single key above, the last field is guaranteed to be the field we are looking for.
         if field.eager.is_none() {
+            trace!("Field is not eager");
             return Ok(None);
         }
 
@@ -224,7 +243,7 @@ impl MongoDataSource {
             join_on
         } else {
             return Err(async_graphql::Error::new(format!(
-                "Eager load failed. Failed to get join_on for field: {}",
+                "Eager load failed. Failed to get join_on for field: {}. Ensure propety `join_on` is present on the field definiton for this field.",
                 field.name
             )));
         };
@@ -284,6 +303,7 @@ impl MongoDataSource {
         filter: Document,
         entity: &ServiceEntityConfig,
         subgraph_config: &SubGraphConfig,
+        resolver_type: &ResolverType,
     ) -> Result<(Document, Vec<EagerLoadOptions>), async_graphql::Error> {
         debug!("Finalizing Input Filters");
 
@@ -293,8 +313,12 @@ impl MongoDataSource {
         for (key, value) in filter.iter() {
             if key == "query" {
                 let query = value.as_document().unwrap();
-                let (query_finalized, eager_opts) =
-                    MongoDataSource::finalize_input(query.clone(), entity, subgraph_config)?;
+                let (query_finalized, eager_opts) = MongoDataSource::finalize_input(
+                    query.clone(),
+                    entity,
+                    subgraph_config,
+                    &resolver_type,
+                )?;
                 finalized.insert(key.clone(), query_finalized);
                 eager_filters.extend(eager_opts);
             }
@@ -321,8 +345,12 @@ impl MongoDataSource {
                 };
                 for filter in filters {
                     let filter = filter.as_document().unwrap();
-                    let (filter_finalized, eager_opts) =
-                        MongoDataSource::finalize_input(filter.clone(), entity, subgraph_config)?;
+                    let (filter_finalized, eager_opts) = MongoDataSource::finalize_input(
+                        filter.clone(),
+                        entity,
+                        subgraph_config,
+                        &resolver_type,
+                    )?;
                     recursive_filters.push(filter_finalized);
                     eager_filters.extend(eager_opts);
                 }
@@ -366,6 +394,7 @@ impl MongoDataSource {
                 finalized,
                 entity,
                 subgraph_config,
+                &resolver_type,
             )?;
         eager_filters.extend(eager_load_options);
 
@@ -489,7 +518,7 @@ impl MongoDataSource {
 
         let eager_load_options;
         (input, eager_load_options) =
-            MongoDataSource::finalize_input(input, &entity, subgraph_config)?;
+            MongoDataSource::finalize_input(input, &entity, subgraph_config, &resolver_type)?;
 
         let db = match data_source {
             DataSource::Mongo(ds) => ds.db.clone(),

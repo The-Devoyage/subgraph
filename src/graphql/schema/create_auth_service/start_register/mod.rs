@@ -53,14 +53,6 @@ impl ServiceSchema {
                     // Check if user exists. If previous register, reject, else delete the user.
                     let user = ServiceSchema::get_user(&data_source, &identifier).await; 
 
-                    if user.is_err() {
-                        error!("Failed to get user: {:?}", user.clone().err().unwrap());
-                        return Err(async_graphql::Error::new(format!(
-                            "Failed to get user: {:?}",
-                            user.err().unwrap()
-                        )));
-                    }
-
                     if !user.is_err() && user.clone().unwrap().clone().is_some() {
                         if user.clone().unwrap().unwrap().passkey.is_some() {
                             error!("User already exists: {:?}", &identifier);

@@ -12,7 +12,6 @@ impl Environment {
         config: SubGraphConfig,
         env: HashMap<String, String>,
     ) -> SubGraphConfig {
-        println!("Replacing env vars in config");
         let config_json = json!(config);
 
         let replaced_json = Environment::replace_env_vars_in_json(config_json, env);
@@ -37,14 +36,10 @@ impl Environment {
             })
             .to_string();
 
-        println!("Replaced json: {}", replaced_json);
-
         let json = match serde_json::from_str(&replaced_json) {
             Ok(json) => json,
             Err(e) => panic!("Error parsing config: {}", e),
         };
-
-        println!("Replaced json: {}", json);
 
         json
     }

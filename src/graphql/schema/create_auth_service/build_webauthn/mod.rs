@@ -25,11 +25,12 @@ impl ServiceSchema {
             .map_err(|e| {
                 error!("Failed to build webauthn builder: {:?}", e);
                 trace!("Requesting Party: {:?}", &auth_config.requesting_party);
+                trace!("Requesting Party Origin: {:?}", &rp_origin);
                 async_graphql::Error::new(format!("Failed to build webauthn builder: {:?}", e))
             });
 
         let webauthn_builder = match webauthn_builder {
-            Ok(_) => webauthn_builder.unwrap(),
+            Ok(builder) => builder,
             Err(e) => return Err(e),
         };
 

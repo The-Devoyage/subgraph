@@ -35,6 +35,7 @@ async fn execute(
         generate_keypair: false,
         migrate: None,
         watch: false,
+        host: false,
     });
     let schema = spawn_app(args).await;
     let mut headers = HeaderMap::new();

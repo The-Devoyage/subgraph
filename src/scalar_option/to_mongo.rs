@@ -30,10 +30,10 @@ impl ScalarOption {
                 if let bson::Bson::String(object_id_string) = value {
                     let object_id = ObjectId::from_str(&object_id_string).map_err(|e| {
                         error!("Failed to convert string to object id. Error: {:?}", e);
-                        async_graphql::Error::new(format!(
+                        return async_graphql::Error::new(format!(
                             "Failed to convert string to object id. Error: {:?}",
                             e
-                        ))
+                        ));
                     })?;
                     Some(MongoValue::ObjectID(object_id))
                 } else if let bson::Bson::ObjectId(object_id) = value {
@@ -54,10 +54,10 @@ impl ScalarOption {
                     let date_time = chrono::DateTime::<chrono::Utc>::from_str(&date_time_string)
                         .map_err(|e| {
                             error!("Failed to convert string to date time. Error: {:?}", e);
-                            async_graphql::Error::new(format!(
+                            return async_graphql::Error::new(format!(
                                 "Failed to convert string to date time. Error: {:?}",
                                 e
-                            ))
+                            ));
                         })?;
                     Some(MongoValue::DateTime(date_time))
                 } else if let bson::Bson::DateTime(date_time) = value {
