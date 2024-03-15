@@ -31,17 +31,18 @@ with the key in the service configuration to disable the timeout.
 
 ### Config File Options
 
-| Service\*      | Description                                               | Type           |
-| -------------- | --------------------------------------------------------- | -------------- |
-| name\*         | The name of this service.                                 | String         |
-| version        | The version of the API.                                   | Option<String> |
-| data_sources\* | Where the data is located.                                | DataSource[]   |
-| entities\*     | The data to be defined.                                   | Entity[]       |
-| cors           | Cors options for the GraphQL Server.                      | Cors Config    |
-| guards         | Guards applied at the sservice level.                     | Guard[]        |
-| imports        | An array of paths to import entities from separate files. | String[]       |
-| port           | The port of which to run the service.                     | Int            |
-| license_key    | Provide a key to remove the 20 minute demo limit.         | Option<String> |
+| Service\*      | Description                                                          | Type           |
+| -------------- | -------------------------------------------------------------------- | -------------- |
+| name\*         | The name of this service.                                            | String         |
+| version        | The version of the API.                                              | Option<String> |
+| data_sources\* | Where the data is located.                                           | DataSource[]   |
+| entities\*     | The data to be defined.                                              | Entity[]       |
+| cors           | Cors options for the GraphQL Server.                                 | Cors Config    |
+| guards         | Guards applied at the sservice level.                                | Guard[]        |
+| imports        | An array of paths to import entities from separate files.            | String[]       |
+| port           | The port of which to run the service.                                | Int            |
+| license_key    | Provide a key to remove the 20 minute demo limit.                    | Option<String> |
+| host           | Enable the ability to host on 0.0.0.0 instead of loaclhost/127.0.0.1 | Option<bool>   |
 
 #### Data Sources
 
@@ -113,13 +114,14 @@ Migrations are only executed if subgraph is run with the flag `--migrate run`
 
 #### Entity
 
-| Entity\*    | Description                         | Type                      |
-| ----------- | ----------------------------------- | ------------------------- |
-| name\*      | The name of the entity.             | String                    |
-| fields\*    | The fields of the entity.           | Field[]                   |
-| data_source | The source of the entity's data.    | Entity Data Source Config |
-| guards      | Guards applied at the entity level. | Guard[]                   |
-| required    | Non nullable entity.                | bool                      |
+| Entity\*            | Description                                | Type                      |
+| ------------------- | ------------------------------------------ | ------------------------- |
+| name\*              | The name of the entity.                    | String                    |
+| fields\*            | The fields of the entity.                  | Field[]                   |
+| data_source         | The source of the entity's data.           | Entity Data Source Config |
+| guards              | Guards applied at the entity level.        | Guard[]                   |
+| required            | Non nullable entity.                       | bool                      |
+| exclude_from_output | Remove the ability to resolve this entity. | bool                      |
 
 | Entity Data Source Config | Description                                                         | Type              |
 | ------------------------- | ------------------------------------------------------------------- | ----------------- |
@@ -153,7 +155,7 @@ Migrations are only executed if subgraph is run with the flag `--migrate run`
 | scalar\*            | The scalar type of the field.                                                 | Scalar Options     |
 | required            | Whether or not the field is required. Defaults to false.                      | Option<bool>       |
 | exclude_from_input  | A list of resolvers of which not to apply to the associated input.            | ExcludeFromInput[] |
-| exclude_from_output | A list of resolvers of which not to apply to the associated input.            | bool               |
+| exclude_from_output | Remove the ability to resolve this field.                                     | bool               |
 | list                | Defines the scalar as a list or a singular value.                             | Option<bool>       |
 | as_type             | Associates the field with another entity type for joining/extending           | Option<String>     |
 | join_on             | The 'foreign key' of the type to be joined on.                                | Option<String>     |
@@ -162,6 +164,7 @@ Migrations are only executed if subgraph is run with the flag `--migrate run`
 | default_value       | An eval expr calculated value that is applied for Update and Create Resolvers | Option<String>     |
 | is_virtual          | Define properties on graphql inputs that do not exist in the database         | Option<bool>       |
 | eager               | Search for entity based on the fields of another entity                       | Option<bool>       |
+| primary_key         | Use field to override the default primary key (\_id for mongo, id for sql )   | Option<bool>       |
 
 | Scalar Options |
 | -------------- |
@@ -215,3 +218,5 @@ Additional guard functions that may be used within the `if_expr` syntax. Current
 | token_data                 | Extracts data from auth token, identifier and user_uuid                 | token_data("user_uuid") != input("created_by")     |
 | resolver_type              | Shows the type of resolver in guard function                            | resolver_type() == "FindOne"                       |
 | context                    | Extracts a value from the context provided from a guard. Returns tuple. | every(context("user.id"), 23)                      |
+| now                        | Returns the current `datetime`.                                         | now()                                              |
+| uuid                       | Generates a UUIDv4.                                                     | uuid()                                             |

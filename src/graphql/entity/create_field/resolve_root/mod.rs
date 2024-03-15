@@ -122,10 +122,14 @@ impl ServiceEntity {
                     Err(e) => {
                         debug!("Failed to downcast parent value: {:?}", e);
                         if entity_required {
-                            error!("Failed to resolve root field. Entity Required.");
-                            return Err(async_graphql::Error::new(
-                                "Failed to resolve root field. Entity Required.",
-                            )
+                            error!(
+                                "Failed to resolve root field, `{}`. Entity is marked as required.",
+                                entity_field.name
+                            );
+                            return Err(async_graphql::Error::new(format!(
+                                "Failed to resolve root field, `{}`. The entity is marked as required.",
+                                entity_field.name
+                            ))
                             .extend_with(|_err, e| {
                                 e.set("field", field_name);
                                 e.set("entity", entity_field.name.clone());

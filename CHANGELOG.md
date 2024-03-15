@@ -5,7 +5,7 @@
 ### Added
 
 - Response layer with request metadata such as service name, version (new), pagination details, timestamp, and more.
-- Pagination for Database related data sources.
+- Pagination and Sorting for Database related data sources.
 - Primary key identifier added to the Service Entity Field Config.
 - LIKE, GT, and LT Filter added to resolver query inputs.
 - `exclude_from_output` now available at entity level.
@@ -15,13 +15,13 @@
 
 ### Fixed
 
-- Join to HTTP Data Source Entities. Internal input created correctly.
+- Join to HTTP Data Source Entities Fixed. Internal input created correctly.
 - SQL Datasources return incorrect results after update many. Now currently requires table to have ID column and \_id column (if mongo).
-- Mongo Datasource now only returns matched updated documents on find many instead of all documents that match the updated document.
-- Mongo Datasource now returns correct documents when updating one and using nested filtering.
+- Mongo Datasource now only return matched updated documents on find many instead of all documents that match the updated document.
+- Mongo Datasource now returns correct documents when updating one while using nested filtering.
 - Extract correct `values` input when parsing request body.
 - Create One Resolver Input - Nullable lists fixed.
-- Errors on mongo user registration and authenticastion propegated.
+- Errors on mongo user registration and authenticastion propegate to client.
 
 ### Changed
 
