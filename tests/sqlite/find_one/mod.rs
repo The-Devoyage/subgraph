@@ -6,7 +6,9 @@ async fn find_one() {
         r#"
         query {
             get_coffee(get_coffee_input: { query: { name: "Katz", price: 15, available: true } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -22,7 +24,9 @@ async fn find_one_by_string() {
         r#"
         query {
             get_coffee(get_coffee_input: { query: { name: "Katz" } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -38,7 +42,9 @@ async fn find_one_by_int() {
         r#"
         query {
             get_coffee(get_coffee_input: { query: { price: 15 } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -54,7 +60,9 @@ async fn find_one_by_bool() {
         r#"
         query {
             get_coffee(get_coffee_input: { query: { available: true } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -70,10 +78,12 @@ async fn returns_correct_scalars() {
         r#"
         query {
             get_coffee(get_coffee_input: { query: { name: "Katz" } }) {
-                id
-                name
-                price
-                available
+                data {
+                    id
+                    name
+                    price
+                    available
+                }
             }
         }
         "#,
@@ -82,10 +92,65 @@ async fn returns_correct_scalars() {
     let response = execute(request, None).await;
     let json = response.data.into_json().unwrap();
     let coffee = json.get("get_coffee").unwrap();
-    assert_eq!(coffee.get("id").unwrap(), 1);
-    assert_eq!(coffee.get("name").unwrap(), &serde_json::json!("Katz"));
-    assert_eq!(coffee.get("price").unwrap(), &serde_json::json!(15));
-    assert_eq!(coffee.get("available").unwrap(), &serde_json::json!(true));
+    assert_eq!(coffee["data"].get("id").unwrap(), 1);
+    assert_eq!(
+        coffee["data"].get("name").unwrap(),
+        &serde_json::json!("Katz")
+    );
+    assert_eq!(coffee["data"].get("price").unwrap(), &serde_json::json!(15));
+    assert_eq!(
+        coffee["data"].get("available").unwrap(),
+        &serde_json::json!(true)
+    );
+}
+
+#[tokio::test]
+async fn returns_correct_scalars_date_uuid() {
+    // Create new coffee order
+    let uuid = uuid::Uuid::new_v4().to_string();
+    let request = async_graphql::Request::new(format!(
+        r#"
+            mutation {{
+                create_coffee_order(create_coffee_order_input: {{ values: {{  created_by: "6510865e93142f6d61b10dd8", uuid: "{}" }} }}) {{
+                    data {{
+                        id
+                    }}
+                }}
+            }}
+            "#,
+        uuid
+    ));
+    let response = execute(request, None).await;
+    assert!(response.is_ok());
+    let id = response.data.into_json().unwrap()["create_coffee_order"]["data"]["id"]
+        .as_i64()
+        .unwrap();
+
+    // Get coffee order
+    let request = async_graphql::Request::new(format!(
+        r#"
+            query {{
+                get_coffee_order(get_coffee_order_input: {{ query: {{ uuid: "{}" }} }}) {{
+                    data {{
+                        id
+                        uuid
+                        order_date
+                    }}
+                }}
+            }}
+            "#,
+        uuid
+    ));
+
+    let response = execute(request, None).await;
+    let json = response.data.into_json().unwrap();
+    let coffee_order = json.get("get_coffee_order").unwrap();
+    assert_eq!(coffee_order["data"].get("id").unwrap(), id);
+    assert_eq!(
+        coffee_order["data"].get("uuid").unwrap(),
+        &serde_json::json!(uuid)
+    );
+    assert!(coffee_order["data"].get("order_date").unwrap().is_string());
 }
 
 #[tokio::test]
@@ -95,7 +160,9 @@ async fn join_sqlite_to_mongo() {
         r#"
         query {
             get_user(get_user_input: { query: {} }) {
-                _id 
+                data {
+                    _id
+                }
             }
         }
         "#,
@@ -103,7 +170,7 @@ async fn join_sqlite_to_mongo() {
     let response = execute(request, None).await;
     let json = response.data.into_json().unwrap();
     let user = json.get("get_user").unwrap();
-    let user_id = user.get("_id").unwrap();
+    let user_id = user["data"].get("_id").unwrap();
     println!("UserID: {}", user_id);
     let graphql_query = format!(
         r#"
@@ -116,7 +183,9 @@ async fn join_sqlite_to_mongo() {
                         created_by: {}
                     }}
                 }}) {{
-                    id
+                    data {{
+                        id
+                    }}
                 }}
             }}
         "#,
@@ -132,12 +201,16 @@ async fn join_sqlite_to_mongo() {
         r#"
         query {
             get_coffee(get_coffee_input: { query: { name: "KatzWithUser" } }) {
-                id
-                name
-                price
-                available
-                created_by(created_by: { query: {} }) {
-                    _id
+                data {
+                    id
+                    name
+                    price
+                    available
+                    created_by(created_by: { query: {} }) {
+                        data {
+                            _id
+                        }
+                    }
                 }
             }
         }
@@ -149,7 +222,9 @@ async fn join_sqlite_to_mongo() {
     let coffee = json.get("get_coffee").unwrap();
     //compare the created_by._id field with the user_id from the first query
     assert_eq!(
-        coffee.get("created_by").unwrap().get("_id").unwrap(),
+        coffee["data"].get("created_by").unwrap()["data"]
+            .get("_id")
+            .unwrap(),
         user_id
     );
 }
@@ -160,7 +235,9 @@ async fn find_one_with_and_filter() {
         r#"
         query {
             get_coffee(get_coffee_input: { query: { AND: [{ name: "Katz" }, { price: 15 }] } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -176,7 +253,9 @@ async fn find_one_with_or_filter() {
         r#"
         query {
             get_coffee(get_coffee_input: { query: { OR: [{ name: "Katz" }, { price: 15 }] } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -192,7 +271,9 @@ async fn find_one_with_virtual_field() {
         r#"
         query {
             get_coffee(get_coffee_input: { query: { name: "Katz", virtual_id: "im virtual" } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,

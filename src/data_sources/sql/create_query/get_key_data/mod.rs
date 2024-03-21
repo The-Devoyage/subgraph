@@ -5,8 +5,9 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    data_sources::sql::{SqlDataSource, SqlValueEnum},
-    graphql::schema::ResolverType,
+    data_sources::sql::SqlDataSource,
+    resolver_type::ResolverType,
+    sql_value::SqlValue,
 };
 
 use super::JoinClauses;
@@ -28,14 +29,15 @@ impl SqlDataSource {
     ) -> Result<
         (
             Vec<String>,
-            Vec<SqlValueEnum>,
+            Vec<SqlValue>,
             Vec<String>,
-            Vec<SqlValueEnum>,
+            Vec<SqlValue>,
             JoinClauses,
         ),
         async_graphql::Error,
     > {
-        debug!("Getting Key Data From Input: {:?}", input_object);
+        debug!("Getting Key Data From Input");
+        trace!("{:?}", input_object);
         let (mut where_keys, mut where_values, mut value_keys, mut values, mut join_clauses) = (
             Vec::new(),
             Vec::new(),

@@ -6,7 +6,9 @@ async fn update_many() {
         r#"
         mutation {
             update_todos(update_todos_input: { values: { completed: false }, query: { userId: 1 } } ) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,

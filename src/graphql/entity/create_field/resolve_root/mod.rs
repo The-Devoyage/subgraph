@@ -7,6 +7,7 @@ use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
     data_sources::{sql::services::ResponseRow, DataSource},
     graphql::entity::ServiceEntity,
+    traits::async_graphql::FromJson,
 };
 
 impl ServiceEntity {
@@ -25,7 +26,10 @@ impl ServiceEntity {
                 let doc = match ctx.parent_value.try_downcast_ref::<Option<Document>>() {
                     Ok(doc) => {
                         if let Some(doc) = doc {
-                            let value = ServiceEntity::resolve_document_field(doc, entity_field)?;
+                            let value = entity_field
+                                .scalar
+                                .clone()
+                                .document_field_to_async_graphql_value(doc, entity_field)?;
                             Ok(Some(value))
                         } else {
                             if entity_required {
@@ -85,11 +89,7 @@ impl ServiceEntity {
                     }
                 };
 
-                let value = ServiceEntity::resolve_http_field(
-                    json_value,
-                    field_name,
-                    entity_field.scalar.clone(),
-                )?;
+                let value = json_value.to_async_graphql_value();
 
                 Ok(Some(value))
             }
@@ -98,11 +98,10 @@ impl ServiceEntity {
                 {
                     Ok(response_row) => {
                         if let Some(rr) = response_row {
-                            let value = ServiceEntity::resolve_sql_field(
-                                rr,
-                                field_name,
-                                entity_field.scalar.clone(),
-                            )?;
+                            let value = entity_field
+                                .scalar
+                                .clone()
+                                .rr_to_async_graphql_value(rr, field_name)?;
                             Ok(Some(value))
                         } else {
                             if entity_required {
@@ -123,10 +122,14 @@ impl ServiceEntity {
                     Err(e) => {
                         debug!("Failed to downcast parent value: {:?}", e);
                         if entity_required {
-                            error!("Failed to resolve root field. Entity Required.");
-                            return Err(async_graphql::Error::new(
-                                "Failed to resolve root field. Entity Required.",
-                            )
+                            error!(
+                                "Failed to resolve root field, `{}`. Entity is marked as required.",
+                                entity_field.name
+                            );
+                            return Err(async_graphql::Error::new(format!(
+                                "Failed to resolve root field, `{}`. The entity is marked as required.",
+                                entity_field.name
+                            ))
                             .extend_with(|_err, e| {
                                 e.set("field", field_name);
                                 e.set("entity", entity_field.name.clone());

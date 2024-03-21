@@ -7,7 +7,8 @@ use crate::{
     configuration::subgraph::{
         data_sources::ServiceDataSourceConfig, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    graphql::schema::ResolverType,
+    graphql::schema::create_auth_service::TokenData,
+    resolver_type::ResolverType,
 };
 
 pub mod http;
@@ -24,8 +25,9 @@ pub enum DataSource {
 #[derive(Debug, Clone)]
 pub struct DataSources {
     sources: Vec<DataSource>,
-    subgraph_config: SubGraphConfig,
 }
+
+pub struct TotalCount(i64);
 
 impl DataSources {
     /// Initialize Data Sources
@@ -53,7 +55,6 @@ impl DataSources {
 
         DataSources {
             sources: data_sources,
-            subgraph_config: subgraph_config.clone(),
         }
     }
 
@@ -74,7 +75,7 @@ impl DataSources {
                             DataSource::HTTP(ds) => &ds.config.name == ds_name,
                             DataSource::SQL(ds) => &ds.config.name == ds_name,
                         })
-                        .unwrap();
+                        .unwrap(); //TODO: Unwrap here needs error handling
                     data_source
                 }
                 _ => panic!("Data source specified for entity but not found."),
@@ -106,6 +107,8 @@ impl DataSources {
         entity: ServiceEntityConfig,
         resolver_type: ResolverType,
         subgraph_config: &SubGraphConfig,
+        token_data: &Option<TokenData>,
+        has_selection_set: bool,
     ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
         debug!("Executing Datasource Operation");
 
@@ -127,6 +130,7 @@ impl DataSources {
                 input,
                 cloned_entity,
                 resolver_type,
+                subgraph_config,
             )
             .await?),
             DataSource::SQL(_ds) => Ok(sql::SqlDataSource::execute_operation(
@@ -135,6 +139,8 @@ impl DataSources {
                 cloned_entity,
                 resolver_type,
                 subgraph_config,
+                token_data,
+                has_selection_set,
             )
             .await?),
         }

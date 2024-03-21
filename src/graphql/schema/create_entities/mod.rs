@@ -1,16 +1,16 @@
 use crate::{
     configuration::subgraph::data_sources::sql::DialectEnum,
     data_sources::{DataSource, DataSources},
-    graphql::schema::ResolverType,
+    resolver_type::ResolverType,
 };
 
-use super::ServiceSchemaBuilder;
+use super::ServiceSchema;
 use log::debug;
 
 mod create_entity_type_defs;
 mod create_resolver;
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     pub fn create_entities(mut self) -> Self {
         debug!("Creating Entities Config");
         debug!("Entities: {:?}", self.subgraph_config.service.entities);
@@ -20,6 +20,7 @@ impl ServiceSchemaBuilder {
             self = self.create_entity_type_defs(entity);
 
             let data_source = DataSources::get_entity_data_soruce(&self.data_sources, entity);
+
             match data_source {
                 DataSource::SQL(ds) => match ds.config.dialect {
                     DialectEnum::POSTGRES => {

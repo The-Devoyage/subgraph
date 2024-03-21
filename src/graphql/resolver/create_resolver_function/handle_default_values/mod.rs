@@ -3,8 +3,8 @@ use evalexpr::{eval_with_context_mut, HashMapContext};
 use log::debug;
 
 use crate::{
-    configuration::subgraph::entities::ServiceEntityConfig,
-    graphql::{resolver::ServiceResolver, schema::ResolverType},
+    configuration::subgraph::entities::ServiceEntityConfig, graphql::resolver::ServiceResolver,
+    resolver_type::ResolverType,
 };
 
 impl ServiceResolver {

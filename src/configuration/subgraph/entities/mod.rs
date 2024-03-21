@@ -1,11 +1,11 @@
-use bson::spec::ElementType;
-use log::{debug, error};
+use log::{debug, error, trace};
 use serde::{Deserialize, Serialize};
 
 use service_entity_field::ServiceEntityFieldConfig;
 
+use crate::resolver_type::ResolverType;
+
 use super::{cors::MethodOption, guard::Guard};
-use crate::graphql::schema::ResolverType;
 
 pub mod service_entity_field;
 
@@ -16,32 +16,6 @@ pub struct ServiceEntityResolversConfig {
     pub create_one: Option<ServiceEntityResolverConfig>,
     pub update_one: Option<ServiceEntityResolverConfig>,
     pub update_many: Option<ServiceEntityResolverConfig>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum ScalarOptions {
-    String,
-    Int,
-    Boolean,
-    ObjectID,
-    Object,
-    UUID,
-    DateTime,
-}
-
-impl ScalarOptions {
-    pub fn to_bson_type(self) -> ElementType {
-        debug!("Converting Scalar To BSON Element Type: {:?}", self);
-        match self {
-            ScalarOptions::String => ElementType::String,
-            ScalarOptions::Int => ElementType::Int32,
-            ScalarOptions::Boolean => ElementType::Boolean,
-            ScalarOptions::ObjectID => ElementType::ObjectId,
-            ScalarOptions::Object => ElementType::EmbeddedDocument,
-            ScalarOptions::UUID => ElementType::String,
-            ScalarOptions::DateTime => ElementType::DateTime,
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -73,6 +47,7 @@ pub struct ServiceEntityConfig {
     pub data_source: Option<ServiceEntityDataSourceConfig>,
     pub guards: Option<Vec<Guard>>,
     pub required: Option<bool>,
+    pub exclude_from_output: Option<bool>,
 }
 
 impl ServiceEntityConfig {
@@ -213,12 +188,13 @@ impl ServiceEntityConfig {
         debug!("Get Field {:?} From {:?}", field_name, entity);
         let entity_fields = &entity.fields;
         if field_name.contains(".") {
-            debug!("Field is Nested");
+            trace!("Field is Nested");
             let mut field_names = ServiceEntityFieldConfig::split_field_names(&field_name)?;
             let first_field_name = field_names[0];
             let first_field = ServiceEntityConfig::get_field(entity, first_field_name.to_string())?;
             let nested_fields = first_field.fields;
             if nested_fields.is_none() {
+                error!("Field {} is not a nested field", field_name);
                 return Err(async_graphql::Error::new(format!(
                     "Field {} is not a nested field",
                     field_name
@@ -227,7 +203,7 @@ impl ServiceEntityConfig {
             field_names.remove(0);
             let field =
                 ServiceEntityFieldConfig::get_field(nested_fields.unwrap(), field_names.join("."))?;
-            debug!("Found Field: {:?}", field);
+            trace!("Found Field: {:?}", field);
             return Ok(field);
         } else {
             for field in entity_fields {
@@ -241,5 +217,41 @@ impl ServiceEntityConfig {
                 field_name
             )))
         }
+    }
+
+    pub fn get_primary_key_field(
+        entity: &ServiceEntityConfig,
+    ) -> Result<ServiceEntityFieldConfig, async_graphql::Error> {
+        debug!("Get Primary Key Field");
+        let entity_fields = &entity.fields;
+        // Make sure the entity does not have multiple primary keys
+        if entity_fields
+            .iter()
+            .filter(|field| field.primary_key.unwrap_or(false))
+            .count()
+            > 1
+        {
+            error!("Entity {} has multiple primary keys", entity.name);
+            return Err(async_graphql::Error::from(format!(
+                "Entity {} has multiple primary keys.",
+                entity.name
+            )));
+        }
+
+        for field in entity_fields {
+            if field.primary_key.unwrap_or(false) {
+                return Ok(field.clone());
+            }
+        }
+        // Try to find the id or the _id field
+        for field in entity_fields {
+            if field.name == "id" || field.name == "_id" {
+                return Ok(field.clone());
+            }
+        }
+        Err(async_graphql::Error::from(format!(
+            "No primary key field found for entity {}",
+            entity.name
+        )))
     }
 }

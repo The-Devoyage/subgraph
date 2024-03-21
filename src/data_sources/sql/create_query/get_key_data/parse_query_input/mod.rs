@@ -7,7 +7,9 @@ use crate::{
         entities::{service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig},
         SubGraphConfig,
     },
-    data_sources::sql::{create_query::JoinClauses, SqlDataSource, SqlValueEnum},
+    data_sources::sql::{create_query::JoinClauses, SqlDataSource},
+    filter_operator::FilterOperator,
+    sql_value::SqlValue,
 };
 
 mod get_query_where_values;
@@ -17,12 +19,12 @@ impl SqlDataSource {
     pub fn parse_query_input(
         value: &Bson,
         mut where_keys: Vec<String>,
-        mut where_values: Vec<SqlValueEnum>,
+        mut where_values: Vec<SqlValue>,
         dialect: &DialectEnum,
         entity: &ServiceEntityConfig,
         subgraph_config: &SubGraphConfig,
         disable_eager_loading: bool,
-    ) -> Result<(Vec<String>, Vec<SqlValueEnum>, JoinClauses), async_graphql::Error> {
+    ) -> Result<(Vec<String>, Vec<SqlValue>, JoinClauses), async_graphql::Error> {
         debug!("Parse Query Input");
         trace!("Input: {:?}", value);
         let query_object = value.as_document();
@@ -33,7 +35,10 @@ impl SqlDataSource {
             return Err(async_graphql::Error::new("Invalid Query Object"));
         }
 
-        let excluded_keys = vec!["OR".to_string(), "AND".to_string()];
+        let excluded_keys = FilterOperator::list()
+            .iter()
+            .map(|x| x.as_str().to_string())
+            .collect::<Vec<String>>();
 
         // Iterate through the query object and create a vector of keys and values
         for (key, value) in query_object.unwrap().iter() {
@@ -43,6 +48,9 @@ impl SqlDataSource {
 
             trace!("Parsing Query Key: {:?}", key);
             let field = ServiceEntityConfig::get_field(entity.clone(), key.to_string())?;
+
+            let eager_input = value.as_document();
+            let disable_eager_loading = disable_eager_loading || eager_input.is_none();
 
             // Get the where key prefix
             let where_key_prefix = SqlDataSource::get_where_key_prefix(
@@ -56,8 +64,9 @@ impl SqlDataSource {
             // If the field is eager loaded, we can assume it is a object with many fields. Iterate
             // over the fields and return the keys.
             // Else, just return the key as is.
-            if field.eager.is_some() && !disable_eager_loading {
+            if field.eager.is_some() && !disable_eager_loading && eager_input.is_some() {
                 trace!("Parsing Eager Loaded Field");
+                let eager_input = eager_input.unwrap();
 
                 // Get the join clause and push it to the join clauses vector
                 let join_clause = SqlDataSource::get_join_clause(
@@ -71,16 +80,8 @@ impl SqlDataSource {
                     join_clauses.0.push(join_clause.unwrap());
                 }
 
-                let eager_input = match value.as_document() {
-                    Some(v) => Some(v),
-                    None => {
-                        error!("Invalid Eager Loaded Field: {:?}", value);
-                        return Err(async_graphql::Error::new("Invalid Eager Loaded Field"));
-                    }
-                };
-
                 let as_type = field.as_type;
-                for (key, nested_value) in eager_input.unwrap().iter() {
+                for (key, nested_value) in eager_input.iter() {
                     let (wk, wv, jc) = SqlDataSource::get_query_where_values(
                         nested_value,
                         dialect,
@@ -107,6 +108,7 @@ impl SqlDataSource {
                     }
                 }
             } else {
+                trace!("Parsing Non Eager Loaded Field");
                 let (parsed_where_keys, parsed_where_values, parsed_join_clauses) =
                     SqlDataSource::get_query_where_values(
                         value,

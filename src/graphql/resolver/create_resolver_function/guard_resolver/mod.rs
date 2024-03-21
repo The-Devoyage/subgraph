@@ -16,9 +16,9 @@ use crate::{
     },
     data_sources::{sql::services::ResponseRow, DataSources},
     graphql::{
-        entity::ServiceEntity,
-        schema::{create_auth_service::TokenData, ResolverType},
+        entity::create_return_types::ResolverResponse, schema::create_auth_service::TokenData,
     },
+    resolver_type::ResolverType,
     utils::clean_string::clean_string,
 };
 
@@ -32,7 +32,7 @@ impl ServiceResolver {
         service_guards: Option<Vec<Guard>>,
         resolver_type: &ResolverType,
         headers: HeaderMap,
-        token_data: Option<TokenData>,
+        token_data: &Option<TokenData>,
         data_sources: &DataSources,
         subgraph_config: &SubGraphConfig,
     ) -> Result<HashMapContext, async_graphql::Error> {
@@ -86,7 +86,7 @@ impl ServiceResolver {
             subgraph_config,
             guard_context,
             headers.clone(),
-            token_data.clone(),
+            token_data,
             resolver_type,
             input_document.clone(),
         )
@@ -99,7 +99,7 @@ impl ServiceResolver {
         // Re-create the evalexpr context including the data context
         guard_context = Guard::create_guard_context(
             headers,
-            token_data,
+            token_data.clone(),
             input_document.clone(),
             resolver_type.to_string(),
             Some(data_context),
@@ -147,11 +147,7 @@ impl ServiceResolver {
             let fields = ServiceEntityFieldConfig::get_fields_recursive(
                 entity.fields.clone(),
                 field_name.to_string(),
-            )
-            .map_err(|e| {
-                error!("Error getting fields recursively: {:?}", e);
-                async_graphql::Error::new("Error getting fields recursively")
-            })?;
+            )?;
 
             let field = fields.iter().last().unwrap(); // Last field found will be the one we want.
 
@@ -181,7 +177,7 @@ impl ServiceResolver {
         subgraph_config: &SubGraphConfig,
         mut guard_context: HashMapContext,
         headers: HeaderMap,
-        token_data: Option<TokenData>,
+        token_data: &Option<TokenData>,
         resolver_type: &ResolverType,
         input: Document,
     ) -> Result<Value, async_graphql::Error> {
@@ -263,6 +259,8 @@ impl ServiceResolver {
                 ));
             }
 
+            let has_selection_set = true;
+
             //Execute the operation to get the data.
             let results = DataSources::execute(
                 &data_sources,
@@ -270,6 +268,8 @@ impl ServiceResolver {
                 entity.clone(),
                 ResolverType::FindMany,
                 subgraph_config,
+                token_data,
+                has_selection_set,
             )
             .await?;
 
@@ -280,23 +280,11 @@ impl ServiceResolver {
 
             let results = results.unwrap();
 
-            let results = results.try_to_list();
+            let downcasted = results.try_downcast_ref::<ResolverResponse>()?;
 
-            if results.is_err() {
-                error!(
-                    "Failed to get results from data context query. Error: {:?}",
-                    results.err()
-                );
-                return Err(async_graphql::Error::new(
-                    "Can't parse the guard data context query. Failed to get results.".to_string(),
-                ));
-            }
-
-            let results_list = results.unwrap();
-
-            // iterate and turn all to json
+            // iterate and turn all to json so it can be parsed when guarding.
             let mut results_json = serde_json::json!([]);
-            for result in results_list {
+            for result in &downcasted.data {
                 let downcasted = result.try_downcast_ref::<Option<Document>>();
                 if downcasted.is_err() {
                     debug!(
@@ -329,11 +317,10 @@ impl ServiceResolver {
                         if field.is_virtual.unwrap_or(false) {
                             continue;
                         }
-                        let json_value = ServiceEntity::resolve_sql_field_json(
-                            response_row,
-                            &field.name.clone(),
-                            field.scalar.clone(),
-                        )?;
+                        let json_value = field
+                            .scalar
+                            .clone()
+                            .rr_to_serde_json_value(response_row, &field.name)?;
                         json_obj[field.name.clone()] = json_value;
                     }
 

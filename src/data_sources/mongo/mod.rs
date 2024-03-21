@@ -1,18 +1,21 @@
 use async_graphql::dynamic::FieldValue;
-use bson::{doc, oid::ObjectId, Document};
+use bson::{doc, to_document, Document};
 use log::{debug, error, trace};
 use mongodb::{options::ClientOptions, Client, Database};
-use std::str::FromStr;
 
 use crate::{
     configuration::subgraph::{
         data_sources::mongo::MongoDataSourceConfig,
-        entities::{
-            service_entity_field::ServiceEntityFieldConfig, ScalarOptions, ServiceEntityConfig,
-        },
+        entities::{service_entity_field::ServiceEntityFieldConfig, ServiceEntityConfig},
         SubGraphConfig,
     },
-    graphql::schema::ResolverType,
+    filter_operator::FilterOperator,
+    graphql::{
+        entity::create_return_types::{ResolverResponse, ResolverResponseMeta},
+        schema::create_options_input::{DirectionEnum, OptionsInput},
+    },
+    resolver_type::ResolverType,
+    scalar_option::{to_mongo::MongoValue, ScalarOption},
 };
 
 use super::DataSource;
@@ -61,6 +64,7 @@ impl MongoDataSource {
         filter: Document,
         entity: &ServiceEntityConfig,
         subgraph_config: &SubGraphConfig,
+        resolver_type: &ResolverType,
     ) -> Result<(Document, Vec<EagerLoadOptions>), async_graphql::Error> {
         debug!("Serialize String Object IDs to Object IDs");
 
@@ -70,7 +74,13 @@ impl MongoDataSource {
         let mut key = "".to_string();
         for (k, value) in filter.iter() {
             debug!("Key: {}, Value: {}", k, value);
-            if k == "query" || k == "values" || k == "OR" || k == "AND" {
+            if k == "query"
+                || k == "values"
+                || FilterOperator::list()
+                    .iter()
+                    .map(|x| x.as_str())
+                    .any(|x| x == k)
+            {
                 let document = match value.as_document() {
                     Some(document) => document,
                     None => {
@@ -85,6 +95,7 @@ impl MongoDataSource {
                         document.clone(),
                         entity,
                         subgraph_config,
+                        resolver_type,
                     ) {
                         Ok(nested) => nested,
                         Err(e) => {
@@ -109,23 +120,36 @@ impl MongoDataSource {
 
             // Since searching by a single key above, the last field is guaranteed to be the field we are looking for.
             if let Some(field) = fields.last() {
-                match field.scalar {
-                    ScalarOptions::ObjectID => {
-                        // if the value is a string, convert it to an object id.
-                        if let bson::Bson::String(object_id_string) = value {
-                            let object_id = ObjectId::from_str(&object_id_string).map_err(|e| {
-                                error!("Failed to convert string to object id. Error: {:?}", e);
-                                async_graphql::Error::new(format!(
-                                    "Failed to convert string to object id. Error: {:?}",
-                                    e
-                                ))
-                            })?;
-
-                            //update the cooresponding value in converted
-                            converted.insert(k.clone(), object_id);
+                // Certain scalars need to be converted to mongo types.
+                // If they do, replace them in the doc.
+                if !field.eager.unwrap_or(false)
+                    || resolver_type == &ResolverType::CreateOne
+                    || resolver_type == &ResolverType::UpdateOne
+                    || resolver_type == &ResolverType::UpdateMany
+                {
+                    match field.scalar.bson_to_mongo_value(value) {
+                        Ok(mongo_value) => {
+                            if mongo_value.is_some() {
+                                match mongo_value.unwrap() {
+                                    MongoValue::ObjectID(object_id) => {
+                                        //update the cooresponding value in converted
+                                        converted.insert(k.clone(), object_id);
+                                    }
+                                    MongoValue::DateTime(date_time) => {
+                                        //update the cooresponding value in converted
+                                        converted.insert(k.clone(), date_time);
+                                    }
+                                    _ => {}
+                                }
+                            }
                         }
-                    }
-                    ScalarOptions::Object => {
+                        Err(_) => {}
+                    };
+                }
+
+                // Handle object types and eager loaded fields
+                match field.scalar {
+                    ScalarOption::Object => {
                         let separator = if key.is_empty() { "" } else { "." };
                         let separated = format!("{}{}", separator, k);
                         key.push_str(&separated);
@@ -134,6 +158,7 @@ impl MongoDataSource {
                                 value.as_document().unwrap().clone(),
                                 entity,
                                 subgraph_config,
+                                resolver_type,
                             ) {
                                 Ok(nested) => nested,
                                 Err(e) => {
@@ -150,6 +175,13 @@ impl MongoDataSource {
                     _ => (),
                 }
 
+                // If the resolver type is not find one or find many, we don't need to handle eager loaded fields.
+                if resolver_type != &ResolverType::FindOne
+                    && resolver_type != &ResolverType::FindMany
+                {
+                    continue;
+                }
+
                 // Handle eager loaded fields
                 let eager_load_options =
                     match MongoDataSource::handle_eager_fields(field, entity, subgraph_config) {
@@ -159,6 +191,7 @@ impl MongoDataSource {
                             return Err(e);
                         }
                     };
+
                 if let Some((eager_load_option, eager_entity)) = eager_load_options {
                     // Send through recursive function to convert the object id string to object id
                     // for eager loaded fields.
@@ -167,6 +200,7 @@ impl MongoDataSource {
                             value.as_document().unwrap().clone(), // If eager, this will always be a document.
                             &eager_entity,
                             subgraph_config,
+                            resolver_type,
                         ) {
                             Ok(nested) => nested,
                             Err(e) => {
@@ -199,6 +233,7 @@ impl MongoDataSource {
         debug!("Handle eager fields");
         // Since searching by a single key above, the last field is guaranteed to be the field we are looking for.
         if field.eager.is_none() {
+            trace!("Field is not eager");
             return Ok(None);
         }
 
@@ -208,7 +243,7 @@ impl MongoDataSource {
             join_on
         } else {
             return Err(async_graphql::Error::new(format!(
-                "Eager load failed. Failed to get join_on for field: {}",
+                "Eager load failed. Failed to get join_on for field: {}. Ensure propety `join_on` is present on the field definiton for this field.",
                 field.name
             )));
         };
@@ -268,6 +303,7 @@ impl MongoDataSource {
         filter: Document,
         entity: &ServiceEntityConfig,
         subgraph_config: &SubGraphConfig,
+        resolver_type: &ResolverType,
     ) -> Result<(Document, Vec<EagerLoadOptions>), async_graphql::Error> {
         debug!("Finalizing Input Filters");
 
@@ -277,8 +313,12 @@ impl MongoDataSource {
         for (key, value) in filter.iter() {
             if key == "query" {
                 let query = value.as_document().unwrap();
-                let (query_finalized, eager_opts) =
-                    MongoDataSource::finalize_input(query.clone(), entity, subgraph_config)?;
+                let (query_finalized, eager_opts) = MongoDataSource::finalize_input(
+                    query.clone(),
+                    entity,
+                    subgraph_config,
+                    &resolver_type,
+                )?;
                 finalized.insert(key.clone(), query_finalized);
                 eager_filters.extend(eager_opts);
             }
@@ -288,20 +328,62 @@ impl MongoDataSource {
                 finalized.insert(key.clone(), value.clone());
             }
 
-            if key == "AND" || key == "OR" {
-                debug!("AND/OR Filter");
-                let mut and_or_filters = Vec::new();
-                let filters = value.as_array().unwrap();
+            if FilterOperator::list()
+                .iter()
+                .map(|operator| operator.as_str())
+                .collect::<Vec<&str>>()
+                .contains(&key.as_str())
+            {
+                trace!("Found filter operator key: {}", key);
+                let mut recursive_filters = Vec::new();
+                let filters = match value.as_array() {
+                    Some(filters) => filters.clone(),
+                    None => {
+                        let filters = vec![value.clone()];
+                        filters
+                    }
+                };
                 for filter in filters {
                     let filter = filter.as_document().unwrap();
-                    let (filter_finalized, eager_opts) =
-                        MongoDataSource::finalize_input(filter.clone(), entity, subgraph_config)?;
-                    and_or_filters.push(filter_finalized);
+                    let (filter_finalized, eager_opts) = MongoDataSource::finalize_input(
+                        filter.clone(),
+                        entity,
+                        subgraph_config,
+                        &resolver_type,
+                    )?;
+                    recursive_filters.push(filter_finalized);
                     eager_filters.extend(eager_opts);
                 }
                 finalized.remove(key);
-                let key = if key == "AND" { "$and" } else { "$or" };
-                finalized.insert(key, and_or_filters);
+                let filter_operator = FilterOperator::from_str(key).unwrap();
+                let operator_key = FilterOperator::get_mongo_operator(&filter_operator);
+
+                match filter_operator {
+                    FilterOperator::And => {
+                        finalized.insert(operator_key, recursive_filters);
+                    }
+                    FilterOperator::Or => {
+                        finalized.insert(operator_key, recursive_filters);
+                    }
+                    _ => {
+                        // The rest of the filter operators require the reverse format.
+                        // For example { $eq: { name: "test" } } becomes { name: { $eq: "test" } }
+                        let mut new_filter = Document::new();
+                        for filter in recursive_filters {
+                            for (key, value) in filter.iter() {
+                                let mut new_value = Document::new();
+                                new_value.insert(operator_key, value.clone());
+                                new_filter.insert(key.clone(), new_value);
+                            }
+                        }
+                        finalized.insert("$and".to_string(), vec![new_filter]);
+                    }
+                }
+            }
+
+            // Add the options back to the filter.
+            if key == "opts" {
+                finalized.insert(key.clone(), value.clone());
             }
         }
 
@@ -312,6 +394,7 @@ impl MongoDataSource {
                 finalized,
                 entity,
                 subgraph_config,
+                &resolver_type,
             )?;
         eager_filters.extend(eager_load_options);
 
@@ -325,8 +408,12 @@ impl MongoDataSource {
     pub fn create_aggregation(
         query_doc: &Document,
         eager_load_options: Vec<EagerLoadOptions>,
+        opts_doc: Option<OptionsInput>,
     ) -> Result<Vec<Document>, async_graphql::Error> {
         debug!("Creating Aggregation");
+        trace!("Query Doc: {:?}", query_doc);
+        trace!("Eager Load Options: {:?}", eager_load_options);
+        trace!("Opts Doc: {:?}", opts_doc);
         let mut pipeline = Vec::new();
         for eager_load_option in eager_load_options {
             let lookup = doc! {
@@ -350,8 +437,71 @@ impl MongoDataSource {
         let match_doc = doc! {
             "$match": query_doc
         };
-
         pipeline.push(match_doc);
+
+        // Start the facet pipeline.
+        let mut facet_doc = doc! {
+            "total_count": [
+                {
+                    "$count": "total_count"
+                }
+            ]
+        };
+
+        let mut paginated_facet_doc = vec![];
+
+        // Handle sorting and paginating
+        if let Some(opts) = opts_doc {
+            let mut sort_doc = doc! {};
+            let mut skip = 0;
+            let mut limit = 10;
+            if let Some(sort) = opts.sort {
+                for sort_input in sort.iter() {
+                    sort_doc.insert(
+                        sort_input.field.clone(),
+                        match sort_input.direction {
+                            DirectionEnum::Asc => 1,
+                            DirectionEnum::Desc => -1,
+                        },
+                    );
+                }
+            }
+
+            // If opts.page and opts.per_page, calculate the new skip and limit values.
+            if let Some(page_value) = opts.page {
+                if let Some(per_page_value) = opts.per_page {
+                    skip = (page_value - 1) * per_page_value;
+                    limit = per_page_value;
+                }
+            }
+
+            trace!("Sort Doc: {:?}", sort_doc);
+
+            if !sort_doc.is_empty() {
+                let sort = doc! {
+                    "$sort": sort_doc
+                };
+                paginated_facet_doc.push(sort);
+            }
+            if skip > 0 {
+                let skip = doc! {
+                    "$skip": skip
+                };
+                paginated_facet_doc.push(skip);
+            }
+            if limit > 0 {
+                let limit = doc! {
+                    "$limit": limit
+                };
+                paginated_facet_doc.push(limit);
+            }
+        }
+
+        facet_doc.insert("documents", paginated_facet_doc);
+
+        pipeline.push(doc! {
+            "$facet": facet_doc
+        });
 
         trace!("Pipeline: {:?}", pipeline);
         Ok(pipeline)
@@ -368,7 +518,7 @@ impl MongoDataSource {
 
         let eager_load_options;
         (input, eager_load_options) =
-            MongoDataSource::finalize_input(input, &entity, subgraph_config)?;
+            MongoDataSource::finalize_input(input, &entity, subgraph_config, &resolver_type)?;
 
         let db = match data_source {
             DataSource::Mongo(ds) => ds.db.clone(),
@@ -387,38 +537,140 @@ impl MongoDataSource {
                 let result =
                     services::Services::find_one(db, input, collection_name, eager_load_options)
                         .await?;
-                if result.is_none() {
-                    return Ok(FieldValue::NONE);
-                }
-                Ok(Some(FieldValue::owned_any(result)))
+                let res = ResolverResponse {
+                    data: vec![FieldValue::owned_any(result)],
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: 1,
+                        total_count: 1,
+                        page: 1,
+                        total_pages: 1,
+                        user_uuid: None,
+                    },
+                };
+                Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::FindMany => {
-                let results =
-                    services::Services::find_many(db, input, collection_name, eager_load_options)
-                        .await?;
-                Ok(Some(FieldValue::list(
-                    results.into_iter().map(|doc| FieldValue::owned_any(doc)),
-                )))
+                let (results, total_count) = services::Services::find_many(
+                    db,
+                    input.clone(),
+                    collection_name,
+                    eager_load_options,
+                )
+                .await?;
+                let opts_doc = if input.clone().get("opts").is_some() {
+                    trace!("opts: {:?}", input.get("opts").unwrap());
+                    to_document(input.get("opts").unwrap()).unwrap()
+                } else {
+                    let mut d = Document::new();
+                    d.insert("per_page", 10);
+                    d.insert("page", 1);
+                    trace!("created opts: {:?}", d);
+                    d
+                };
+                let page = if let Some(page_value) = opts_doc.get("page") {
+                    page_value.as_i32().unwrap() as i64
+                } else {
+                    1
+                };
+                let total_pages = if let Some(per_page_value) = opts_doc.get("per_page") {
+                    let per_page = per_page_value.as_i32().unwrap();
+                    if total_count as i32 % per_page as i32 == 0 {
+                        total_count as i32 / per_page as i32
+                    } else {
+                        (total_count as i32 / per_page as i32) + 1
+                    }
+                } else {
+                    1
+                };
+
+                let res = ResolverResponse {
+                    data: results
+                        .clone()
+                        .into_iter()
+                        .map(|doc| FieldValue::owned_any(doc))
+                        .collect(),
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: results.len() as i64,
+                        total_count: total_count as i64,
+                        page,
+                        total_pages: total_pages as i64,
+                        user_uuid: None,
+                    },
+                };
+                Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::CreateOne => {
                 let result = services::Services::create_one(db, input, collection_name).await?;
-                if result.is_none() {
-                    return Ok(FieldValue::NONE);
-                }
-                Ok(Some(FieldValue::owned_any(result)))
+                let res = ResolverResponse {
+                    data: vec![FieldValue::owned_any(result)],
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: 1,
+                        total_count: 1,
+                        page: 1,
+                        total_pages: 1,
+                        user_uuid: None,
+                    },
+                };
+                Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::UpdateOne => {
-                let result = services::Services::update_one(db, input, collection_name).await?;
-                if result.is_none() {
-                    return Ok(FieldValue::NONE);
-                }
-                Ok(Some(FieldValue::owned_any(result)))
+                let result =
+                    services::Services::update_one(db, input, collection_name, &entity).await?;
+                let res = ResolverResponse {
+                    data: vec![FieldValue::owned_any(result)],
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: 1,
+                        total_count: 1,
+                        page: 1,
+                        total_pages: 1,
+                        user_uuid: None,
+                    },
+                };
+                Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::UpdateMany => {
-                let results = services::Services::update_many(db, input, collection_name).await?;
-                Ok(Some(FieldValue::list(
-                    results.into_iter().map(|doc| FieldValue::owned_any(doc)),
-                )))
+                let results =
+                    services::Services::update_many(db, input, collection_name, &entity).await?;
+                let count = results.len();
+                let res = ResolverResponse {
+                    data: results
+                        .into_iter()
+                        .map(|doc| FieldValue::owned_any(doc))
+                        .collect(),
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: count as i64,
+                        total_count: count as i64,
+                        page: 1,
+                        total_pages: 1,
+                        user_uuid: None,
+                    },
+                };
+                Ok(Some(FieldValue::owned_any(res)))
             }
             _ => panic!("Invalid resolver type"),
         }

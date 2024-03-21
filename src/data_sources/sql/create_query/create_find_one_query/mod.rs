@@ -5,10 +5,12 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    data_sources::sql::{SqlDataSource, SqlValueEnum},
+    data_sources::sql::SqlDataSource,
+    filter_operator::FilterOperator,
+    sql_value::SqlValue,
 };
 
-use super::{create_nested_query_recursive::FilterOperator, JoinClauses};
+use super::JoinClauses;
 
 impl SqlDataSource {
     pub fn create_find_one_query(
@@ -18,7 +20,7 @@ impl SqlDataSource {
         input: &Document,
         subgraph_config: &SubGraphConfig,
         join_clauses: Option<JoinClauses>,
-    ) -> Result<(String, Vec<SqlValueEnum>), async_graphql::Error> {
+    ) -> Result<(String, Vec<SqlValue>, Vec<String>), async_graphql::Error> {
         let mut query = String::new();
         let entity_table_name = if let Some(entity_ds) = entity.data_source.clone() {
             if entity_ds.table.is_some() {
@@ -41,19 +43,23 @@ impl SqlDataSource {
             }
         };
 
-        let (nested_query, combined_where_values, combined_join_clauses) =
-            SqlDataSource::create_nested_query_recursive(
-                true,
-                &vec![query_input.clone()],
-                entity,
-                dialect,
-                FilterOperator::And,
-                false,
-                None,
-                subgraph_config,
-                join_clauses,
-                false,
-            )?;
+        let (
+            nested_query,
+            combined_where_values,
+            combined_join_clauses,
+            combined_where_keys,
+            _offset,
+        ) = SqlDataSource::create_nested_query_recursive(
+            &vec![query_input.clone()],
+            entity,
+            dialect,
+            FilterOperator::And,
+            false,
+            None,
+            subgraph_config,
+            join_clauses,
+            false,
+        )?;
 
         for join_clause in combined_join_clauses.0 {
             query.push_str(&join_clause);
@@ -71,6 +77,6 @@ impl SqlDataSource {
             query.push(';');
         }
 
-        Ok((query, combined_where_values))
+        Ok((query, combined_where_values, combined_where_keys))
     }
 }

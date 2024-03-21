@@ -6,7 +6,9 @@ async fn find_many() {
         r#"
         {
             get_todos(get_todos_input: { query: { userId: 1 } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,

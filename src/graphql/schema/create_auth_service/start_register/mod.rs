@@ -3,16 +3,17 @@ use async_graphql::{
     Value,
 };
 use bson::{doc, Bson};
-use log::{debug, error};
+use log::{debug, error, trace};
 
 use crate::{
     configuration::subgraph::data_sources::sql::DialectEnum,
     data_sources::{sql::PoolEnum, DataSource, DataSources},
-    graphql::schema::ServiceSchemaBuilder,
+    graphql::schema::ServiceSchema,
 };
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     pub fn create_register_start(mut self) -> Self {
+        debug!("Creating register start");
         let auth_config = match self.subgraph_config.service.auth.clone() {
             Some(auth) => auth,
             None => {
@@ -24,13 +25,16 @@ impl ServiceSchemaBuilder {
             "register_start",
             TypeRef::named_nn(TypeRef::STRING),
             move |ctx| {
+                debug!("Resolving register start");
                 let auth_config = auth_config.clone();
 
                 FieldFuture::new(async move {
                     let identifier = match ctx.args.try_get("identifier") {
                         Ok(input) => input
-                            .deserialize::<String>()
-                            .expect("Failed to deserialize."),
+                            .deserialize::<String>().map_err(|e| {
+                                error!("Failed to get input: {:?}", e);
+                                async_graphql::Error::new(format!("Failed to get input: {:?}", e))
+                            })?,
                         Err(e) => {
                             return Err(async_graphql::Error::new(format!(
                                 "Failed to get input: {:?}",
@@ -47,7 +51,7 @@ impl ServiceSchemaBuilder {
                     );
 
                     // Check if user exists. If previous register, reject, else delete the user.
-                    let user = ServiceSchemaBuilder::get_user(&data_source, &identifier).await; 
+                    let user = ServiceSchema::get_user(&data_source, &identifier).await; 
 
                     if !user.is_err() && user.clone().unwrap().clone().is_some() {
                         if user.clone().unwrap().unwrap().passkey.is_some() {
@@ -57,13 +61,16 @@ impl ServiceSchemaBuilder {
                                 &identifier
                             )));
                         }else {
-                            ServiceSchemaBuilder::delete_user(&data_source, &identifier).await?;
+                            ServiceSchema::delete_user(&data_source, &identifier).await?;
                         }
                     }
 
-                    debug!("Creating webauthn service");
+                    trace!("Creating webauthn service");
 
-                    let webauthn = ServiceSchemaBuilder::build_webauthn(&auth_config)?;
+                    let webauthn = ServiceSchema::build_webauthn(&auth_config).map_err(|e| {
+                        error!("Failed to build webauthn: {:?}", e);
+                        async_graphql::Error::new(format!("Failed to build webauthn: {:?}", e))
+                    })?;
 
                     let user_uuid = uuid::Uuid::new_v4();
 
@@ -72,7 +79,13 @@ impl ServiceSchemaBuilder {
                         &identifier,
                         &identifier,
                         None,
-                    )?;
+                    ).map_err(|e| {
+                        error!("Failed to start passkey registration: {:?}", e);
+                        async_graphql::Error::new(format!(
+                            "Failed to start passkey registration: {:?}",
+                            e
+                        ))
+                    })?;
 
                     let reg_state = match serde_json::to_string(&reg_state) {
                         Ok(reg_state) => reg_state,
@@ -146,8 +159,8 @@ impl ServiceSchemaBuilder {
                         _ => panic!("Data Source not supported."),
                     };
 
-                    debug!("Challenge created: {:?}", ccr);
-                    debug!("Registration state created: {:?}", reg_state);
+                    trace!("Challenge created: {:?}", ccr);
+                    trace!("Registration state created: {:?}", reg_state);
 
                     let json = match serde_json::to_value(&ccr) {
                         Ok(json) => json,

@@ -3,11 +3,11 @@ use async_graphql::{
     Value,
 };
 use biscuit_auth::{Biscuit, KeyPair};
-use log::error;
+use log::{debug, error};
 use serde::{Deserialize, Serialize};
 use webauthn_rs::prelude::PublicKeyCredential;
 
-use crate::{data_sources::DataSources, graphql::schema::ServiceSchemaBuilder};
+use crate::{data_sources::DataSources, graphql::schema::ServiceSchema};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AuthenticateSuccess {
@@ -16,8 +16,10 @@ pub struct AuthenticateSuccess {
     pub user_identifier: String,
 }
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     pub fn create_authenticate_finish(mut self) -> Self {
+        debug!("Creating authenticate finish");
+
         let auth_config = match self.subgraph_config.service.auth.clone() {
             Some(auth) => auth,
             None => {
@@ -29,6 +31,7 @@ impl ServiceSchemaBuilder {
             "authenticate_finish",
             TypeRef::named_nn("authenticate_success"),
             move |ctx| {
+                debug!("Resolving authenticate finish");
                 let auth_config = auth_config.clone();
 
                 FieldFuture::new(async move {
@@ -40,6 +43,7 @@ impl ServiceSchemaBuilder {
                     let key_pair = match ctx.data_unchecked::<Option<KeyPair>>() {
                         Some(key_pair) => key_pair,
                         None => {
+                            error!("Failed to get key pair.");
                             return Err(async_graphql::Error::new(format!(
                                 "Failed to get key pair."
                             )));
@@ -47,10 +51,12 @@ impl ServiceSchemaBuilder {
                     };
 
                     let identifier = match ctx.args.try_get("identifier") {
-                        Ok(input) => input
-                            .deserialize::<String>()
-                            .expect("Failed to deserialize."),
+                        Ok(input) => input.deserialize::<String>().map_err(|e| {
+                            error!("Failed to get input: {:?}", e);
+                            async_graphql::Error::new(format!("Failed to get input: {:?}", e))
+                        })?,
                         Err(e) => {
+                            error!("Failed to get input: {:?}", e);
                             return Err(async_graphql::Error::new(format!(
                                 "Failed to get input: {:?}",
                                 e
@@ -58,10 +64,12 @@ impl ServiceSchemaBuilder {
                         }
                     };
                     let pub_key = match ctx.args.try_get("public_key") {
-                        Ok(input) => input
-                            .deserialize::<String>()
-                            .expect("Failed to deserialize."),
+                        Ok(input) => input.deserialize::<String>().map_err(|e| {
+                            error!("Failed to deserialize: {:?}", e);
+                            async_graphql::Error::new(format!("Failed to deserialize: {:?}", e))
+                        })?,
                         Err(e) => {
+                            error!("Failed to get input: {:?}", e);
                             return Err(async_graphql::Error::new(format!(
                                 "Failed to get input: {:?}",
                                 e
@@ -72,24 +80,28 @@ impl ServiceSchemaBuilder {
                         serde_json::from_str(&pub_key).map_err(|e| {
                             async_graphql::Error::new(format!("Failed to deserialize: {:?}", e))
                         });
+
                     let pub_key = match pub_key {
                         Ok(pk) => pk,
                         Err(error) => {
+                            error!("Failed to deserialize public key: {:?}", error);
                             return Err(error);
                         }
                     };
 
-                    let user = ServiceSchemaBuilder::get_user(&data_source, &identifier).await?;
+                    let user = ServiceSchema::get_user(&data_source, &identifier).await?;
 
                     let user = match user {
                         Some(user) => {
                             if user.passkey.is_none() {
+                                error!("User does not have a passkey.");
                                 return Err(async_graphql::Error::new(format!(
                                     "User does not have a passkey."
                                 )));
                             };
 
                             if user.authentication_state.is_none() {
+                                error!("User does not have an authentication state.");
                                 return Err(async_graphql::Error::new(format!(
                                     "User does not have an authentication state."
                                 )));
@@ -97,11 +109,17 @@ impl ServiceSchemaBuilder {
                             user
                         }
                         None => {
+                            error!("User not found.");
                             return Err(async_graphql::Error::new(format!("User not found.")));
                         }
                     };
 
-                    let webauthn = ServiceSchemaBuilder::build_webauthn(&auth_config)?;
+                    debug!("Authenticating Config: {:?}", &auth_config);
+
+                    let webauthn = ServiceSchema::build_webauthn(&auth_config).map_err(|e| {
+                        error!("Failed to build webauthn: {:?}", e);
+                        async_graphql::Error::new(format!("Failed to build webauthn: {:?}", e))
+                    })?;
 
                     webauthn
                         .finish_passkey_authentication(
@@ -109,6 +127,7 @@ impl ServiceSchemaBuilder {
                             &user.authentication_state.unwrap(),
                         )
                         .map_err(|e| {
+                            error!("Failed to finish authentication: {:?}", e);
                             async_graphql::Error::new(format!(
                                 "Failed to finish authentication: {:?}",
                                 e
@@ -121,12 +140,15 @@ impl ServiceSchemaBuilder {
                     biscuit
                         .add_fact(format!("user(\"{}\", \"{}\")", identifier, user_uuid).as_str())
                         .map_err(|e| {
+                            error!("Failed to add fact: {:?}", e);
                             async_graphql::Error::new(format!("Failed to add fact: {:?}", e))
                         })?;
                     let biscuit = biscuit.build(key_pair).map_err(|e| {
+                        error!("Failed to build biscuit: {:?}", e);
                         async_graphql::Error::new(format!("Failed to build biscuit: {:?}", e))
                     })?;
                     let base64 = biscuit.to_base64().map_err(|e| {
+                        error!("Failed to convert to base64: {:?}", e);
                         async_graphql::Error::new(format!("Failed to convert to base64: {:?}", e))
                     })?;
 
@@ -136,6 +158,7 @@ impl ServiceSchemaBuilder {
                         user_identifier: identifier.clone(),
                     })
                     .map_err(|e| {
+                        error!("Failed to serialize: {:?}", e);
                         async_graphql::Error::new(format!("Failed to serialize: {:?}", e))
                     })?;
 

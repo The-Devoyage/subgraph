@@ -5,10 +5,10 @@ use crate::{
     configuration::subgraph::{
         data_sources::sql::DialectEnum, entities::ServiceEntityConfig, SubGraphConfig,
     },
-    data_sources::sql::{SqlDataSource, SqlValueEnum},
+    data_sources::sql::SqlDataSource,
+    filter_operator::FilterOperator,
+    sql_value::SqlValue,
 };
-
-use super::create_nested_query_recursive::FilterOperator;
 
 impl SqlDataSource {
     pub fn create_update_one_query(
@@ -18,13 +18,18 @@ impl SqlDataSource {
         dialect: &DialectEnum,
         input: &Document,
         subgraph_config: &SubGraphConfig,
-    ) -> Result<(String, Vec<SqlValueEnum>), async_graphql::Error> {
+    ) -> Result<(String, Vec<SqlValue>, Vec<String>, String), async_graphql::Error> {
         debug!("Creating Update One Query");
 
         let mut query = String::new();
         query.push_str("UPDATE ");
         query.push_str(table_name);
         query.push_str(" SET ");
+
+        let mut identifier_query = String::new();
+        let primary_key_field = ServiceEntityConfig::get_primary_key_field(entity)?;
+        identifier_query
+            .push_str(format!("SELECT {} FROM {}", primary_key_field.name, table_name).as_str());
 
         for i in 0..value_keys.len() {
             query.push_str(&value_keys[i]);
@@ -39,24 +44,30 @@ impl SqlDataSource {
         let offset = Some(value_keys.len() as i32);
 
         query.push_str(" WHERE ");
+        identifier_query.push_str(" WHERE ");
 
         let query_input = input.get("query").unwrap();
-        let (nested_query, combined_where_values, _combined_join_values) =
-            SqlDataSource::create_nested_query_recursive(
-                true,
-                &vec![query_input.clone()],
-                entity,
-                dialect,
-                FilterOperator::And,
-                false,
-                offset,
-                subgraph_config,
-                None,
-                false,
-            )?;
+        let (
+            nested_query,
+            combined_where_values,
+            _combined_join_values,
+            combined_where_keys,
+            _offset,
+        ) = SqlDataSource::create_nested_query_recursive(
+            &vec![query_input.clone()],
+            entity,
+            dialect,
+            FilterOperator::And,
+            false,
+            offset,
+            subgraph_config,
+            None,
+            false,
+        )?;
 
         if let Some(nested_query) = nested_query {
             query.push_str(nested_query.as_str());
+            identifier_query.push_str(nested_query.as_str());
         } else {
             return Err(async_graphql::Error::from("No filter provided"));
         }
@@ -67,6 +78,15 @@ impl SqlDataSource {
             query.push(';');
         }
 
-        Ok((query, combined_where_values))
+        if !identifier_query.ends_with(';') {
+            identifier_query.push(';');
+        }
+
+        Ok((
+            query,
+            combined_where_values,
+            combined_where_keys,
+            identifier_query,
+        ))
     }
 }

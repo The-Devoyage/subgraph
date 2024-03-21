@@ -1,19 +1,20 @@
 use crate::{
-    configuration::subgraph::data_sources::sql::DialectEnum,
-    data_sources::sql::{SqlDataSource, SqlValueEnum},
+    configuration::subgraph::data_sources::sql::DialectEnum, data_sources::sql::SqlDataSource,
+    filter_operator::FilterOperator, sql_value::SqlValue,
 };
-use log::{debug, error};
+use log::{debug, error, trace};
 
 impl SqlDataSource {
     pub fn create_where_clause(
         where_keys: &Vec<String>,
         dialect: &DialectEnum,
         mut pg_param_offset: Option<i32>,
-        where_values: &Vec<SqlValueEnum>,
+        where_values: &Vec<SqlValue>,
+        filter_operator: FilterOperator,
     ) -> Result<(String, i32), async_graphql::Error> {
         debug!("Creating Where Clause");
-        debug!("Where Keys: {:?}", where_keys);
-        debug!("Where Values: {:?}", where_values);
+        trace!("Where Keys: {:?}", where_keys);
+        trace!("Where Values: {:?}", where_values);
         let parameterized_query = if !where_keys.is_empty() {
             let mut query = String::new();
 
@@ -29,35 +30,35 @@ impl SqlDataSource {
                 }
 
                 let is_list = match where_values[i] {
-                    SqlValueEnum::StringList(_)
-                    | SqlValueEnum::IntList(_)
-                    | SqlValueEnum::BoolList(_) => true,
+                    SqlValue::StringList(_) | SqlValue::IntList(_) | SqlValue::BoolList(_) => true,
                     _ => false,
                 };
-                let operator = match is_list {
-                    true => " IN (",
-                    false => " = ",
-                };
-                query.push_str(operator);
+
+                if is_list {
+                    query.push_str(" IN (");
+                } else {
+                    let sql_operator = FilterOperator::get_sql_operator(&filter_operator);
+                    query.push_str(sql_operator);
+                }
 
                 // This is used to offset the placeholder index for postgres.
                 // It is incremented by the number of placeholders added to the query.
                 let index = if pg_param_offset.is_some() {
+                    trace!("Existing Pg Param Offset: {:?}", pg_param_offset);
                     Some(i as i32 + pg_param_offset.unwrap())
                 } else {
+                    trace!("No Existing Pg Param Offset");
                     Some(0)
                 };
 
                 match where_values[i] {
-                    SqlValueEnum::StringList(_)
-                    | SqlValueEnum::IntList(_)
-                    | SqlValueEnum::BoolList(_) => {
+                    SqlValue::StringList(_) | SqlValue::IntList(_) | SqlValue::BoolList(_) => {
                         let placeholder_count = match where_values[i] {
-                            SqlValueEnum::StringList(ref list) => list.len(),
-                            SqlValueEnum::IntList(ref list) => list.len(),
-                            SqlValueEnum::BoolList(ref list) => list.len(),
-                            SqlValueEnum::UUIDList(ref list) => list.len(),
-                            SqlValueEnum::DateTimeList(ref list) => list.len(),
+                            SqlValue::StringList(ref list) => list.len(),
+                            SqlValue::IntList(ref list) => list.len(),
+                            SqlValue::BoolList(ref list) => list.len(),
+                            SqlValue::UUIDList(ref list) => list.len(),
+                            SqlValue::DateTimeList(ref list) => list.len(),
                             _ => 0,
                         };
 
@@ -87,7 +88,8 @@ impl SqlDataSource {
         } else {
             String::new()
         };
-        debug!("Where Clause: {}", parameterized_query);
+        trace!("Where Clause: {}", parameterized_query);
+        trace!("Parameter Offset: {:?}", pg_param_offset.unwrap_or(0));
         Ok((parameterized_query, pg_param_offset.unwrap_or(0)))
     }
 }

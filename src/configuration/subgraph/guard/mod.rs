@@ -7,11 +7,8 @@ use log::{debug, error, trace};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    configuration::subgraph::{
-        entities::{ScalarOptions, ServiceEntityConfig},
-        SubGraphConfig,
-    },
-    graphql::schema::create_auth_service::TokenData,
+    configuration::subgraph::SubGraphConfig, filter_operator::FilterOperator,
+    graphql::schema::create_auth_service::TokenData, traits::evalexpr::FromSerdeJson,
     utils::clean_string::clean_string,
 };
 
@@ -66,7 +63,10 @@ impl Guard {
     }
 
     pub fn extract_input_values(input_document: Document) -> Result<Document, EvalexprError> {
-        let exclude_keys = vec!["OR".to_string(), "AND".to_string()];
+        let exclude_keys = FilterOperator::list()
+            .iter()
+            .map(|op| op.as_str().to_string())
+            .collect::<Vec<String>>();
 
         let values_input = match input_document.get("values") {
             Some(values_input) => values_input.as_document(),
@@ -123,12 +123,12 @@ impl Guard {
 
         let query_document = query_document.as_document().unwrap();
 
-        let and_queries = query_document.get("AND");
-        let or_queries = query_document.get("OR");
+        let and_queries = query_document.get(FilterOperator::And.as_str());
+        let or_queries = query_document.get(FilterOperator::Or.as_str());
 
         let mut initial_query = query_document.clone();
-        initial_query.remove("AND");
-        initial_query.remove("OR");
+        initial_query.remove(FilterOperator::And.as_str());
+        initial_query.remove(FilterOperator::Or.as_str());
 
         if !initial_query.is_empty() {
             documents.push(initial_query)
@@ -197,25 +197,27 @@ impl Guard {
 
                         let mut values_tuple = vec![];
                         let is_nested = key.contains(".");
-                        let excluded_keys = vec!["AND", "OR"];
+                        let excluded_keys = FilterOperator::list().iter().map(|op| op.as_str().to_string()).collect::<Vec<String>>();
 
                         for input_document in documents {
                             let json = serde_json::to_value(input_document.clone()).unwrap();
+                            trace!("Input Json Document: {:?}", json);
 
                             // If the specified input is nested, extract the nested value.
                             if is_nested {
                                 let keys: Vec<&str> = key.split(".").collect();
+                                trace!("Input Nested Keys: {:?}", keys);
                                 let mut value = &json[keys[0]];
                                 for key in keys.iter().skip(1) {
                                     trace!("Input Nested Key: {:?}", key);
-                                    if excluded_keys.contains(key) {
+                                    if excluded_keys.contains(&key.to_string()) {
                                         continue;
                                     }
                                     value = &value[key];
                                 }
 
                                 if value.is_null() {
-                                    return Ok(Value::Empty);
+                                    continue;
                                 }
 
                                 let value = value.to_string();
@@ -224,7 +226,7 @@ impl Guard {
 
                                 values_tuple.push(value);
                             } else { // Else extract the value directly.
-                                if excluded_keys.contains(&key.as_str()) {
+                                if excluded_keys.contains(&key.to_string()) {
                                     continue;
                                 }
                                 let value = json.get(key.clone());
@@ -295,7 +297,6 @@ impl Guard {
                 if entity.is_none() {
                     return Err(EvalexprError::CustomMessage("Entity not found.".to_string()))
                 }
-                let entity = entity.unwrap();
 
                 // Root value should be a vector of entities, loop through each one and extract the
                 // value. Add the value to the values_tuple.
@@ -328,13 +329,6 @@ impl Guard {
                         } else {
                             debug!("Context Key: {:?}", cleaned_key.clone());
                             let value = value.get(cleaned_key.clone());
-                            let field = match ServiceEntityConfig::get_field(entity.clone(), cleaned_key.clone()) {
-                                Ok(field) => field,
-                                Err(e)=> {
-                                    error!("Field not found: {:?}", e);
-                                    return Err(EvalexprError::CustomMessage("Failed to parse context: Field not found.".to_string()))
-                                }
-                            };
 
                             debug!("Context Value: {:?}", value);
                             let value = match value {
@@ -342,22 +336,8 @@ impl Guard {
                                     if value.is_null() {
                                         return Ok(Value::Empty);
                                     }
-                                    match field.scalar {
-                                        ScalarOptions::String => Value::String(clean_string(&value.to_string(), None)),
-                                        ScalarOptions::Int => Value::Int(value.as_i64().unwrap()),
-                                        ScalarOptions::Boolean => Value::Boolean(value.as_bool().unwrap()),
-                                        ScalarOptions::DateTime => Value::String(value.to_string()),
-                                        ScalarOptions::UUID => Value::String(clean_string(&value.to_string(), None)),
-                                        ScalarOptions::ObjectID => {
-                                            let object_id = value.get("$oid");
-                                            if object_id.is_none() {
-                                                return Err(EvalexprError::CustomMessage("ObjectID not found.".to_string()))
-                                            }
-                                            let object_id = object_id.unwrap().as_str().unwrap();
-                                            Value::String(object_id.to_string())
-                                        },
-                                        _ => return Err(EvalexprError::CustomMessage("Scalar is not supported in context.".to_string()))
-                                    }
+                                    // field.scalar.to_evalexpr(&value)?
+                                    value.to_evalalexpr_value()?
 
                                 },
                                 None => Value::Empty,
@@ -448,6 +428,17 @@ impl Guard {
                 } else {
                     Ok(Value::Boolean(false))
                 }
+            }),
+            // Returns the current date time.
+            "now" => Function::new(move |_| {
+                debug!("Guard Function - Now");
+                let now = chrono::Utc::now();
+                Ok(Value::String(now.to_rfc3339()))
+            }),
+            "uuid" => Function::new(move |_| {
+                debug!("Guard Function - UUID");
+                let uuid = uuid::Uuid::new_v4();
+                Ok(Value::String(uuid.to_string()))
             })
         };
         debug!("Guard Context: {:?}", context);

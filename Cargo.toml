@@ -1,6 +1,6 @@
 [package]
 name = "subgraph"
-version = "0.0.13"
+version = "0.0.14"
 edition = "2021"
 license = "MIT"
 description = "Subgraph is a CLI that instantly generates a GraphQL API around Mongo, SQL, and HTTP APIs."
@@ -19,8 +19,8 @@ path = "src/main.rs"
 tokio = { version = "1.23.0", features = ["full"] }
 warp = "0.3.3"
 http = "0.2.8"
-async-graphql = {version = "6.0.7", features= ["dynamic-schema"]}
-async-graphql-warp = "6.0.7"
+async-graphql = {version = "7.0.1", features= ["dynamic-schema"]}
+async-graphql-warp = "7.0.1"
 reqwest = {version = "0.11.14", features = ["json"]}
 serde = { version = "1.0", features = ["derive"] }
 bson = { version = "2", features = ["chrono-0_4"] }
@@ -41,6 +41,9 @@ biscuit-auth = "4"
 base64 = "0.21.4"
 notify = "6.1.1"
 openssl = { version = "0.10", features = ["vendored"] }
+rand = "0.8.5"
+local-ip-address = "0.5.7"
+regex = "1.10.3"
 
 [dependencies.mongodb]
 version = "2.3.1"

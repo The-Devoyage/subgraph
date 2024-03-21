@@ -6,7 +6,9 @@ async fn update_one() {
         r#"
         mutation {
             update_todo(update_todo_input: { values: { completed: false }, query: { id: 1 } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,

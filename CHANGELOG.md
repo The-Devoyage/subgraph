@@ -1,5 +1,36 @@
 # Changelog
 
+## [v0.0.14]
+
+### Added
+
+- Response layer with request metadata such as service name, version (new), pagination details, timestamp, and more.
+- Pagination and Sorting for Database related data sources.
+- Primary key identifier added to the Service Entity Field Config.
+- LIKE, GT, and LT Filter added to resolver query inputs.
+- `exclude_from_output` now available at entity level.
+- Add `host` option to config file to allow service to be hosted on 0.0.0.0.
+- New built in function, `now` to generate current date time.
+- New build in function `uuid` to generate unique uuids.
+
+### Fixed
+
+- Join to HTTP Data Source Entities Fixed. Internal input created correctly.
+- SQL Datasources return incorrect results after update many. Now currently requires table to have ID column and \_id column (if mongo).
+- Mongo Datasource now only return matched updated documents on find many instead of all documents that match the updated document.
+- Mongo Datasource now returns correct documents when updating one while using nested filtering.
+- Extract correct `values` input when parsing request body.
+- Create One Resolver Input - Nullable lists fixed.
+- Errors on mongo user registration and authenticastion propegate to client.
+
+### Changed
+
+- SQL Filters now allow nested filtering from root input.
+- Replace ENV variables function updated to exclude surrounding quotes.
+- HTTP error response now includes the returned error in the errors extensions.
+- Refactored Scalar Option which allows easier addition to future scalars.
+- Update the Environment variable parser to look for exact matches in values only.
+
 ## [v0.0.13]
 
 ### Added

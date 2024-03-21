@@ -4,7 +4,6 @@ use async_graphql::dynamic::Schema;
 use http::HeaderMap;
 use subgraph::configuration::{environment::Environment, subgraph::SubGraphConfig};
 
-mod auth;
 mod http_ds;
 mod mongo;
 mod mysql;
@@ -36,6 +35,7 @@ async fn execute(
         generate_keypair: false,
         migrate: None,
         watch: false,
+        host: false,
     });
     let schema = spawn_app(args).await;
     let mut headers = HeaderMap::new();

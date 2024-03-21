@@ -4,10 +4,10 @@ use log::debug;
 use crate::{
     configuration::subgraph::data_sources::sql::DialectEnum,
     data_sources::{sql::PoolEnum, DataSource},
-    graphql::schema::{create_auth_service::ServiceUser, ServiceSchemaBuilder},
+    graphql::schema::{create_auth_service::ServiceUser, ServiceSchema},
 };
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     pub async fn delete_user(
         data_source: &DataSource,
         identifier: &str,

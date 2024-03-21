@@ -6,7 +6,9 @@ async fn find_one() {
         r#"
         {
             get_todo(get_todo_input: { query: { id: 1 } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,
@@ -25,7 +27,9 @@ async fn find_one() {
 //         r#"
 //         {
 //             get_todo(get_todo_input: { id: 1 }) {
-//                 id
+//                 data {
+//                      id
+//                 }
 //             }
 //         }
 //         "#,
@@ -41,7 +45,9 @@ async fn find_one_by_int() {
         r#"
         {
             get_todo(get_todo_input: { query: { id: 1 } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,

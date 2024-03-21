@@ -3,11 +3,12 @@ use bson::Document;
 use log::debug;
 
 use crate::{
-    configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
-    data_sources::sql::services::ResponseRow, graphql::resolver::ServiceResolver,
+    data_sources::sql::services::ResponseRow,
+    graphql::resolver::ServiceResolver,
+    traits::sqlx::{
+        mysql_row::FromMySqlRow, postgres_row::FromPostgresRow, sqlite_row::FromSqliteRow,
+    },
 };
-
-mod response_row_to_document;
 
 impl ServiceResolver {
     /// Gets the parent value from the context, which is either a document or a response row.
@@ -15,7 +16,6 @@ impl ServiceResolver {
     pub fn get_parent_value(
         ctx: &ResolverContext,
         field_name: &str,
-        as_type_field: &ServiceEntityFieldConfig,
     ) -> Result<Option<Document>, async_graphql::Error> {
         debug!("Getting Parent Value");
 
@@ -38,25 +38,13 @@ impl ServiceResolver {
                         // Map the value into a Document, which is what the resolver expects.
                         Some(response_row) => match response_row {
                             ResponseRow::SqLite(rr) => {
-                                Some(ServiceResolver::sqlite_response_row_to_doc(
-                                    rr,
-                                    as_type_field,
-                                    field_name,
-                                )?)
+                                Some(rr.to_document(Some(vec![field_name]))?)
                             }
-                            ResponseRow::MySql(rr) => {
-                                Some(ServiceResolver::mysql_response_row_to_doc(
-                                    rr,
-                                    as_type_field,
-                                    field_name,
-                                )?)
+                            ResponseRow::MySql(mysql_row) => {
+                                Some(mysql_row.to_document(Some(vec![field_name]))?)
                             }
                             ResponseRow::Postgres(rr) => {
-                                Some(ServiceResolver::postgres_response_row_to_doc(
-                                    rr,
-                                    as_type_field,
-                                    field_name,
-                                )?)
+                                Some(rr.to_document(Some(vec![field_name]))?)
                             }
                         },
                         None => {

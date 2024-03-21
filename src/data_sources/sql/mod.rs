@@ -1,8 +1,8 @@
 use std::{path::Path, str::FromStr};
 
 use async_graphql::dynamic::FieldValue;
-use bson::Document;
-use log::{debug, error, info};
+use bson::{to_document, Document};
+use log::{debug, error, info, trace};
 use sqlx::{sqlite::SqliteConnectOptions, MySql, Pool, Postgres, Sqlite};
 
 use crate::{
@@ -12,8 +12,12 @@ use crate::{
         entities::ServiceEntityConfig,
         SubGraphConfig,
     },
-    data_sources::sql::services::ResponseRow,
-    graphql::schema::ResolverType,
+    graphql::{
+        entity::create_return_types::{ResolverResponse, ResolverResponseMeta},
+        schema::create_auth_service::TokenData,
+    },
+    resolver_type::ResolverType,
+    sql_value::SqlValue,
 };
 
 use super::DataSource;
@@ -40,29 +44,13 @@ pub enum PoolEnum {
     SqLite(Pool<Sqlite>),
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum SqlValueEnum {
-    String(String),
-    Int(i32),
-    Bool(bool),
-    StringList(Vec<String>),
-    IntList(Vec<i32>),
-    BoolList(Vec<bool>),
-    UUID(uuid::Uuid),
-    UUIDList(Vec<uuid::Uuid>),
-    DateTime(chrono::DateTime<chrono::Utc>),
-    DateTimeList(Vec<chrono::DateTime<chrono::Utc>>),
-    ObjectID(String),
-    ObjectIDList(Vec<String>),
-}
-
 #[derive(Debug, Clone)]
 pub struct SqlQuery {
     query: String,
-    values: Vec<SqlValueEnum>,
-    value_keys: Vec<String>,
-    where_values: Vec<SqlValueEnum>,
-    where_keys: Vec<String>,
+    count_query: Option<String>,
+    identifier_query: Option<String>,
+    values: Vec<SqlValue>,
+    where_values: Vec<SqlValue>,
     table: String,
 }
 
@@ -77,10 +65,10 @@ impl SqlDataSource {
         // Create the pool
         let pool: PoolEnum = match sql_data_source_config.dialect {
             DialectEnum::SQLITE => {
-                debug!("Creating SQLite Pool: {:?}", &sql_data_source_config.uri);
+                trace!("Creating SQLite Pool: {:?}", &sql_data_source_config.uri);
 
                 let options = if let Some(extensions) = &sql_data_source_config.sqlite_extensions {
-                    debug!("Creating SQLite Pool with Extensions: {:?}", &extensions);
+                    trace!("Creating SQLite Pool with Extensions: {:?}", &extensions);
                     let mut options = SqliteConnectOptions::from_str(&sql_data_source_config.uri)
                         .expect("Failed to create SqliteConnectOptions with extensions");
                     for extension in extensions {
@@ -101,7 +89,7 @@ impl SqlDataSource {
                 PoolEnum::SqLite(pool)
             }
             DialectEnum::POSTGRES => {
-                debug!("Creating Postgres Pool: {:?}", &sql_data_source_config.uri);
+                trace!("Creating Postgres Pool: {:?}", &sql_data_source_config.uri);
                 let pool = sqlx::postgres::PgPoolOptions::new()
                     .max_connections(5)
                     .connect(&sql_data_source_config.uri)
@@ -110,7 +98,7 @@ impl SqlDataSource {
                 PoolEnum::Postgres(pool)
             }
             DialectEnum::MYSQL => {
-                debug!("Creating MySql Pool: {:?}", &sql_data_source_config.uri);
+                trace!("Creating MySql Pool: {:?}", &sql_data_source_config.uri);
                 let pool = sqlx::mysql::MySqlPoolOptions::new()
                     .max_connections(5)
                     .connect(&sql_data_source_config.uri)
@@ -187,6 +175,8 @@ impl SqlDataSource {
         entity: ServiceEntityConfig,
         resolver_type: ResolverType,
         subgraph_config: &SubGraphConfig,
+        token_data: &Option<TokenData>,
+        has_selection_set: bool,
     ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
         debug!("Executing SQL Operation");
 
@@ -211,7 +201,7 @@ impl SqlDataSource {
         }
 
         let query = SqlDataSource::create_query(
-            input,
+            input.clone(),
             resolver_type,
             &table,
             data_source.config.dialect.clone(),
@@ -219,20 +209,80 @@ impl SqlDataSource {
             &subgraph_config,
         )?;
 
+        let user_uuid = if token_data.is_some() {
+            Some(token_data.as_ref().unwrap().user_uuid.to_string())
+        } else {
+            None
+        };
+
         // Return the result from the database as a FieldValue
         match resolver_type {
             ResolverType::FindOne => {
                 let result = services::Services::find_one(&data_source.pool, &query).await?;
-                if result.is_none() {
-                    return Ok(FieldValue::NONE);
-                }
-                Ok(Some(FieldValue::owned_any(result)))
+                let res = ResolverResponse {
+                    data: vec![FieldValue::owned_any(result)],
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: 1,
+                        total_count: 1,
+                        page: 1,
+                        total_pages: 1,
+                        user_uuid,
+                    },
+                };
+                Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::FindMany => {
-                let results = services::Services::find_many(&data_source.pool, &query).await?;
-                Ok(Some(FieldValue::list(
-                    results.into_iter().map(|row| FieldValue::owned_any(row)),
-                )))
+                let (entities, total_count) =
+                    services::Services::find_many(&data_source.pool, &query, &has_selection_set)
+                        .await?;
+                let count = entities.len();
+                let opts_doc = if input.clone().get("opts").is_some() {
+                    trace!("opts: {:?}", input.get("opts").unwrap());
+                    to_document(input.get("opts").unwrap()).unwrap()
+                } else {
+                    let mut d = Document::new();
+                    d.insert("per_page", 10);
+                    d.insert("page", 1);
+                    trace!("created opts: {:?}", d);
+                    d
+                };
+                trace!("opts_doc: {:?}", opts_doc);
+                let page = opts_doc
+                    .get_i64("page")
+                    .unwrap_or(opts_doc.get_i32("page").unwrap_or(1) as i64);
+                let per_page = opts_doc
+                    .get_i64("per_page")
+                    .unwrap_or(opts_doc.get_i32("per_page").unwrap_or(10) as i64);
+                trace!("per_page: {:?}", per_page);
+                let res = ResolverResponse {
+                    data: entities
+                        .into_iter()
+                        .map(|row| FieldValue::owned_any(row))
+                        .collect(),
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: count as i64,
+                        total_count: total_count.0,
+                        page,
+                        total_pages: if per_page == -1 {
+                            1
+                        } else {
+                            (total_count.0 / per_page) + 1
+                        },
+                        user_uuid,
+                    },
+                };
+
+                Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::CreateOne => {
                 let result = services::Services::create_one(
@@ -243,37 +293,68 @@ impl SqlDataSource {
                     &subgraph_config,
                 )
                 .await?;
-                if result.is_none() {
-                    return Ok(FieldValue::NONE);
-                }
-                Ok(Some(FieldValue::owned_any(result)))
+
+                let res = ResolverResponse {
+                    data: vec![FieldValue::owned_any(result)],
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: 1,
+                        total_count: 1,
+                        page: 1,
+                        total_pages: 1,
+                        user_uuid,
+                    },
+                };
+
+                Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::UpdateOne => {
-                let result = services::Services::update_one(
-                    &entity,
-                    &data_source.pool,
-                    &query,
-                    data_source.config.dialect.clone(),
-                    &subgraph_config,
-                )
-                .await?;
-                if result.is_none() {
-                    return Ok(FieldValue::NONE);
-                }
-                Ok(Some(FieldValue::owned_any(result)))
+                let result =
+                    services::Services::update_one(&entity, &data_source.pool, &query).await?;
+                let res = ResolverResponse {
+                    data: vec![FieldValue::owned_any(result)],
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: 1,
+                        total_count: 1,
+                        page: 1,
+                        total_pages: 1,
+                        user_uuid,
+                    },
+                };
+                Ok(Some(FieldValue::owned_any(res)))
             }
             ResolverType::UpdateMany => {
-                let results = services::Services::update_many(
-                    &entity,
-                    &data_source.pool,
-                    &query,
-                    data_source.config.dialect.clone(),
-                    &subgraph_config,
-                )
-                .await?;
-                Ok(Some(FieldValue::list(
-                    results.into_iter().map(|row| FieldValue::owned_any(row)),
-                )))
+                let results =
+                    services::Services::update_many(&entity, &data_source.pool, &query).await?;
+                let count = results.len();
+                let res = ResolverResponse {
+                    data: results
+                        .into_iter()
+                        .map(|row| FieldValue::owned_any(row))
+                        .collect(),
+                    meta: ResolverResponseMeta {
+                        request_id: uuid::Uuid::new_v4().to_string(),
+                        service_name: subgraph_config.service.name.clone(),
+                        service_version: subgraph_config.service.version.clone(),
+                        executed_at: chrono::Utc::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        count: count as i64,
+                        total_count: count as i64,
+                        page: 1,
+                        total_pages: 1,
+                        user_uuid,
+                    },
+                };
+                Ok(Some(FieldValue::owned_any(res)))
             }
             _ => panic!("Invalid resolver type"),
         }

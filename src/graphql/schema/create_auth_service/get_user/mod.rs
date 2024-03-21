@@ -1,23 +1,24 @@
 use bson::{doc, Regex};
-use log::debug;
+use log::{debug, error, trace};
 use sqlx::Row;
 
 use crate::{
     configuration::subgraph::data_sources::sql::DialectEnum,
     data_sources::{sql::PoolEnum, DataSource},
-    graphql::schema::{create_auth_service::ServiceUser, ServiceSchemaBuilder},
+    graphql::schema::{create_auth_service::ServiceUser, ServiceSchema},
 };
 
-impl ServiceSchemaBuilder {
+impl ServiceSchema {
     pub async fn get_user(
         data_source: &DataSource,
         identifier: &str,
     ) -> Result<Option<ServiceUser>, async_graphql::Error> {
-        debug!("Getting user, identifier: {:?}", &identifier);
+        debug!("Get User");
+        trace!("Identifier: {:?}", &identifier);
 
         let user = match &data_source {
             DataSource::Mongo(mongo_ds) => {
-                debug!("Getting User - Mongo Data Source");
+                trace!("Getting User - Mongo Data Source");
 
                 let identifier_regex = Regex {
                     pattern: identifier.to_string(),
@@ -35,11 +36,12 @@ impl ServiceSchemaBuilder {
                     .await;
 
                 user.map_err(|e| {
-                    async_graphql::Error::new(format!("Failed to get user from mongo: {:?}", e))
+                    error!("Failed to get user from mongo: {:?}", e);
+                    async_graphql::Error::new(format!("Failed to get user from MongoDB: {:?}", e))
                 })
             }
             DataSource::SQL(sql_ds) => {
-                debug!("SQL data source");
+                trace!("SQL data source");
                 let user = match sql_ds.config.dialect {
                     DialectEnum::MYSQL => {
                         let query = sqlx::query(
@@ -159,10 +161,13 @@ impl ServiceSchemaBuilder {
                 };
                 user
             }
-            _ => panic!("Data Source not supported."),
+            _ => {
+                error!("Data Source not supported.");
+                return Err(async_graphql::Error::new("Data Source not supported."));
+            }
         };
 
-        debug!("User: {:?}", &user);
+        trace!("User: {:?}", &user);
 
         user
     }

@@ -3,46 +3,23 @@ use bson::{Bson, Document};
 use log::debug;
 
 use crate::{
-    configuration::subgraph::entities::{
-        service_entity_field::ServiceEntityFieldConfig, ScalarOptions,
-    },
-    graphql::entity::ServiceEntity,
-    utils::document::{get_from_document::GetDocumentResultType, DocumentUtils},
+    configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
+    graphql::entity::ServiceEntity, utils::document::get_from_document::DocumentValue,
 };
 
 impl ServiceEntity {
-    pub fn resolve_document_field(
-        document: &Document,
-        field: &ServiceEntityFieldConfig,
-    ) -> Result<Value, async_graphql::Error> {
-        debug!("Resolving Document Field: {:?}", field.name);
-
-        match &field.scalar {
-            ScalarOptions::String => ServiceEntity::resolve_document_string_scalar(document, field),
-            ScalarOptions::ObjectID => {
-                ServiceEntity::resolve_document_object_id_scalar(document, field)
-            }
-            ScalarOptions::Int => ServiceEntity::resolve_document_int_scalar(document, field),
-            ScalarOptions::Boolean => {
-                ServiceEntity::resolve_document_boolean_scalar(document, field)
-            }
-            ScalarOptions::Object => ServiceEntity::resolve_document_object_scalar(document, field),
-            ScalarOptions::UUID => ServiceEntity::resolve_document_uuid_scalar(document, field),
-            ScalarOptions::DateTime => {
-                ServiceEntity::resolve_document_datetime_scalar(document, field)
-            }
-        }
-    }
-
     pub fn resolve_document_object_id_scalar(
         document: &Document,
         field: &ServiceEntityFieldConfig,
     ) -> Result<Value, async_graphql::Error> {
         debug!("Resolving Object ID Scalar");
-        let resolved = DocumentUtils::get_from_document(document, field)?;
+        let resolved =
+            field
+                .scalar
+                .get_from_document(document, &field.name, field.list.unwrap_or(false))?;
 
         match resolved {
-            GetDocumentResultType::ObjectID(object_id) => Ok(Value::from(object_id.to_string())),
+            DocumentValue::ObjectID(object_id) => Ok(Value::from(object_id.to_string())),
             _ => unreachable!("Invalid result type for object id scalar"),
         }
     }
@@ -52,11 +29,14 @@ impl ServiceEntity {
         field: &ServiceEntityFieldConfig,
     ) -> Result<Value, async_graphql::Error> {
         debug!("Resolving String Scalar");
-        let resolved = DocumentUtils::get_from_document(document, field)?;
+        let resolved =
+            field
+                .scalar
+                .get_from_document(document, &field.name, field.list.unwrap_or(false))?;
 
         match resolved {
-            GetDocumentResultType::String(value) => Ok(Value::from(value)),
-            GetDocumentResultType::StringArray(values) => Ok(Value::List(
+            DocumentValue::String(value) => Ok(Value::from(value)),
+            DocumentValue::StringArray(values) => Ok(Value::List(
                 values.into_iter().map(|value| Value::from(value)).collect(),
             )),
             _ => unreachable!("Invalid result type for string scalar"),
@@ -69,11 +49,14 @@ impl ServiceEntity {
     ) -> Result<Value, async_graphql::Error> {
         debug!("Resolving Int Scalar");
 
-        let resolved = DocumentUtils::get_from_document(document, field)?;
+        let resolved =
+            field
+                .scalar
+                .get_from_document(document, &field.name, field.list.unwrap_or(false))?;
 
         match resolved {
-            GetDocumentResultType::Int(value) => Ok(Value::from(value)),
-            GetDocumentResultType::IntArray(values) => Ok(Value::List(
+            DocumentValue::Int(value) => Ok(Value::from(value)),
+            DocumentValue::IntArray(values) => Ok(Value::List(
                 values.into_iter().map(|value| Value::from(value)).collect(),
             )),
             _ => unreachable!("Invalid result type for int scalar"),
@@ -86,11 +69,14 @@ impl ServiceEntity {
     ) -> Result<Value, async_graphql::Error> {
         debug!("Resolving Boolean Scalar");
 
-        let resolved = DocumentUtils::get_from_document(document, field)?;
+        let resolved =
+            field
+                .scalar
+                .get_from_document(document, &field.name, field.list.unwrap_or(false))?;
 
         match resolved {
-            GetDocumentResultType::Boolean(value) => Ok(Value::from(value)),
-            GetDocumentResultType::BooleanArray(values) => Ok(Value::List(
+            DocumentValue::Boolean(value) => Ok(Value::from(value)),
+            DocumentValue::BooleanArray(values) => Ok(Value::List(
                 values.into_iter().map(|value| Value::from(value)).collect(),
             )),
             _ => unreachable!("Invalid result type for boolean scalar"),
@@ -103,11 +89,14 @@ impl ServiceEntity {
     ) -> Result<Value, async_graphql::Error> {
         debug!("Resolving UUID Scalar");
 
-        let resolved = DocumentUtils::get_from_document(document, field)?;
+        let resolved =
+            field
+                .scalar
+                .get_from_document(document, &field.name, field.list.unwrap_or(false))?;
 
         match resolved {
-            GetDocumentResultType::UUID(value) => Ok(Value::from(value.to_string())),
-            GetDocumentResultType::UUIDArray(values) => Ok(Value::List(
+            DocumentValue::UUID(value) => Ok(Value::from(value.to_string())),
+            DocumentValue::UUIDArray(values) => Ok(Value::List(
                 values
                     .into_iter()
                     .map(|value| Value::from(value.to_string()))
@@ -123,12 +112,14 @@ impl ServiceEntity {
     ) -> Result<Value, async_graphql::Error> {
         debug!("Resolving DateTime Scalar");
 
-        let resolved = DocumentUtils::get_from_document(document, field)?;
+        let resolved =
+            field
+                .scalar
+                .get_from_document(document, &field.name, field.list.unwrap_or(false))?;
 
         match resolved {
-            // NOTE: Not sure if this is the correct format for DateTime
-            GetDocumentResultType::DateTime(value) => Ok(Value::from(value.to_rfc3339())),
-            GetDocumentResultType::DateTimeArray(values) => Ok(Value::List(
+            DocumentValue::DateTime(value) => Ok(Value::from(value.to_rfc3339())),
+            DocumentValue::DateTimeArray(values) => Ok(Value::List(
                 values
                     .into_iter()
                     .map(|value| Value::from(value.to_rfc3339()))
@@ -157,7 +148,10 @@ impl ServiceEntity {
                 field.fields.clone().unwrap_or(Vec::new()),
                 key.clone(),
             )?;
-            let value = ServiceEntity::resolve_document_field(document, &field)?;
+            let value = field
+                .scalar
+                .clone()
+                .document_field_to_async_graphql_value(document, &field)?;
             index_map.insert(name, value);
         }
         Ok(index_map)

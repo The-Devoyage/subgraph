@@ -1,15 +1,17 @@
 use log::{debug, error};
 use serde::{Deserialize, Serialize};
 
-use crate::{configuration::subgraph::guard::Guard, graphql::schema::ExcludeFromInput};
+use crate::{configuration::subgraph::guard::Guard, scalar_option::ScalarOption};
 
-use super::ScalarOptions;
+use self::exclude_from_input::ExcludeFromInput;
+
+pub mod exclude_from_input;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceEntityFieldConfig {
     pub name: String,
     pub guards: Option<Vec<Guard>>,
-    pub scalar: ScalarOptions,
+    pub scalar: ScalarOption,
     pub required: Option<bool>,
     pub exclude_from_input: Option<Vec<ExcludeFromInput>>,
     pub exclude_from_output: Option<bool>,
@@ -21,6 +23,7 @@ pub struct ServiceEntityFieldConfig {
     pub default_value: Option<String>,
     pub eager: Option<bool>,
     pub is_virtual: Option<bool>,
+    pub primary_key: Option<bool>,
 }
 
 impl ServiceEntityFieldConfig {

@@ -1,6 +1,6 @@
-use async_graphql::{Error, ErrorExtensions};
+use async_graphql::Error;
 use json::JsonValue;
-use log::info;
+use log::{debug, error, trace};
 use reqwest::Client;
 
 use crate::data_sources::http::filter::HttpDataSourceFilter;
@@ -12,16 +12,26 @@ impl Services {
         client: Client,
         filter: HttpDataSourceFilter,
     ) -> Result<JsonValue, Error> {
-        info!("Executing Create One - HTTP Data Source");
+        debug!("Executing Create One - HTTP Data Source");
 
         let result = Services::request(client, filter).await?;
+        trace!("Create One Result: {}", result);
+
+        if result.is_empty() {
+            return json::parse("{}").map_err(|e| {
+                error!("Error parsing JSON: {}", e);
+                Error::new("HTTP Create One Failed")
+            });
+        }
 
         let json = json::parse(&result);
 
         match json {
             Ok(res) => Ok(res),
-            Err(_error) => Err(Error::new("HTTP Find One Failed")
-                .extend_with(|err, e| e.set("details", err.message.as_str()))),
+            Err(error) => {
+                error!("Error parsing JSON: {}", error);
+                Err(Error::new("HTTP Create One Failed"))
+            }
         }
     }
 }

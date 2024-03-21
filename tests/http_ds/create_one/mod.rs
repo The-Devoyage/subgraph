@@ -6,7 +6,9 @@ async fn create_one() {
         r#"
         mutation {
             create_todo(create_todo_input: { values: { userId: 1, title: "Test subgraph", completed: false } }) {
-                id
+                data {
+                    id
+                }
             }
         }
         "#,

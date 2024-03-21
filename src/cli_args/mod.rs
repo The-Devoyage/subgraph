@@ -22,6 +22,10 @@ pub struct CliArgs {
     #[arg(short, long)]
     pub port: Option<u16>,
 
+    /// Allow service to run on 0.0.0.0, all interfaces.
+    #[arg(long)]
+    pub host: bool,
+
     /// Run migrations
     #[arg(short, long, value_parser = PossibleValuesParser::new(["run", "revert"]))]
     pub migrate: Option<String>,
