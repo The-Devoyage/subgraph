@@ -1,6 +1,8 @@
 # @The-Devoyage/subgraph
 
-Currently, Pre-Alpha Release, written in Rust in order to dynamically generate a full-stack ready API from a simple configuration/schema.
+A tool to spin up a dynamic graphql web server based on a simple configuration file. Define the config to inform subgraph about the shape of your data and the available data sources. Subgraph connects to your database automatically, generates CRU(D) resolvers, authentication/authorization controntrolls and more. 
+
+Deploy as you see fit and own your data. Subgraph helps you to interact with your data, allowing you to focus on building interfaces instead of building web servers.
 
 Use in production at your own risk - There is still a bit of work to get to v0.1.0 from our pre-alpha state. That being said, I hope that you enjoy what has been made so far.
 
