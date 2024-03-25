@@ -1,4 +1,4 @@
-use crate::configuration::subgraph::SubGraphConfig;
+use crate::configuration::subgraph::{file::FileDirectory, SubGraphConfig};
 use async_graphql::{
     dynamic::Schema,
     http::{playground_source, GraphQLPlaygroundConfig},
@@ -66,24 +66,50 @@ pub async fn run(
     // CORS Config
     let cors = configuration::cors_config::CorsConfig::create_cors(subgraph_config.clone());
 
-    // Routes - Combine GraphQL and GraphQL Playground
-    let routes =
-        graphql_playground
-            .or(graphql_post)
-            .with(cors)
-            .recover(|err: Rejection| async move {
-                if let Some(GraphQLBadRequest(err)) = err.find() {
-                    return Ok::<_, Infallible>(warp::reply::with_status(
-                        err.to_string(),
-                        StatusCode::BAD_REQUEST,
-                    ));
-                }
+    // Init File Serving If Config Present
+    let file_config = subgraph_config.service.file.clone();
+    if file_config.is_some() {
+        info!("📁 File Route: {:?}", file_config.clone().unwrap().route);
+        info!("📁 File Path: {:?}", file_config.clone().unwrap().path);
+    }
+    let file_route = warp::path(
+        file_config
+            .clone()
+            .unwrap_or(FileDirectory {
+                path: "/tmp".to_string(),
+                route: "files".to_string(),
+            })
+            .route,
+    )
+    .and(warp::fs::dir(
+        file_config
+            .clone()
+            .unwrap_or(FileDirectory {
+                path: "/tmp".to_string(),
+                route: "files".to_string(),
+            })
+            .path,
+    ))
+    .and_then(move |file| FileDirectory::check_file_perm(file, file_config.is_some()));
 
-                Ok(warp::reply::with_status(
-                    "INTERNAL_SERVER_ERROR".to_string(),
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                ))
-            });
+    // Routes - Combine GraphQL and GraphQL Playground
+    let routes = graphql_playground
+        .or(graphql_post)
+        .or(file_route)
+        .with(cors)
+        .recover(|err: Rejection| async move {
+            if let Some(GraphQLBadRequest(err)) = err.find() {
+                return Ok::<_, Infallible>(warp::reply::with_status(
+                    err.to_string(),
+                    StatusCode::BAD_REQUEST,
+                ));
+            }
+
+            Ok(warp::reply::with_status(
+                "INTERNAL_SERVER_ERROR".to_string(),
+                StatusCode::INTERNAL_SERVER_ERROR,
+            ))
+        });
 
     // Get Port from CLI Arguments or Subgraph Config
     let port = match args.port.clone() {

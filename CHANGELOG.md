@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.0.15]
+
+### Added
+
+- Serve Files with Restful Endpoint `/files`.
+
 ## [v0.0.14]
 
 ### Added

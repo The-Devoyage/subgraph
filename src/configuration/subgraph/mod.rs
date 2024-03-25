@@ -10,6 +10,7 @@ pub mod auth;
 pub mod cors;
 pub mod data_sources;
 pub mod entities;
+pub mod file;
 pub mod guard;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -21,6 +22,7 @@ pub struct ServiceConfig {
     pub host: Option<bool>,
     pub log_level: Option<LogLevelEnum>,
     pub auth: Option<auth::ServiceAuth>,
+    pub file: Option<file::FileDirectory>,
     pub guards: Option<Vec<Guard>>,
     #[serde(default)]
     pub entities: Vec<entities::ServiceEntityConfig>,
