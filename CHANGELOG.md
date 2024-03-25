@@ -2,6 +2,10 @@
 
 ## [v0.0.15]
 
+### Changed
+
+- Update Async Graphql
+
 ### Added
 
 - Serve Files with Restful Endpoint `/files`.
