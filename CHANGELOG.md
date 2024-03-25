@@ -5,10 +5,12 @@
 ### Changed
 
 - Update Async Graphql
+- Allow empty `data_sources` and `entities` when starting service.
 
 ### Added
 
 - Serve Files with Restful Endpoint `/files`.
+- Add health check to mutation and query objects.
 
 ## [v0.0.14]
 

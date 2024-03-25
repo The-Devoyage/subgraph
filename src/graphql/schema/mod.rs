@@ -1,4 +1,6 @@
-use async_graphql::dynamic::{Object, Scalar, Schema, SchemaBuilder};
+use async_graphql::dynamic::{
+    Field, FieldFuture, FieldValue, Object, Scalar, Schema, SchemaBuilder, TypeRef,
+};
 use biscuit_auth::KeyPair;
 use log::{debug, error, trace};
 
@@ -33,6 +35,21 @@ impl ServiceSchema {
         service_schema
     }
 
+    pub fn register_health_check(mut self) -> Self {
+        debug!("Registering Health Check");
+        self.query = self.query.field(Field::new(
+            "health_check",
+            TypeRef::named_nn(TypeRef::BOOLEAN),
+            move |_| FieldFuture::new(async move { Ok(Some(FieldValue::owned_any(true))) }),
+        ));
+        self.mutation = self.mutation.field(Field::new(
+            "create_health_check",
+            TypeRef::named_nn(TypeRef::BOOLEAN),
+            move |_| FieldFuture::new(async move { Ok(Some(FieldValue::owned_any(true))) }),
+        ));
+        self
+    }
+
     pub fn build(mut self) -> Schema {
         debug!("Building Schema");
 
@@ -44,6 +61,9 @@ impl ServiceSchema {
 
         // Create entities
         self = self.create_entities();
+
+        // Create Health Check
+        self = self.register_health_check();
 
         // Create auth service
         if self.subgraph_config.service.auth.is_some() {
