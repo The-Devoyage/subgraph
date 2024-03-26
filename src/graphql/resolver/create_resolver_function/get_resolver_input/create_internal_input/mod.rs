@@ -1,6 +1,6 @@
 use async_graphql::dynamic::ResolverContext;
 use bson::{doc, Document};
-use log::debug;
+use log::{debug, trace};
 
 use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
@@ -19,10 +19,11 @@ impl ServiceResolver {
     pub fn create_internal_input(
         ctx: &ResolverContext,
         as_type_field: ServiceEntityFieldConfig,
+        join_on_field: ServiceEntityFieldConfig,
         data_source: &DataSource,
     ) -> Result<Option<Document>, async_graphql::Error> {
         debug!("Creating Internal Input: {:?}", ctx.field().name());
-        debug!("As Type Field: {:?}", as_type_field);
+        trace!("As Type Field: {:?}", as_type_field);
 
         let field_name = if let Some(join_from) = as_type_field.join_from.clone() {
             join_from // Use the join_from field name if provided.
@@ -87,11 +88,12 @@ impl ServiceResolver {
                 &field_name,
                 &scalar,
                 &join_on,
+                join_on_field.eager.unwrap_or(false),
             )?;
         }
 
         if query_input.is_empty() {
-            debug!("Empty Internal Query Input.");
+            trace!("Empty Internal Query Input.");
             return Ok(None);
         }
 
@@ -112,7 +114,7 @@ impl ServiceResolver {
             "opts": opts_doc,
         };
 
-        debug!("Internal Input: {:?}", field_input);
+        trace!("Internal Input: {:?}", field_input);
         Ok(Some(field_input))
     }
 }

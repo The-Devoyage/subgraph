@@ -67,13 +67,14 @@ impl MongoDataSource {
         resolver_type: &ResolverType,
     ) -> Result<(Document, Vec<EagerLoadOptions>), async_graphql::Error> {
         debug!("Serialize String Object IDs to Object IDs");
+        trace!("Filter: {:?}", filter);
 
         let mut converted = filter.clone();
         let mut combined_eager_options = vec![];
 
         let mut key = "".to_string();
         for (k, value) in filter.iter() {
-            debug!("Key: {}, Value: {}", k, value);
+            trace!("Key: {}, Value: {}", k, value);
             if k == "query"
                 || k == "values"
                 || FilterOperator::list()
@@ -306,6 +307,7 @@ impl MongoDataSource {
         resolver_type: &ResolverType,
     ) -> Result<(Document, Vec<EagerLoadOptions>), async_graphql::Error> {
         debug!("Finalizing Input Filters");
+        trace!("Filter: {:?}", filter);
 
         let mut finalized = filter.clone();
         let mut eager_filters = Vec::new();
@@ -515,6 +517,7 @@ impl MongoDataSource {
         subgraph_config: &SubGraphConfig,
     ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
         debug!("Executing Operation - Mongo Data Source");
+        trace!("Input: {:?}", input);
 
         let eager_load_options;
         (input, eager_load_options) =

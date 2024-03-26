@@ -29,6 +29,11 @@ impl DocumentUtils {
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
         debug!("Getting Document String Scalar: {}", field_name);
+
+        if document.get(field_name).is_none() {
+            return Ok(DocumentValue::None);
+        }
+
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 let valid_strings = documents.iter().all(|value| value.as_str().is_some());
@@ -68,6 +73,11 @@ impl DocumentUtils {
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
         debug!("Getting Document Int Scalar: {}", field_name);
+
+        if document.get(field_name).is_none() {
+            return Ok(DocumentValue::None);
+        }
+
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 // Check that all values are i32 or i64
@@ -141,6 +151,11 @@ impl DocumentUtils {
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
         debug!("Getting Document Boolean Scalar: {}", field_name);
+
+        if document.get(field_name).is_none() {
+            return Ok(DocumentValue::None);
+        }
+
         if is_list {
             let valid_bools = document
                 .get_array(field_name)?
@@ -178,6 +193,11 @@ impl DocumentUtils {
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
         debug!("Getting Document UUID Scalar: {}", field_name);
+
+        if document.get(field_name).is_none() {
+            return Ok(DocumentValue::None);
+        }
+
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 let valid_uuids = documents.iter().all(|value| {
@@ -233,6 +253,11 @@ impl DocumentUtils {
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
         debug!("Getting Document DateTime Scalar: {}", field_name);
+
+        if document.get(field_name).is_none() {
+            return Ok(DocumentValue::None);
+        }
+
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 // Check all values are valid dates
@@ -277,6 +302,11 @@ impl DocumentUtils {
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
         debug!("Getting Document ObjectID Scalar: {}", field_name);
+
+        if document.get(field_name).is_none() {
+            return Ok(DocumentValue::None);
+        }
+
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 let valid_object_ids = documents.iter().all(|value| {
@@ -320,13 +350,13 @@ impl DocumentUtils {
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
         debug!("Resolving Object Scalar");
-        let value = document.get(field_name);
 
-        if value.is_none() {
-            return Err(async_graphql::Error::new("No Object Value Found"));
+        if document.get(field_name).is_none() {
+            return Ok(DocumentValue::None);
         }
 
-        let value = value.unwrap();
+        let value = document.get(field_name).unwrap();
+
         if is_list {
             if let Some(bson_array) = value.as_array() {
                 let valid_docs = bson_array.iter().all(|value| {

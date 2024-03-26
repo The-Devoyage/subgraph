@@ -15,6 +15,7 @@ impl ServiceResolver {
         field_name: &str,
         scalar: &ScalarOption,
         join_on: &str,
+        is_eager: bool,
     ) -> Result<Document, async_graphql::Error> {
         debug!("Combining Primitive Value With Input");
         trace!("Parent Value: {:?}", parent_value);
@@ -70,7 +71,17 @@ impl ServiceResolver {
         if join_on_value.is_some() {
             match join_on_value.unwrap() {
                 DocumentValue::String(v) => {
-                    let join_query = doc! { join_on: Some(v) };
+                    let mut join_query = bson::Document::new();
+                    if is_eager {
+                        join_query.insert(
+                            join_on,
+                            doc! {
+                                "_id": Some(v)
+                            },
+                        );
+                    } else {
+                        join_query.insert(join_on, Some(v));
+                    }
                     let bson = bson::to_bson(&join_query).unwrap();
                     query_input
                         .get_array_mut(FilterOperator::And.as_str())
@@ -79,7 +90,17 @@ impl ServiceResolver {
                 }
                 DocumentValue::UUID(v) => {
                     // Needs to be converted to String for input type.
-                    let join_query = doc! { join_on: Some(v.to_string()) };
+                    let mut join_query = bson::Document::new();
+                    if is_eager {
+                        join_query.insert(
+                            join_on,
+                            doc! {
+                                "_id": Some(v.to_string())
+                            },
+                        );
+                    } else {
+                        join_query.insert(join_on, Some(v.to_string()));
+                    }
                     let bson = bson::to_bson(&join_query).unwrap();
                     query_input
                         .get_array_mut(FilterOperator::And.as_str())
@@ -88,7 +109,17 @@ impl ServiceResolver {
                 }
                 DocumentValue::DateTime(v) => {
                     // Needs to be converted to String for input type.
-                    let join_query = doc! { join_on: Some(v.to_string()) };
+                    let mut join_query = bson::Document::new();
+                    if is_eager {
+                        join_query.insert(
+                            join_on,
+                            doc! {
+                                "_id": Some(v.to_string())
+                            },
+                        );
+                    } else {
+                        join_query.insert(join_on, Some(v.to_string()));
+                    }
                     let bson = bson::to_bson(&join_query).unwrap();
                     query_input
                         .get_array_mut(FilterOperator::And.as_str())
@@ -97,7 +128,17 @@ impl ServiceResolver {
                 }
                 DocumentValue::StringArray(v) => {
                     for value in v {
-                        let join_query = doc! { join_on: Some(value) };
+                        let mut join_query = bson::Document::new();
+                        if is_eager {
+                            join_query.insert(
+                                join_on,
+                                doc! {
+                                    "_id": Some(value)
+                                },
+                            );
+                        } else {
+                            join_query.insert(join_on, Some(value));
+                        }
                         let bson = bson::to_bson(&join_query).unwrap();
                         query_input
                             .get_array_mut(FilterOperator::Or.as_str())
@@ -108,7 +149,17 @@ impl ServiceResolver {
                 DocumentValue::UUIDArray(v) => {
                     for value in v {
                         // Needs to be converted to String for input type.
-                        let join_query = doc! { join_on: Some(value.to_string()) };
+                        let mut join_query = bson::Document::new();
+                        if is_eager {
+                            join_query.insert(
+                                join_on,
+                                doc! {
+                                    "_id": Some(value.to_string())
+                                },
+                            );
+                        } else {
+                            join_query.insert(join_on, Some(value.to_string()));
+                        }
                         let bson = bson::to_bson(&join_query).unwrap();
                         query_input
                             .get_array_mut(FilterOperator::Or.as_str())
@@ -119,7 +170,17 @@ impl ServiceResolver {
                 DocumentValue::DateTimeArray(v) => {
                     for value in v {
                         // Needs to be converted to String for input type.
-                        let join_query = doc! { join_on: Some(value.to_string()) };
+                        let mut join_query = bson::Document::new();
+                        if is_eager {
+                            join_query.insert(
+                                join_on,
+                                doc! {
+                                    "_id": Some(value.to_string())
+                                },
+                            );
+                        } else {
+                            join_query.insert(join_on, Some(value.to_string()));
+                        }
                         let bson = bson::to_bson(&join_query).unwrap();
                         query_input
                             .get_array_mut(FilterOperator::Or.as_str())
@@ -129,7 +190,17 @@ impl ServiceResolver {
                 }
                 DocumentValue::Int(v) => {
                     // Needs to be converted to i64 for input type.
-                    let join_query = doc! { join_on: Some(v as i64) };
+                    let mut join_query = bson::Document::new();
+                    if is_eager {
+                        join_query.insert(
+                            join_on,
+                            doc! {
+                                "_id": Some(v as i64)
+                            },
+                        );
+                    } else {
+                        join_query.insert(join_on, Some(v as i64));
+                    }
                     let bson = bson::to_bson(&join_query).unwrap();
                     query_input
                         .get_array_mut(FilterOperator::And.as_str())
@@ -148,7 +219,17 @@ impl ServiceResolver {
                     }
                 }
                 DocumentValue::ObjectID(v) => {
-                    let join_query = doc! { join_on: Some(v) };
+                    let mut join_query = bson::Document::new();
+                    if is_eager {
+                        join_query.insert(
+                            join_on,
+                            doc! {
+                                "_id": Some(v)
+                            },
+                        );
+                    } else {
+                        join_query.insert(join_on, Some(v));
+                    }
                     let bson = bson::to_bson(&join_query).unwrap();
                     query_input
                         .get_array_mut(FilterOperator::And.as_str())
@@ -157,7 +238,18 @@ impl ServiceResolver {
                 }
                 DocumentValue::ObjectIDArray(v) => {
                     for value in v {
-                        let join_query = doc! { join_on: Some(value) };
+                        // let join_query = doc! { join_on: Some(value) };
+                        let mut join_query = bson::Document::new();
+                        if is_eager {
+                            join_query.insert(
+                                join_on,
+                                doc! {
+                                    "_id": Some(value)
+                                },
+                            );
+                        } else {
+                            join_query.insert(join_on, Some(value));
+                        }
                         let bson = bson::to_bson(&join_query).unwrap();
                         query_input
                             .get_array_mut(FilterOperator::Or.as_str())
@@ -166,7 +258,17 @@ impl ServiceResolver {
                     }
                 }
                 DocumentValue::Boolean(v) => {
-                    let join_query = doc! { join_on: Some(v) };
+                    let mut join_query = bson::Document::new();
+                    if is_eager {
+                        join_query.insert(
+                            join_on,
+                            doc! {
+                                "_id": Some(v)
+                            },
+                        );
+                    } else {
+                        join_query.insert(join_on, Some(v));
+                    }
                     let bson = bson::to_bson(&join_query).unwrap();
                     query_input
                         .get_array_mut(FilterOperator::And.as_str())
@@ -175,7 +277,17 @@ impl ServiceResolver {
                 }
                 DocumentValue::BooleanArray(v) => {
                     for value in v {
-                        let join_query = doc! { join_on: Some(value) };
+                        let mut join_query = bson::Document::new();
+                        if is_eager {
+                            join_query.insert(
+                                join_on,
+                                doc! {
+                                    "_id": Some(value)
+                                },
+                            );
+                        } else {
+                            join_query.insert(join_on, Some(value));
+                        }
                         let bson = bson::to_bson(&join_query).unwrap();
                         query_input
                             .get_array_mut(FilterOperator::Or.as_str())

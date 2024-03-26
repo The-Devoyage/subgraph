@@ -2,6 +2,11 @@
 
 ## [v0.0.15]
 
+### Fixed
+
+- Internal Joins with Eager Loaded Fields Fixed
+- Implement and resolve Document NONE values.
+
 ### Changed
 
 - Update Async Graphql

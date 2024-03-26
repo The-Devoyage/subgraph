@@ -1,6 +1,6 @@
 use async_graphql::dynamic::ResolverContext;
 use bson::Document;
-use log::debug;
+use log::{debug, trace};
 
 use crate::{
     configuration::subgraph::entities::{
@@ -26,6 +26,7 @@ impl ServiceResolver {
         entity: &ServiceEntityConfig,
     ) -> Result<Option<Document>, async_graphql::Error> {
         debug!("Getting Resolver Input");
+
         let data_source = DataSources::get_entity_data_soruce(data_sources, entity);
         let input_document = match resolver_type {
             ResolverType::InternalType => {
@@ -34,7 +35,19 @@ impl ServiceResolver {
                 } else {
                     return Err(async_graphql::Error::new("Field is not a nested field"));
                 };
-                ServiceResolver::create_internal_input(&ctx, as_field.clone(), data_source)?
+
+                // Determine if the `join_on` field is eager
+                let join_on_field = ServiceEntityConfig::get_field(
+                    entity.clone(),
+                    as_field.clone().join_on.unwrap().clone(),
+                )?;
+
+                ServiceResolver::create_internal_input(
+                    &ctx,
+                    as_field.clone(),
+                    join_on_field,
+                    data_source,
+                )?
             }
             _ => {
                 let input = ctx.args.try_get(&format!("{}_input", ctx.field().name()))?;
@@ -43,7 +56,7 @@ impl ServiceResolver {
             }
         };
 
-        debug!("Resolver Input: {:?}", input_document);
+        trace!("Resolver Input: {:?}", input_document);
         Ok(input_document)
     }
 }
