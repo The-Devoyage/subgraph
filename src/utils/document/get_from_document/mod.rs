@@ -19,6 +19,7 @@ pub enum DocumentValue {
     UUIDArray(Vec<uuid::Uuid>),
     DateTime(chrono::DateTime<chrono::Utc>),
     DateTimeArray(Vec<chrono::DateTime<chrono::Utc>>),
+    Null,
     None,
 }
 
@@ -32,6 +33,10 @@ impl DocumentUtils {
 
         if document.get(field_name).is_none() {
             return Ok(DocumentValue::None);
+        }
+
+        if document.get(field_name).unwrap().as_null().is_some() {
+            return Ok(DocumentValue::Null);
         }
 
         if is_list {
@@ -76,6 +81,10 @@ impl DocumentUtils {
 
         if document.get(field_name).is_none() {
             return Ok(DocumentValue::None);
+        }
+
+        if document.get(field_name).unwrap().as_null().is_some() {
+            return Ok(DocumentValue::Null);
         }
 
         if is_list {
@@ -156,6 +165,10 @@ impl DocumentUtils {
             return Ok(DocumentValue::None);
         }
 
+        if document.get(field_name).unwrap().as_null().is_some() {
+            return Ok(DocumentValue::Null);
+        }
+
         if is_list {
             let valid_bools = document
                 .get_array(field_name)?
@@ -196,6 +209,10 @@ impl DocumentUtils {
 
         if document.get(field_name).is_none() {
             return Ok(DocumentValue::None);
+        }
+
+        if document.get(field_name).unwrap().as_null().is_some() {
+            return Ok(DocumentValue::Null);
         }
 
         if is_list {
@@ -258,6 +275,10 @@ impl DocumentUtils {
             return Ok(DocumentValue::None);
         }
 
+        if document.get(field_name).unwrap().as_null().is_some() {
+            return Ok(DocumentValue::Null);
+        }
+
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 // Check all values are valid dates
@@ -307,6 +328,10 @@ impl DocumentUtils {
             return Ok(DocumentValue::None);
         }
 
+        if document.get(field_name).unwrap().as_null().is_some() {
+            return Ok(DocumentValue::Null);
+        }
+
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 let valid_object_ids = documents.iter().all(|value| {
@@ -353,6 +378,10 @@ impl DocumentUtils {
 
         if document.get(field_name).is_none() {
             return Ok(DocumentValue::None);
+        }
+
+        if document.get(field_name).unwrap().as_null().is_some() {
+            return Ok(DocumentValue::Null);
         }
 
         let value = document.get(field_name).unwrap();

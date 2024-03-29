@@ -20,6 +20,7 @@ impl ServiceEntity {
 
         match resolved {
             DocumentValue::ObjectID(object_id) => Ok(Value::from(object_id.to_string())),
+            DocumentValue::Null => Ok(Value::Null),
             DocumentValue::None => Ok(Value::Null),
             _ => Err(async_graphql::Error::from(
                 "Invalid result type for object id scalar",
@@ -43,6 +44,7 @@ impl ServiceEntity {
                 values.into_iter().map(|value| Value::from(value)).collect(),
             )),
             DocumentValue::None => Ok(Value::Null),
+            DocumentValue::Null => Ok(Value::Null),
             _ => Err(async_graphql::Error::from(
                 "Invalid result type for string scalar",
             )),
@@ -66,6 +68,7 @@ impl ServiceEntity {
                 values.into_iter().map(|value| Value::from(value)).collect(),
             )),
             DocumentValue::None => Ok(Value::Null),
+            DocumentValue::Null => Ok(Value::Null),
             _ => Err(async_graphql::Error::from(
                 "Invalid result type for int scalar",
             )),
@@ -88,6 +91,7 @@ impl ServiceEntity {
             DocumentValue::BooleanArray(values) => Ok(Value::List(
                 values.into_iter().map(|value| Value::from(value)).collect(),
             )),
+            DocumentValue::Null => Ok(Value::Null),
             DocumentValue::None => Ok(Value::Null),
             _ => Err(async_graphql::Error::from(
                 "Invalid result type for boolean scalar",
@@ -114,6 +118,7 @@ impl ServiceEntity {
                     .map(|value| Value::from(value.to_string()))
                     .collect(),
             )),
+            DocumentValue::Null => Ok(Value::Null),
             DocumentValue::None => Ok(Value::Null),
             _ => Err(async_graphql::Error::from(
                 "Invalid result type for UUID scalar",
@@ -140,6 +145,7 @@ impl ServiceEntity {
                     .map(|value| Value::from(value.to_rfc3339()))
                     .collect(),
             )),
+            DocumentValue::Null => Ok(Value::Null),
             DocumentValue::None => Ok(Value::Null),
             _ => Err(async_graphql::Error::from(
                 "Invalid result type for DateTime scalar",

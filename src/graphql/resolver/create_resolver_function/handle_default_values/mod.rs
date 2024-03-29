@@ -69,6 +69,10 @@ impl ServiceResolver {
 
                         if default_value.is_string() {
                             let default_value = default_value.as_string().unwrap();
+                            if default_value == "null" {
+                                values.insert(&field.name, bson::Bson::Null);
+                                continue;
+                            }
                             values.insert(&field.name, default_value);
                             continue;
                         }
