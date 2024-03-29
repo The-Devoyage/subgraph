@@ -17,6 +17,7 @@
 - Serve Files with Restful Endpoint `/files`.
 - Add health check to mutation and query objects.
 - Provide string `"null"` converts to `null` in default value.
+- Enum Scalar Support
 
 ## [v0.0.14]
 

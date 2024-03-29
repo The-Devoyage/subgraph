@@ -32,6 +32,7 @@ impl ScalarOption {
             ScalarOption::DateTime => {
                 ServiceEntity::resolve_document_datetime_scalar(document, field)
             }
+            ScalarOption::Enum => ServiceEntity::resolve_document_enum_scalar(document, field),
         };
 
         trace!("Resolved Document Field: {:?}", field.name);

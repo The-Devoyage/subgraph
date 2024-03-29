@@ -1,3 +1,4 @@
+use async_graphql::dynamic::Enum;
 use log::debug;
 
 use crate::{
@@ -21,6 +22,7 @@ impl ServiceEntity {
         debug!("Creating Required Type Refs");
 
         let mut type_defs = Vec::new();
+        let mut enum_defs = Vec::new();
 
         let type_ref = entity_field
             .scalar
@@ -38,9 +40,20 @@ impl ServiceEntity {
                 )
                 .build();
 
-                for object in object_type_defs {
+                for object in object_type_defs.0 {
                     type_defs.push(object)
                 }
+                for enum_def in object_type_defs.1 {
+                    enum_defs.push(enum_def)
+                }
+            }
+            ScalarOption::Enum => {
+                if entity_field.enum_values.is_none() {
+                    {}
+                }
+                let enum_def =
+                    Enum::new(&entity_field.name).items(entity_field.enum_values.clone().unwrap());
+                enum_defs.push(enum_def);
             }
             _ => {}
         };
@@ -48,6 +61,7 @@ impl ServiceEntity {
         TypeRefsAndDefs {
             type_ref,
             type_defs,
+            enum_defs,
         }
     }
 }

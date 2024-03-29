@@ -421,4 +421,52 @@ impl DocumentUtils {
             ))
         }
     }
+
+    pub fn get_document_enum_scalar(
+        document: &bson::Document,
+        field_name: &str,
+        is_list: bool,
+    ) -> Result<DocumentValue, async_graphql::Error> {
+        debug!("Resolving Enum Scalar");
+
+        if document.get(field_name).is_none() {
+            return Ok(DocumentValue::None);
+        }
+
+        if document.get(field_name).unwrap().as_null().is_some() {
+            return Ok(DocumentValue::Null);
+        }
+
+        if is_list {
+            if let Some(Bson::Array(documents)) = document.get(field_name) {
+                let valid_strings = documents.iter().all(|value| value.as_str().is_some());
+
+                if !valid_strings {
+                    error!("Not all values are strings for field {}", field_name);
+                    return Err(async_graphql::Error::new(format!(
+                        "Not all values are strings for field {}",
+                        field_name
+                    )));
+                }
+
+                let values = documents
+                    .into_iter()
+                    .map(|value| value.as_str().unwrap().to_string())
+                    .collect::<Vec<String>>();
+                trace!("Document Value String Array: {:?}", values);
+                return Ok(DocumentValue::StringArray(values));
+            } else {
+                trace!("Document Value String Array: Empty Vec");
+                return Ok(DocumentValue::StringArray(vec![]));
+            }
+        }
+
+        let value = document.get_str(field_name).map_err(|err| {
+            error!("Value is not a string: {}", err);
+            async_graphql::Error::new(format!("Value is not a string: {}", err))
+        })?;
+
+        trace!("Found String Value: {:?}", value);
+        Ok(DocumentValue::String(value.to_string()))
+    }
 }

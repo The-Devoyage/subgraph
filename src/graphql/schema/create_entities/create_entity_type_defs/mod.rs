@@ -37,7 +37,8 @@ impl ServiceSchema {
         )
         .build();
 
-        self = self.register_types(entity_type_defs);
+        self = self.register_types(entity_type_defs.0);
+        self = self.register_enums(entity_type_defs.1);
 
         self
     }

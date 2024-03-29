@@ -1,6 +1,6 @@
 # @The-Devoyage/subgraph
 
-A tool to spin up a dynamic graphql web server based on a simple configuration file. Define the config to inform subgraph about the shape of your data and the available data sources. Subgraph connects to your database automatically, generates CRU(D) resolvers, authentication/authorization controntrolls and more. 
+A tool to spin up a dynamic graphql web server based on a simple configuration file. Define the config to inform subgraph about the shape of your data and the available data sources. Subgraph connects to your database automatically, generates CRU(D) resolvers, authentication/authorization controntrolls and more.
 
 Deploy as you see fit and own your data. Subgraph helps you to interact with your data, allowing you to focus on building interfaces instead of building web servers.
 
@@ -151,22 +151,23 @@ Migrations are only executed if subgraph is run with the flag `--migrate run`
 
 #### Field
 
-| Field\*             | Description                                                                   | Type               |
-| ------------------- | ----------------------------------------------------------------------------- | ------------------ |
-| name\*              | The name of the field.                                                        | String             |
-| scalar\*            | The scalar type of the field.                                                 | Scalar Options     |
-| required            | Whether or not the field is required. Defaults to false.                      | Option<bool>       |
-| exclude_from_input  | A list of resolvers of which not to apply to the associated input.            | ExcludeFromInput[] |
-| exclude_from_output | Remove the ability to resolve this field.                                     | bool               |
-| list                | Defines the scalar as a list or a singular value.                             | Option<bool>       |
-| as_type             | Associates the field with another entity type for joining/extending           | Option<String>     |
-| join_on             | The 'foreign key' of the type to be joined on.                                | Option<String>     |
-| join_from           | The source key to join from when performing associations.                     | Option<String>     |
-| guards              | A list of guards to apply to a field.                                         | Option<Guard>      |
-| default_value       | An eval expr calculated value that is applied for Update and Create Resolvers | Option<String>     |
-| is_virtual          | Define properties on graphql inputs that do not exist in the database         | Option<bool>       |
-| eager               | Search for entity based on the fields of another entity                       | Option<bool>       |
-| primary_key         | Use field to override the default primary key (\_id for mongo, id for sql )   | Option<bool>       |
+| Field\*             | Description                                                                                           | Type               |
+| ------------------- | ----------------------------------------------------------------------------------------------------- | ------------------ |
+| name\*              | The name of the field.                                                                                | String             |
+| scalar\*            | The scalar type of the field.                                                                         | Scalar Options     |
+| required            | Whether or not the field is required. Defaults to false.                                              | Option<bool>       |
+| exclude_from_input  | A list of resolvers of which not to apply to the associated input.                                    | ExcludeFromInput[] |
+| exclude_from_output | Remove the ability to resolve this field.                                                             | bool               |
+| list                | Defines the scalar as a list or a singular value.                                                     | Option<bool>       |
+| as_type             | Associates the field with another entity type for joining/extending                                   | Option<String>     |
+| join_on             | The 'foreign key' of the type to be joined on.                                                        | Option<String>     |
+| join_from           | The source key to join from when performing associations.                                             | Option<String>     |
+| guards              | A list of guards to apply to a field.                                                                 | Option<Guard>      |
+| default_value       | An eval expr calculated value that is applied for Update and Create Resolvers. Use "null" for `null`. | Option<String>     |
+| is_virtual          | Define properties on graphql inputs that do not exist in the database                                 | Option<bool>       |
+| eager               | Search for entity based on the fields of another entity                                               | Option<bool>       |
+| primary_key         | Use field to override the default primary key (\_id for mongo, id for sql )                           | Option<bool>       |
+| enum_values         | A list of strings representing the possible values for a field.                                       | Option<String>     |
 
 | Scalar Options |
 | -------------- |
@@ -175,6 +176,7 @@ Migrations are only executed if subgraph is run with the flag `--migrate run`
 | Boolean        |
 | ObjectID       |
 | Object         |
+| Enum           |
 
 | ResolverType |
 | ------------ |

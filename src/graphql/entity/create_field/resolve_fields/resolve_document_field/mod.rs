@@ -210,4 +210,28 @@ impl ServiceEntity {
 
         Ok(Value::from(index_map))
     }
+
+    pub fn resolve_document_enum_scalar(
+        document: &Document,
+        field: &ServiceEntityFieldConfig,
+    ) -> Result<Value, async_graphql::Error> {
+        debug!("Resolving Enum Scalar");
+
+        let resolved =
+            field
+                .scalar
+                .get_from_document(document, &field.name, field.list.unwrap_or(false))?;
+
+        match resolved {
+            DocumentValue::String(value) => Ok(Value::from(value)),
+            DocumentValue::StringArray(values) => Ok(Value::List(
+                values.into_iter().map(|value| Value::from(value)).collect(),
+            )),
+            DocumentValue::None => Ok(Value::Null),
+            DocumentValue::Null => Ok(Value::Null),
+            _ => Err(async_graphql::Error::from(
+                "Invalid result type for enum scalar",
+            )),
+        }
+    }
 }

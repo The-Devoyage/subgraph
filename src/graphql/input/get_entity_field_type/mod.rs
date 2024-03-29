@@ -75,6 +75,18 @@ impl ServiceInput {
                     .unwrap(); //HACK: should return a Result
                 type_ref
             }
+            ScalarOption::Enum => {
+                let type_ref = entity_field
+                    .scalar
+                    .to_input_type_ref(
+                        is_list,
+                        is_required,
+                        resolver_type,
+                        Some(&entity_field.name),
+                    )
+                    .unwrap(); //HACK: should return a Result
+                type_ref
+            }
             _ => {
                 let type_ref = entity_field
                     .scalar

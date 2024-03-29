@@ -57,6 +57,13 @@ impl ScalarOption {
                     TypeRef::named(TypeRef::STRING)
                 }
             }
+            ScalarOption::Enum => {
+                if is_list {
+                    TypeRef::named_list_nn(name)
+                } else {
+                    TypeRef::named(name)
+                }
+            }
         };
         trace!("{:?}", type_ref);
         type_ref

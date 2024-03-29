@@ -32,6 +32,18 @@ impl ScalarOption {
                     ));
                 }
             }
+            Self::Enum => {
+                if let Some(input_name) = input_name {
+                    input_name
+                } else {
+                    error!(
+                        "ScalarOption::to_input_type_ref: Enum ScalarOption requires input_name"
+                    );
+                    return Err(async_graphql::Error::new(
+                        "ScalarOption::to_input_type_ref: Enum ScalarOption requires input_name",
+                    ));
+                }
+            }
         };
 
         let type_ref = match resolver_type {

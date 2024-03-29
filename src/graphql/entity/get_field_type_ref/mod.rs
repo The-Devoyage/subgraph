@@ -1,4 +1,4 @@
-use async_graphql::dynamic::{Object, TypeRef};
+use async_graphql::dynamic::{Enum, Object, TypeRef};
 use log::debug;
 
 use crate::configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig;
@@ -13,6 +13,7 @@ mod create_required_type_refs;
 pub struct TypeRefsAndDefs {
     pub type_ref: TypeRef,
     pub type_defs: Vec<Object>,
+    pub enum_defs: Vec<Enum>,
 }
 
 impl ServiceEntity {

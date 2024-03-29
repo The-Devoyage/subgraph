@@ -264,4 +264,49 @@ impl ServiceEntity {
             None => Ok(None),
         }
     }
+
+    pub fn resolve_sql_enum_scalar(
+        response_row: &ResponseRow,
+        field_name: &str,
+    ) -> Result<Option<String>, async_graphql::Error> {
+        debug!("Resolving SQL Enum Scalar");
+
+        let value = match response_row {
+            ResponseRow::MySql(row) => {
+                let value: Option<&str> = row.try_get(field_name).map_err(|e| {
+                    error!("Error resolving Enum field: {:?}", e.to_string());
+                    async_graphql::Error::new(format!(
+                        "Error resolving Enum field: {:?}",
+                        e.to_string()
+                    ))
+                })?;
+                value.map(|s| s.to_string())
+            }
+            ResponseRow::SqLite(row) => {
+                let value: Option<&str> = row.try_get(field_name).map_err(|e| {
+                    error!("Error resolving Enum field: {:?}", e.to_string());
+                    async_graphql::Error::new(format!(
+                        "Error resolving Enum field: {:?}",
+                        e.to_string()
+                    ))
+                })?;
+                value.map(|s| s.to_string())
+            }
+            ResponseRow::Postgres(row) => {
+                let value: Option<&str> = row.try_get(field_name).map_err(|e| {
+                    error!("Error resolving Enum field: {:?}", e.to_string());
+                    async_graphql::Error::new(format!(
+                        "Error resolving Enum field: {:?}",
+                        e.to_string()
+                    ))
+                })?;
+                value.map(|s| s.to_string())
+            }
+        };
+
+        match value {
+            Some(value) => Ok(Some(value)),
+            None => Ok(None),
+        }
+    }
 }
