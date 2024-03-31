@@ -6,6 +6,8 @@
 
 - Internal Joins with Eager Loaded Fields Fixed
 - Implement and resolve Document NONE values.
+- Object Scalars with Required False and Required True Children Resolving
+- Limit/per page for Mongo
 
 ### Changed
 

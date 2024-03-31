@@ -374,7 +374,8 @@ impl DocumentUtils {
         field_name: &str,
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
-        debug!("Resolving Object Scalar");
+        debug!("Get Document Object Scalar");
+        trace!("Field Name: {}", field_name);
 
         if document.get(field_name).is_none() {
             return Ok(DocumentValue::None);
@@ -430,10 +431,18 @@ impl DocumentUtils {
         debug!("Resolving Enum Scalar");
 
         if document.get(field_name).is_none() {
+            trace!(
+                "Field `{}` not found, returning DocumentValue::None",
+                field_name
+            );
             return Ok(DocumentValue::None);
         }
 
         if document.get(field_name).unwrap().as_null().is_some() {
+            trace!(
+                "Field `{}` is null, returning DocumentValue::Null",
+                field_name
+            );
             return Ok(DocumentValue::Null);
         }
 

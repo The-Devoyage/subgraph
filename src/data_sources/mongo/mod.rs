@@ -1,6 +1,6 @@
 use async_graphql::dynamic::FieldValue;
 use bson::{doc, to_document, Document};
-use log::{debug, error, trace};
+use log::{debug, error, trace, warn};
 use mongodb::{options::ClientOptions, Client, Database};
 
 use crate::{
@@ -469,6 +469,11 @@ impl MongoDataSource {
                 }
             }
 
+            // Get the limit from the opts input
+            if let Some(per_page) = opts.per_page {
+                limit = per_page;
+            }
+
             // If opts.page and opts.per_page, calculate the new skip and limit values.
             if let Some(page_value) = opts.page {
                 if let Some(per_page_value) = opts.per_page {
@@ -566,9 +571,10 @@ impl MongoDataSource {
                 )
                 .await?;
                 let opts_doc = if input.clone().get("opts").is_some() {
-                    trace!("opts: {:?}", input.get("opts").unwrap());
+                    trace!("Options Document Found: {:?}", input.get("opts").unwrap());
                     to_document(input.get("opts").unwrap()).unwrap()
                 } else {
+                    trace!("Options Document Not Found. Defaulting to 10 per page.");
                     let mut d = Document::new();
                     d.insert("per_page", 10);
                     d.insert("page", 1);
@@ -581,11 +587,20 @@ impl MongoDataSource {
                     1
                 };
                 let total_pages = if let Some(per_page_value) = opts_doc.get("per_page") {
-                    let per_page = per_page_value.as_i32().unwrap();
-                    if total_count as i32 % per_page as i32 == 0 {
-                        total_count as i32 / per_page as i32
+                    let mut per_page = per_page_value.as_i32();
+                    if per_page.is_none() {
+                        let per_page_i64 = per_page_value.as_i64();
+                        if per_page_i64.is_none() {
+                            warn!("Invalid per_page value. Defaulting to 10.");
+                            per_page = Some(10);
+                        } else {
+                            per_page = Some(per_page_i64.unwrap() as i32);
+                        }
+                    }
+                    if total_count as i32 % per_page.unwrap() as i32 == 0 {
+                        total_count as i32 / per_page.unwrap() as i32
                     } else {
-                        (total_count as i32 / per_page as i32) + 1
+                        (total_count as i32 / per_page.unwrap() as i32) + 1
                     }
                 } else {
                     1

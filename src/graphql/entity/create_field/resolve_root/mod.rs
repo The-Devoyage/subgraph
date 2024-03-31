@@ -1,7 +1,7 @@
 use async_graphql::{dynamic::ResolverContext, ErrorExtensions, Value};
 use bson::Document;
 use json::JsonValue;
-use log::{debug, error};
+use log::{debug, error, trace};
 
 use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
@@ -17,22 +17,26 @@ impl ServiceEntity {
         entity_field: &ServiceEntityFieldConfig,
         entity_required: bool,
     ) -> Result<Option<Value>, async_graphql::Error> {
+        debug!("Resolve Root Field");
         let field_name = ctx.field().name();
-
-        debug!("Resolving Root Field: {:?}", &field_name);
+        trace!("Field Name: {:?}", field_name);
 
         let value = match data_source {
             DataSource::Mongo(_ds) => {
                 let doc = match ctx.parent_value.try_downcast_ref::<Option<Document>>() {
                     Ok(doc) => {
+                        trace!("Parent Value: {:?}", doc);
                         if let Some(doc) = doc {
+                            trace!("Document Matched: {:?}", doc);
                             let value = entity_field
                                 .scalar
                                 .clone()
                                 .document_field_to_async_graphql_value(doc, entity_field)?;
-                            Ok(Some(value))
+                            trace!("Resolved Value: {:?}", value);
+                            Ok(value)
                         } else {
                             if entity_required {
+                                error!("Failed to resolve root field.");
                                 return Err(async_graphql::Error::new(
                                     "Failed to resolve root field.",
                                 )
@@ -41,8 +45,9 @@ impl ServiceEntity {
                                     e.set("entity", entity_field.name.clone());
                                 }));
                             } else {
-                                debug!("Parent value is null, returning null.");
+                                trace!("Parent value is null, returning null.");
                                 if entity_required {
+                                    error!("Failed to resolve root field.");
                                     return Err(async_graphql::Error::new(
                                         "Failed to resolve root field.",
                                     )
@@ -51,7 +56,7 @@ impl ServiceEntity {
                                         e.set("entity", entity_field.name.clone());
                                     }));
                                 } else {
-                                    debug!("Parent value is null, returning null.");
+                                    trace!("Parent value is null, returning null.");
                                     Ok(Some(Value::Null))
                                 }
                             }
@@ -65,7 +70,7 @@ impl ServiceEntity {
                                     e.set("entity", entity_field.name.clone());
                                 }));
                         } else {
-                            debug!("Failed to downcast parent value, returning null.");
+                            trace!("Failed to downcast parent value, returning null.");
                             return Ok(Some(Value::Null));
                         }
                     }
@@ -114,13 +119,13 @@ impl ServiceEntity {
                                     e.set("entity", entity_field.name.clone());
                                 }));
                             } else {
-                                debug!("Parent value is null, returning null.");
+                                trace!("Parent value is null, returning null.");
                                 Ok(Some(Value::Null))
                             }
                         }
                     }
                     Err(e) => {
-                        debug!("Failed to downcast parent value: {:?}", e);
+                        trace!("Failed to downcast parent value: {:?}", e);
                         if entity_required {
                             error!(
                                 "Failed to resolve root field, `{}`. Entity is marked as required.",
@@ -143,7 +148,7 @@ impl ServiceEntity {
             }
         };
 
-        debug!("Resolved Root Field: {:?}", value);
+        trace!("Resolved Root Field: {:?}", value);
 
         value
     }

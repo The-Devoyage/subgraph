@@ -27,6 +27,7 @@ impl ServiceEntity {
             let data_source = data_source.clone();
 
             FieldFuture::new(async move {
+                debug!("Resolving Field: {:?}", cloned_entity_field.name);
                 match is_root_object {
                     false => ServiceEntity::resolve_nested(&ctx, &cloned_entity_field),
                     true => ServiceEntity::resolve_root(
