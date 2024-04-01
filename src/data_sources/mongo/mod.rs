@@ -65,6 +65,7 @@ impl MongoDataSource {
         entity: &ServiceEntityConfig,
         subgraph_config: &SubGraphConfig,
         resolver_type: &ResolverType,
+        key: Option<String>, // Provide a key to keep track of nested fields.
     ) -> Result<(Document, Vec<EagerLoadOptions>), async_graphql::Error> {
         debug!("Serialize String Object IDs to Object IDs");
         trace!("Filter: {:?}", filter);
@@ -72,9 +73,15 @@ impl MongoDataSource {
         let mut converted = filter.clone();
         let mut combined_eager_options = vec![];
 
-        let mut key = "".to_string();
         for (k, value) in filter.iter() {
-            trace!("Key: {}, Value: {}", k, value);
+            trace!(
+                "Current Key: {:?}, Processing Key: {}, Value: {}",
+                key.clone(),
+                k,
+                value
+            );
+
+            // If it is a servie defined field, iterate through the fields to find the correct field.
             if k == "query"
                 || k == "values"
                 || FilterOperator::list()
@@ -91,12 +98,14 @@ impl MongoDataSource {
                         ));
                     }
                 };
+                // Send through recursive function to convert the object id string to object id
                 let (nested_converted, nested_eager_load_options) =
                     match MongoDataSource::convert_object_id_string_to_object_id_from_doc(
                         document.clone(),
                         entity,
                         subgraph_config,
                         resolver_type,
+                        key.clone(),
                     ) {
                         Ok(nested) => nested,
                         Err(e) => {
@@ -151,15 +160,18 @@ impl MongoDataSource {
                 // Handle object types and eager loaded fields
                 match field.scalar {
                     ScalarOption::Object => {
-                        let separator = if key.is_empty() { "" } else { "." };
+                        trace!("Found Object Scalar");
+                        trace!("Current Key: {:?}", key.clone());
+                        let separator = if key.is_none() { "" } else { "." };
                         let separated = format!("{}{}", separator, k);
-                        key.push_str(&separated);
+                        let key = Some(separated);
                         let (nested_converted, nested_eager_load_options) =
                             match MongoDataSource::convert_object_id_string_to_object_id_from_doc(
                                 value.as_document().unwrap().clone(),
                                 entity,
                                 subgraph_config,
                                 resolver_type,
+                                key.clone(),
                             ) {
                                 Ok(nested) => nested,
                                 Err(e) => {
@@ -170,7 +182,9 @@ impl MongoDataSource {
                                     return Err(e);
                                 }
                             };
-                        converted.insert(key.clone(), nested_converted);
+                        trace!("Nested Converted: {:?}", nested_converted);
+                        trace!("Inserting Key: {:?}", key);
+                        converted.insert(key.as_ref().unwrap().clone(), nested_converted);
                         combined_eager_options.extend(nested_eager_load_options);
                     }
                     _ => (),
@@ -202,6 +216,7 @@ impl MongoDataSource {
                             &eager_entity,
                             subgraph_config,
                             resolver_type,
+                            key.clone(),
                         ) {
                             Ok(nested) => nested,
                             Err(e) => {
@@ -397,6 +412,7 @@ impl MongoDataSource {
                 entity,
                 subgraph_config,
                 &resolver_type,
+                None,
             )?;
         eager_filters.extend(eager_load_options);
 
