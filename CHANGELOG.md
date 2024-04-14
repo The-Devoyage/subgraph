@@ -17,7 +17,8 @@
 
 ### Added
 
-- Serve Files with Restful Endpoint `/files`.
+- Serve Assets with Restful Endpoint.
+- Serve HTML and Hydrate HTML with handlenbars through restful interface.
 - Add health check to mutation and query objects.
 - Provide string `"null"` converts to `null` in default value.
 - Enum Scalar Support

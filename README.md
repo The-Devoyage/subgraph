@@ -45,6 +45,7 @@ with the key in the service configuration to disable the timeout.
 | port           | The port of which to run the service.                                | Int          |
 | license_key    | Provide a key to remove the 20 minute demo limit.                    | String       |
 | host           | Enable the ability to host on 0.0.0.0 instead of loaclhost/127.0.0.1 | bool         |
+| serve          | Serve static assets or SSR rendered HTML with Handlebars             | ServeOptions |
 
 #### Data Sources
 
@@ -88,6 +89,22 @@ Migrations are only executed if subgraph is run with the flag `--migrate run`
 | SQLITE        |
 | POSTGRES      |
 | MYSQL         |
+
+| Serve Options | Description                      | Type          |
+| ------------- | -------------------------------- | ------------- |
+| assets        | Config to point to assets dir.   | AssetsOptions |
+| ssr           | Config to serve and hydrate html | SSR Options   |
+
+| Asset Options | Description                                                 | Type   |
+| ------------- | ----------------------------------------------------------- | ------ |
+| path\*        | The file path of the assets dir.                            | String |
+| route\*       | The route in order to access the dir through a GET request. | String |
+
+| SSR Options    | Description                                                 | Type    |
+| -------------- | ----------------------------------------------------------- | ------- |
+| path\*         | The file path of the assets dir.                            | String  |
+| route\*        | The route in order to access the dir through a GET request. | String  |
+| enable_hydrate | Allow HTML files to hydrate through handlebars.             | Boolean |
 
 #### Cors Config
 
