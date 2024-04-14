@@ -36,9 +36,11 @@ impl ServiceEntity {
                             Ok(value)
                         } else {
                             if entity_required {
-                                error!("Failed to resolve root field.");
+                                error!(
+                                    "Failed to resolve root field. Entity is marked as required. This may be due to a join on a required entity."
+                                );
                                 return Err(async_graphql::Error::new(
-                                    "Failed to resolve root field.",
+                                    "Failed to resolve root field. Entity is marked as required. This may be due to a join on a required entity.",
                                 )
                                 .extend_with(|_err, e| {
                                     e.set("field", field_name);
@@ -64,7 +66,8 @@ impl ServiceEntity {
                     }
                     Err(_) => {
                         if entity_required {
-                            return Err(async_graphql::Error::new("Failed to resolve root field.")
+                            error!("Failed to resolve root field. Entity is marked as required. This may be due to a join on a required entity.");
+                            return Err(async_graphql::Error::new("Failed to resolve root field. Entity is marked as required. This may be due to a join on a required entity.")
                                 .extend_with(|_err, e| {
                                     e.set("field", field_name);
                                     e.set("entity", entity_field.name.clone());
@@ -83,7 +86,8 @@ impl ServiceEntity {
                     Ok(json_value) => json_value,
                     Err(_) => {
                         if entity_required {
-                            return Err(async_graphql::Error::new("Failed to resolve root field.")
+                            error!("Failed to resolve root field. Entity is marked as required. This may be due to a join on a required entity.");
+                            return Err(async_graphql::Error::new("Failed to resolve root field. Entity is marked as required. This may be due to a join on a required entity.")
                                 .extend_with(|_err, e| {
                                     e.set("field", field_name);
                                     e.set("entity", entity_field.name.clone());
@@ -110,9 +114,11 @@ impl ServiceEntity {
                             Ok(Some(value))
                         } else {
                             if entity_required {
-                                error!("Failed to resolve root field.");
+                                error!(
+                                    "Failed to resolve root field. Entity is marked as required. This may be due to a join on a required entity"
+                                );
                                 return Err(async_graphql::Error::new(
-                                    "Failed to resolve root field.",
+                                    "Failed to resolve root field. Entity is marked as required. This may be due to a join on a required entity.",
                                 )
                                 .extend_with(|_err, e| {
                                     e.set("field", field_name);
@@ -128,11 +134,11 @@ impl ServiceEntity {
                         trace!("Failed to downcast parent value: {:?}", e);
                         if entity_required {
                             error!(
-                                "Failed to resolve root field, `{}`. Entity is marked as required.",
+                                "Failed to resolve root field, `{}`. Entity is marked as required. This may be due to a join on a required entity.",
                                 entity_field.name
                             );
                             return Err(async_graphql::Error::new(format!(
-                                "Failed to resolve root field, `{}`. The entity is marked as required.",
+                                "Failed to resolve root field, `{}`. The entity is marked as required. This may be due to a join on a required entity.",
                                 entity_field.name
                             ))
                             .extend_with(|_err, e| {

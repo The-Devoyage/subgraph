@@ -33,18 +33,18 @@ with the key in the service configuration to disable the timeout.
 
 ### Config File Options
 
-| Service\*      | Description                                                          | Type           |
-| -------------- | -------------------------------------------------------------------- | -------------- |
-| name\*         | The name of this service.                                            | String         |
-| version        | The version of the API.                                              | Option<String> |
-| data_sources\* | Where the data is located.                                           | DataSource[]   |
-| entities\*     | The data to be defined.                                              | Entity[]       |
-| cors           | Cors options for the GraphQL Server.                                 | Cors Config    |
-| guards         | Guards applied at the sservice level.                                | Guard[]        |
-| imports        | An array of paths to import entities from separate files.            | String[]       |
-| port           | The port of which to run the service.                                | Int            |
-| license_key    | Provide a key to remove the 20 minute demo limit.                    | Option<String> |
-| host           | Enable the ability to host on 0.0.0.0 instead of loaclhost/127.0.0.1 | Option<bool>   |
+| Service\*      | Description                                                          | Type         |
+| -------------- | -------------------------------------------------------------------- | ------------ |
+| name\*         | The name of this service.                                            | String       |
+| version        | The version of the API.                                              | String       |
+| data_sources\* | Where the data is located.                                           | DataSource[] |
+| entities\*     | The data to be defined.                                              | Entity[]     |
+| cors           | Cors options for the GraphQL Server.                                 | Cors Config  |
+| guards         | Guards applied at the sservice level.                                | Guard[]      |
+| imports        | An array of paths to import entities from separate files.            | String[]     |
+| port           | The port of which to run the service.                                | Int          |
+| license_key    | Provide a key to remove the 20 minute demo limit.                    | String       |
+| host           | Enable the ability to host on 0.0.0.0 instead of loaclhost/127.0.0.1 | bool         |
 
 #### Data Sources
 
@@ -125,13 +125,13 @@ Migrations are only executed if subgraph is run with the flag `--migrate run`
 | required            | Non nullable entity.                       | bool                      |
 | exclude_from_output | Remove the ability to resolve this entity. | bool                      |
 
-| Entity Data Source Config | Description                                                         | Type              |
-| ------------------------- | ------------------------------------------------------------------- | ----------------- |
-| from\*                    | The name of the associated HTTP Data Source.                        | String            |
-| collection                | The name of the associated Mongo Collection.                        | String            |
-| table                     | The name of the associated SQL Table.                               | String            |
-| path                      | The path/endpoint relative to the associated HTTP Data Source Path. | String            |
-| resolvers                 | Configuration to apply per generated resolver.                      | Entity Resolver[] |
+| Entity Data Source Config | Description                                                         | Type            |
+| ------------------------- | ------------------------------------------------------------------- | --------------- |
+| from\*                    | The name of the associated HTTP Data Source.                        | String          |
+| collection                | The name of the associated Mongo Collection.                        | String          |
+| table                     | The name of the associated SQL Table.                               | String          |
+| path                      | The path/endpoint relative to the associated HTTP Data Source Path. | String          |
+| resolvers                 | Configuration to apply per generated resolver.                      | Entity Resolver |
 
 | Entity Resolver | Description                                                  | Type                   |
 | --------------- | ------------------------------------------------------------ | ---------------------- |
@@ -155,19 +155,19 @@ Migrations are only executed if subgraph is run with the flag `--migrate run`
 | ------------------- | ----------------------------------------------------------------------------------------------------- | ------------------ |
 | name\*              | The name of the field.                                                                                | String             |
 | scalar\*            | The scalar type of the field.                                                                         | Scalar Options     |
-| required            | Whether or not the field is required. Defaults to false.                                              | Option<bool>       |
+| required            | Whether or not the field is required. Defaults to false.                                              | bool               |
 | exclude_from_input  | A list of resolvers of which not to apply to the associated input.                                    | ExcludeFromInput[] |
 | exclude_from_output | Remove the ability to resolve this field.                                                             | bool               |
-| list                | Defines the scalar as a list or a singular value.                                                     | Option<bool>       |
-| as_type             | Associates the field with another entity type for joining/extending                                   | Option<String>     |
-| join_on             | The 'foreign key' of the type to be joined on.                                                        | Option<String>     |
-| join_from           | The source key to join from when performing associations.                                             | Option<String>     |
-| guards              | A list of guards to apply to a field.                                                                 | Option<Guard>      |
-| default_value       | An eval expr calculated value that is applied for Update and Create Resolvers. Use "null" for `null`. | Option<String>     |
-| is_virtual          | Define properties on graphql inputs that do not exist in the database                                 | Option<bool>       |
-| eager               | Search for entity based on the fields of another entity                                               | Option<bool>       |
-| primary_key         | Use field to override the default primary key (\_id for mongo, id for sql )                           | Option<bool>       |
-| enum_values         | A list of strings representing the possible values for a field.                                       | Option<String>     |
+| list                | Defines the scalar as a list or a singular value.                                                     | bool               |
+| as_type             | Associates the field with another entity type for joining/extending                                   | String             |
+| join_on             | The 'foreign key' of the type to be joined on.                                                        | String             |
+| join_from           | The source key to join from when performing associations.                                             | String             |
+| guards              | A list of guards to apply to a field.                                                                 | Guard              |
+| default_value       | An eval expr calculated value that is applied for Update and Create Resolvers. Use "null" for `null`. | String             |
+| is_virtual          | Define properties on graphql inputs that do not exist in the database                                 | bool               |
+| eager               | Search for entity based on the fields of another entity                                               | bool               |
+| primary_key         | Use field to override the default primary key (\_id for mongo, id for sql )                           | bool               |
+| enum_values         | A list of strings representing the possible values for a field.                                       | String             |
 
 | Scalar Options |
 | -------------- |
@@ -177,6 +177,8 @@ Migrations are only executed if subgraph is run with the flag `--migrate run`
 | ObjectID       |
 | Object         |
 | Enum           |
+| UUID           |
+| DateTime       |
 
 | ResolverType |
 | ------------ |

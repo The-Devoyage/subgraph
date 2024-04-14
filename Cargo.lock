@@ -185,7 +185,7 @@ dependencies = [
  "fast_chemail",
  "fnv",
  "futures-util",
- "handlebars",
+ "handlebars 4.4.0",
  "http 1.0.0",
  "indexmap 2.0.2",
  "mime",
@@ -1244,6 +1244,20 @@ name = "handlebars"
 version = "4.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c39b3bc2a8f715298032cf5087e58573809374b08160aa7d750582bdb82d2683"
+dependencies = [
+ "log",
+ "pest",
+ "pest_derive",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "handlebars"
+version = "5.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d08485b96a0e6393e9e4d1b8d48cf74ad6c063cd905eb33f42c1ce3f0377539b"
 dependencies = [
  "log",
  "pest",
@@ -3219,6 +3233,7 @@ dependencies = [
  "clap",
  "env_logger",
  "evalexpr",
+ "handlebars 5.1.2",
  "http 0.2.9",
  "http-serde",
  "json",
