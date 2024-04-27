@@ -100,8 +100,11 @@ impl SqlDataSource {
             }
 
             if let Some(sort_input) = opts.get("sort") {
-                let sort_input = sort_input.as_array().unwrap(); // Ok to unwrap, graphql checks
-                                                                 // this.
+                let sort_input = sort_input.as_array();
+                if sort_input.is_none() {
+                    return Err(async_graphql::Error::new("Sort input must be an array"));
+                }
+                let sort_input = sort_input.unwrap();
                 for sort_item in sort_input {
                     let sort_item = sort_item.as_document().unwrap();
                     let field = sort_item.get("field").unwrap();

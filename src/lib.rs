@@ -6,8 +6,8 @@ use async_graphql::{
 use async_graphql_warp::{GraphQLBadRequest, GraphQLResponse};
 use http::{HeaderMap, StatusCode};
 use local_ip_address::local_ip;
-use log::{error, info, trace};
-use std::{collections::HashMap, convert::Infallible};
+use log::{info, trace};
+use std::convert::Infallible;
 use warp::{http::Response as HttpResponse, Filter, Future, Rejection};
 
 pub mod cli_args;
@@ -53,8 +53,9 @@ pub async fn run(
         .and(warp::header::headers_cloned())
         .and_then(
             |(schema, request): (Schema, async_graphql::Request), headers: HeaderMap| async move {
-                let dynamic_request = schema.execute(request.data(headers)).await;
-                let response = GraphQLResponse::from(dynamic_request);
+                trace!("Request: {:?}", request);
+                let dynamic_response = schema.execute(request.data(headers)).await;
+                let response = GraphQLResponse::from(dynamic_response);
                 Ok::<_, Infallible>(response)
             },
         );
@@ -101,83 +102,24 @@ pub async fn run(
 
     let ssr_route = warp::path::full() // Look into nested routing
         .and(warp::post().or(warp::get()))
-        // Get Request Body
         .and(warp::body::form())
-        // Get Search Query
-        .and(warp::query::<HashMap<String, String>>())
-        .map(
+        .and(warp::query::<serde_json::Value>())
+        //headers
+        .and(warp::header::headers_cloned())
+        .and_then(
             move |path: warp::filters::path::FullPath,
                   _,
-                  body: HashMap<String, String>,
-                  search: HashMap<String, String>| {
-                trace!("SSR Path: {:?}", path);
-                trace!("SSR Body: {:?}", body);
-                trace!("SSR Search: {:?}", search);
-
-                // Serve a file located at the same path as the request path
-                let file = format!(
-                    "{}/{}",
-                    ssr_options.clone().unwrap_or_default().path,
-                    path.as_str()
-                );
-
-                trace!("SSR File: {:?}", file);
-
-                let has_extension = file.contains(".");
-                let ext;
-
-                // If the file does not have an extension, assume it is a directory and serve the index.html file
-                let file = if !has_extension {
-                    let file = format!("{}/index.html", file);
-                    let file = std::fs::read_to_string(file);
-                    ext = Some("html".to_string());
-                    match file {
-                        Ok(file) => file,
-                        Err(err) => {
-                            error!("SSR File Error: {:?}", err);
-                            return HttpResponse::builder()
-                                .body("SSR File Error. Check console for detail.".to_string());
-                        }
-                    }
-                } else {
-                    ext = file.split(".").last().map(|s| s.to_string());
-                    let file = std::fs::read_to_string(file);
-                    match file {
-                        Ok(file) => file,
-                        Err(err) => {
-                            error!("SSR File Error: {:?}", err);
-                            return HttpResponse::builder()
-                                .body("SSR File Error. Check console for detail.".to_string());
-                        }
-                    }
-                };
-
-                // If enable_ssr, hydrate the SSR template
-                let enable_hydrate = ssr_options
-                    .clone()
-                    .unwrap_or_default()
-                    .enable_hydrate
-                    .unwrap_or_default();
-
-                if enable_hydrate && ext == Some("html".to_string()) {
-                    // Hydrate the SSR template
-                    let html = ServeOptions::handle_hydrate_ssr(file, ssr_options.clone());
-                    match html {
-                        Ok(html) => HttpResponse::builder().body(html),
-                        Err(err) => {
-                            error!("SSR Hydrate Error: {:?}", err);
-                            HttpResponse::builder().body("SSR Hydrate Error".to_string())
-                        }
-                    }
-                } else if enable_hydrate && ext != Some("html".to_string()) {
-                    error!("SSR Hydrate Error: SSR Hydrate is only available for HTML files");
-                    HttpResponse::builder().body(
-                        "SSR Hydrate Error: SSR Hydrate is only available for HTML files"
-                            .to_string(),
-                    )
-                } else {
-                    // Return the file as is
-                    HttpResponse::builder().body(file)
+                  body: serde_json::Value,
+                  search: serde_json::Value,
+                  headers: HeaderMap| {
+                let ssr_options = ssr_options.clone();
+                trace!("Move SSR: {:?}", path);
+                async move {
+                    trace!("Start SSR");
+                    let response =
+                        ServeOptions::process_ssr(path, body, search, ssr_options.clone(), headers)
+                            .await;
+                    response
                 }
             },
         );
