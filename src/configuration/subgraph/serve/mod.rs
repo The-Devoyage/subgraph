@@ -86,35 +86,60 @@ impl ServeOptions {
         html
     }
 
+    // Recusively search up the path for the index.html file
+    pub fn search_up_path(file_path: String) -> Result<String, Rejection> {
+        warn!("Search Up Path: {:?}", file_path);
+        let path = file_path;
+        loop {
+            trace!("Search Up Path: {:?}", path);
+            let path = path.split("/").collect::<Vec<&str>>();
+            let path = path[0..path.len() - 2].join("/");
+            let file_path = format!("{}/index.html", path);
+            trace!("Implied HTML Extension: {:?}", file_path);
+            let file = std::fs::read_to_string(file_path).ok();
+            if file.is_some() {
+                break Ok(file.unwrap());
+            }
+            // if all the way up to the root directory, return a 404
+            if path == "" {
+                return Err(warp::reject::not_found());
+            }
+        }
+    }
+
     pub fn format_file_path(file_path: String) -> Result<(FilePath, Extension), Rejection> {
+        debug!("Format File Path: {:?}", file_path);
         let ext;
-        let is_directory = std::fs::metadata(&file_path)
-            .map(|metadata| metadata.is_dir())
-            .unwrap_or(false);
+        let is_directory = std::path::Path::extension(std::path::Path::new(&file_path)).is_none();
+        trace!("Is Directory: {:?}", is_directory);
 
         let formatted = if is_directory {
             let file_path = format!("{}/index.html", file_path);
             trace!("Implied HTML Extension: {:?}", file_path);
-            let file = std::fs::read_to_string(file_path);
+            let file = std::fs::read_to_string(file_path.clone()).ok();
             ext = Some("html".to_string());
-            match file {
-                Ok(file) => file,
-                Err(err) => {
-                    error!("SSR File Error: {:?}", err);
-                    // return Response::builder()
-                    //     .body("SSR File Error. Check console for detail.".to_string());
-                    return Err(warp::reject::not_found());
+            let file = match file {
+                Some(file) => file,
+                None => {
+                    let file = ServeOptions::search_up_path(file_path);
+                    match file {
+                        Ok(file) => file,
+                        Err(err) => {
+                            error!("SSR File Error: {:?}", err);
+                            return Err(warp::reject::not_found());
+                        }
+                    }
                 }
-            }
+            };
+            file
         } else {
+            trace!("Explicit Extension: {:?}", file_path);
             ext = file_path.split(".").last().map(|s| s.to_string());
-            let file = std::fs::read_to_string(file_path);
+            let file = std::fs::read_to_string(file_path.clone());
             match file {
                 Ok(file) => file,
                 Err(err) => {
                     error!("SSR File Error: {:?}", err);
-                    // return Response::builder()
-                    //     .body("SSR File Error. Check console for detail.".to_string());
                     return Err(warp::reject::not_found());
                 }
             }
