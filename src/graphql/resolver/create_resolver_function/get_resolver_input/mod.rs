@@ -36,11 +36,17 @@ impl ServiceResolver {
                     return Err(async_graphql::Error::new("Field is not a nested field"));
                 };
 
+                let join_on = if let Some(join_on) = as_field.join_on.clone() {
+                    join_on
+                } else {
+                    return Err(async_graphql::Error::new(
+                        "Field does not have a join_on field",
+                    ));
+                };
+
                 // Determine if the `join_on` field is eager
-                let join_on_field = ServiceEntityConfig::get_field(
-                    entity.clone(),
-                    as_field.clone().join_on.unwrap().clone(),
-                )?;
+                let join_on_field =
+                    ServiceEntityConfig::get_field(entity.clone(), join_on.clone())?;
 
                 ServiceResolver::create_internal_input(
                     &ctx,
