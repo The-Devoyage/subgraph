@@ -76,7 +76,6 @@ pub async fn run(
             info!("📁 Asset Path: {:?}", asset.path);
         }
         if let Some(ssr) = serve_options.ssr {
-            info!("📁 SSR Route: {:?}", ssr.route);
             info!("📁 SSR Path: {:?}", ssr.path);
         }
     }

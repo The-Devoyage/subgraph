@@ -24,7 +24,6 @@ impl Default for ServeAssets {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ServeSSR {
     pub path: String,
-    pub route: String,
     pub enable_hydrate: Option<bool>,
 }
 
@@ -32,7 +31,6 @@ impl Default for ServeSSR {
     fn default() -> Self {
         ServeSSR {
             path: "/tmp".to_string(),
-            route: "ssr".to_string(),
             enable_hydrate: Some(false),
         }
     }
@@ -90,27 +88,30 @@ impl ServeOptions {
     pub fn search_up_path(file_path: String) -> Result<String, Rejection> {
         warn!("Search Up Path: {:?}", file_path);
         let path = file_path;
-        loop {
-            trace!("Search Up Path: {:?}", path);
-            let path = path.split("/").collect::<Vec<&str>>();
-            let path = path[0..path.len() - 2].join("/");
+        let params = path.split("/").collect::<Vec<&str>>();
+        for i in 0..params.len() {
+            let path = params[0..params.len() - i].join("/");
             let file_path = format!("{}/index.html", path);
             trace!("Implied HTML Extension: {:?}", file_path);
             let file = std::fs::read_to_string(file_path).ok();
             if file.is_some() {
-                break Ok(file.unwrap());
+                return Ok(file.unwrap());
             }
+
             // if all the way up to the root directory, return a 404
             if path == "" {
                 return Err(warp::reject::not_found());
             }
         }
+        Err(warp::reject::not_found())
     }
 
     pub fn format_file_path(file_path: String) -> Result<(FilePath, Extension), Rejection> {
         debug!("Format File Path: {:?}", file_path);
         let ext;
-        let is_directory = std::path::Path::extension(std::path::Path::new(&file_path)).is_none();
+        let is_directory = std::fs::metadata(file_path.clone())
+            .map(|metadata| metadata.is_dir())
+            .unwrap_or(false);
         trace!("Is Directory: {:?}", is_directory);
 
         let formatted = if is_directory {
@@ -177,6 +178,13 @@ impl ServeOptions {
             .unwrap_or_default()
             .enable_hydrate
             .unwrap_or_default();
+
+        if ext == Some("js".to_string()) {
+            // Return the file as is with correct content type
+            return Ok(Response::builder()
+                .header("Content-Type", "application/javascript")
+                .body(file_path));
+        }
 
         if enable_hydrate && ext == Some("html".to_string()) {
             // Hydrate the SSR template
