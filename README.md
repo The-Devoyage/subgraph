@@ -14,6 +14,18 @@ Subgraph Documentation has moved to our new [Documentation Site](https://www.the
 
 Check out the [Quick Start](https://www.thedevoyage/com/subgraph/quickstart) in the new Docs Page!
 
+### Install
+
+```
+cargo install devoyage-subgraph
+```
+
+### Run
+
+```
+subgraph -c ./my-config.toml
+```
+
 ## License
 
 Use subgraph without a license for 20 minutes or enable unrestricted access by purchasing a [License Key](https://thedevoyage.gumroad.com/l/subgraph). Make sure to start the service
