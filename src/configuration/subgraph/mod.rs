@@ -11,7 +11,6 @@ pub mod cors;
 pub mod data_sources;
 pub mod entities;
 pub mod guard;
-pub mod serve;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServiceConfig {
@@ -22,7 +21,6 @@ pub struct ServiceConfig {
     pub host: Option<bool>,
     pub log_level: Option<LogLevelEnum>,
     pub auth: Option<auth::ServiceAuth>,
-    pub serve: Option<serve::ServeOptions>,
     pub guards: Option<Vec<Guard>>,
     #[serde(default)]
     pub entities: Vec<entities::ServiceEntityConfig>,
