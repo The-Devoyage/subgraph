@@ -1,5 +1,5 @@
 [package]
-name = "subgraph"
+name = "devoyage-subgraph"
 version = "0.0.15"
 edition = "2021"
 license = "MIT"
@@ -10,6 +10,7 @@ readme = "README.md"
 
 [lib]
 path = "src/lib.rs"
+name = "subgraph"
 
 [[bin]]
 name = "subgraph"
