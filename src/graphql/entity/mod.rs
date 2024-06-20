@@ -1,4 +1,4 @@
-use async_graphql::dynamic::Object;
+use async_graphql::dynamic::{Enum, Object};
 use log::debug;
 
 use crate::{
@@ -45,10 +45,11 @@ impl ServiceEntity {
         }
     }
 
-    pub fn build(self) -> Vec<Object> {
+    pub fn build(self) -> (Vec<Object>, Vec<Enum>) {
         debug!("Creating Type For: `{}`", &self.type_name);
 
         let mut type_defs = Vec::new();
+        let mut enum_defs = Vec::new();
 
         let mut type_def = Object::new(&self.type_name);
 
@@ -67,6 +68,10 @@ impl ServiceEntity {
 
             for object_type_def in type_defs_and_refs.type_defs {
                 type_defs.push(object_type_def);
+            }
+
+            for enum_def in type_defs_and_refs.enum_defs {
+                enum_defs.push(enum_def);
             }
 
             if entity_field.as_type.is_some() {
@@ -91,6 +96,6 @@ impl ServiceEntity {
 
         debug!("Created Type Defs: {:?}", type_defs);
 
-        type_defs
+        (type_defs, enum_defs)
     }
 }

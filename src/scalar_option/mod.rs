@@ -19,4 +19,11 @@ pub enum ScalarOption {
     Object,
     UUID,
     DateTime,
+    Enum,
+}
+
+impl ScalarOption {
+    pub fn is_enum(&self) -> bool {
+        matches!(self, ScalarOption::Enum)
+    }
 }

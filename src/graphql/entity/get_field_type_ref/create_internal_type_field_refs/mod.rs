@@ -34,6 +34,7 @@ impl ServiceEntity {
         TypeRefsAndDefs {
             type_ref,
             type_defs: Vec::new(),
+            enum_defs: Vec::new(),
         }
     }
 }

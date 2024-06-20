@@ -15,6 +15,7 @@ impl ScalarOption {
             ScalarOption::Object => ElementType::EmbeddedDocument,
             ScalarOption::UUID => ElementType::String,
             ScalarOption::DateTime => ElementType::DateTime,
+            ScalarOption::Enum => ElementType::String,
         }
     }
 }

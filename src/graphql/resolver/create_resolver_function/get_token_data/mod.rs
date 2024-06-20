@@ -1,7 +1,7 @@
 use async_graphql::dynamic::ResolverContext;
 use biscuit_auth::{Biscuit, KeyPair};
 use http::HeaderMap;
-use log::debug;
+use log::{debug, trace};
 
 use crate::graphql::{resolver::ServiceResolver, schema::create_auth_service::TokenData};
 
@@ -10,6 +10,8 @@ impl ServiceResolver {
         ctx: &ResolverContext,
         headers: HeaderMap,
     ) -> Result<Option<TokenData>, async_graphql::Error> {
+        debug!("Getting token data");
+
         let key_pair = ctx.data_unchecked::<Option<KeyPair>>();
         let token_data = if key_pair.is_some() {
             let public_key = key_pair.as_ref().unwrap().public();
@@ -27,7 +29,7 @@ impl ServiceResolver {
                 async_graphql::Error::new(format!("Failed to parse biscuit: {:?}", e))
             })?;
 
-            debug!("Biscuit: {:?}", biscuit);
+            trace!("Biscuit: {:?}", biscuit);
 
             let mut authorizier = biscuit.authorizer().map_err(|e| {
                 async_graphql::Error::new(format!("Failed to get authorizer: {:?}", e))
@@ -39,7 +41,7 @@ impl ServiceResolver {
                     async_graphql::Error::new(format!("Failed to query biscuit: {:?}", e))
                 })?;
 
-            debug!("TokenData: {:?}", token_data);
+            trace!("TokenData: {:?}", token_data);
 
             let token_data = TokenData {
                 identifier: token_data[0].0.clone(),

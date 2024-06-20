@@ -47,19 +47,21 @@ pub async fn run(
     // Build GraphQL Schema
     let schema = graphql::schema::ServiceSchema::new(subgraph_config.clone(), data_sources).build();
 
-    // GraphQL Endpoint
-    let graphql_post = async_graphql_warp::graphql(schema.clone())
+    // GraphQL Endpoint at /graphql
+    let graphql_post = warp::path("graphql")
+        .and(async_graphql_warp::graphql(schema.clone()))
         .and(warp::header::headers_cloned())
         .and_then(
             |(schema, request): (Schema, async_graphql::Request), headers: HeaderMap| async move {
-                let dynamic_request = schema.execute(request.data(headers)).await;
-                let response = GraphQLResponse::from(dynamic_request);
+                trace!("Request: {:?}", request);
+                let dynamic_response = schema.execute(request.data(headers)).await;
+                let response = GraphQLResponse::from(dynamic_response);
                 Ok::<_, Infallible>(response)
             },
         );
 
     // GraphQL Playground Endpoint
-    let graphql_playground = warp::path::end().and(warp::get()).map(|| {
+    let graphql_playground = warp::path("playground").and(warp::get()).map(|| {
         HttpResponse::builder().body(playground_source(GraphQLPlaygroundConfig::new("/graphql")))
     });
 
@@ -88,7 +90,7 @@ pub async fn run(
     // Get Port from CLI Arguments or Subgraph Config
     let port = match args.port.clone() {
         Some(port) => port,
-        None => match subgraph_config.clone().service.port {
+        None => match subgraph_config.service.port.clone() {
             Some(port) => port,
             None => 0,
         },
@@ -104,7 +106,7 @@ pub async fn run(
             info!("🛝 Playground: http://{:?}:{:?}", ip, port);
             [0, 0, 0, 0]
         }
-        false => match subgraph_config.clone().service.host {
+        false => match subgraph_config.service.host {
             Some(_host) => {
                 let ip = local_ip().expect("Failed to get local IP address");
                 info!("🛝 Playground: http://{:?}:{:?}", ip, port);

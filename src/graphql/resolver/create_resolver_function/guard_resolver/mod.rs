@@ -50,11 +50,8 @@ impl ServiceResolver {
                 }
                 None => None,
             };
-        let field_guards = ServiceResolver::get_field_guards(selection_fields, &entity, None)
-            .map_err(|e| {
-                error!("Error getting field guards: {:?}", e);
-                async_graphql::Error::new("Error getting field guards")
-            })?;
+        let field_guards =
+            ServiceResolver::get_field_guards(selection_fields, &entity, None).unwrap_or(vec![]);
 
         // Handle guard data contexts to inject data from the graph into the eval context.
         let guard_data_contexts = Guard::get_guard_data_contexts(

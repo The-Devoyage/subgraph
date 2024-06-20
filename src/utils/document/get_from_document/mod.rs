@@ -19,6 +19,7 @@ pub enum DocumentValue {
     UUIDArray(Vec<uuid::Uuid>),
     DateTime(chrono::DateTime<chrono::Utc>),
     DateTimeArray(Vec<chrono::DateTime<chrono::Utc>>),
+    Null,
     None,
 }
 
@@ -29,6 +30,15 @@ impl DocumentUtils {
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
         debug!("Getting Document String Scalar: {}", field_name);
+
+        if document.get(field_name).is_none() {
+            return Ok(DocumentValue::None);
+        }
+
+        if document.get(field_name).unwrap().as_null().is_some() {
+            return Ok(DocumentValue::Null);
+        }
+
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 let valid_strings = documents.iter().all(|value| value.as_str().is_some());
@@ -68,6 +78,15 @@ impl DocumentUtils {
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
         debug!("Getting Document Int Scalar: {}", field_name);
+
+        if document.get(field_name).is_none() {
+            return Ok(DocumentValue::None);
+        }
+
+        if document.get(field_name).unwrap().as_null().is_some() {
+            return Ok(DocumentValue::Null);
+        }
+
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 // Check that all values are i32 or i64
@@ -141,6 +160,15 @@ impl DocumentUtils {
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
         debug!("Getting Document Boolean Scalar: {}", field_name);
+
+        if document.get(field_name).is_none() {
+            return Ok(DocumentValue::None);
+        }
+
+        if document.get(field_name).unwrap().as_null().is_some() {
+            return Ok(DocumentValue::Null);
+        }
+
         if is_list {
             let valid_bools = document
                 .get_array(field_name)?
@@ -178,6 +206,15 @@ impl DocumentUtils {
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
         debug!("Getting Document UUID Scalar: {}", field_name);
+
+        if document.get(field_name).is_none() {
+            return Ok(DocumentValue::None);
+        }
+
+        if document.get(field_name).unwrap().as_null().is_some() {
+            return Ok(DocumentValue::Null);
+        }
+
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 let valid_uuids = documents.iter().all(|value| {
@@ -233,6 +270,15 @@ impl DocumentUtils {
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
         debug!("Getting Document DateTime Scalar: {}", field_name);
+
+        if document.get(field_name).is_none() {
+            return Ok(DocumentValue::None);
+        }
+
+        if document.get(field_name).unwrap().as_null().is_some() {
+            return Ok(DocumentValue::Null);
+        }
+
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 // Check all values are valid dates
@@ -277,6 +323,15 @@ impl DocumentUtils {
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
         debug!("Getting Document ObjectID Scalar: {}", field_name);
+
+        if document.get(field_name).is_none() {
+            return Ok(DocumentValue::None);
+        }
+
+        if document.get(field_name).unwrap().as_null().is_some() {
+            return Ok(DocumentValue::Null);
+        }
+
         if is_list {
             if let Some(Bson::Array(documents)) = document.get(field_name) {
                 let valid_object_ids = documents.iter().all(|value| {
@@ -319,14 +374,19 @@ impl DocumentUtils {
         field_name: &str,
         is_list: bool,
     ) -> Result<DocumentValue, async_graphql::Error> {
-        debug!("Resolving Object Scalar");
-        let value = document.get(field_name);
+        debug!("Get Document Object Scalar");
+        trace!("Field Name: {}", field_name);
 
-        if value.is_none() {
-            return Err(async_graphql::Error::new("No Object Value Found"));
+        if document.get(field_name).is_none() {
+            return Ok(DocumentValue::None);
         }
 
-        let value = value.unwrap();
+        if document.get(field_name).unwrap().as_null().is_some() {
+            return Ok(DocumentValue::Null);
+        }
+
+        let value = document.get(field_name).unwrap();
+
         if is_list {
             if let Some(bson_array) = value.as_array() {
                 let valid_docs = bson_array.iter().all(|value| {
@@ -361,5 +421,61 @@ impl DocumentUtils {
                 value.as_document().unwrap().clone(),
             ))
         }
+    }
+
+    pub fn get_document_enum_scalar(
+        document: &bson::Document,
+        field_name: &str,
+        is_list: bool,
+    ) -> Result<DocumentValue, async_graphql::Error> {
+        debug!("Resolving Enum Scalar");
+
+        if document.get(field_name).is_none() {
+            trace!(
+                "Field `{}` not found, returning DocumentValue::None",
+                field_name
+            );
+            return Ok(DocumentValue::None);
+        }
+
+        if document.get(field_name).unwrap().as_null().is_some() {
+            trace!(
+                "Field `{}` is null, returning DocumentValue::Null",
+                field_name
+            );
+            return Ok(DocumentValue::Null);
+        }
+
+        if is_list {
+            if let Some(Bson::Array(documents)) = document.get(field_name) {
+                let valid_strings = documents.iter().all(|value| value.as_str().is_some());
+
+                if !valid_strings {
+                    error!("Not all values are strings for field {}", field_name);
+                    return Err(async_graphql::Error::new(format!(
+                        "Not all values are strings for field {}",
+                        field_name
+                    )));
+                }
+
+                let values = documents
+                    .into_iter()
+                    .map(|value| value.as_str().unwrap().to_string())
+                    .collect::<Vec<String>>();
+                trace!("Document Value String Array: {:?}", values);
+                return Ok(DocumentValue::StringArray(values));
+            } else {
+                trace!("Document Value String Array: Empty Vec");
+                return Ok(DocumentValue::StringArray(vec![]));
+            }
+        }
+
+        let value = document.get_str(field_name).map_err(|err| {
+            error!("Value is not a string: {}", err);
+            async_graphql::Error::new(format!("Value is not a string: {}", err))
+        })?;
+
+        trace!("Found String Value: {:?}", value);
+        Ok(DocumentValue::String(value.to_string()))
     }
 }

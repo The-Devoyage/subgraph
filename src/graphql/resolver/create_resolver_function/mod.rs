@@ -32,7 +32,7 @@ impl ServiceResolver {
         let subgraph_config = self.subgraph_config.clone();
 
         Box::new(move |ctx: ResolverContext| {
-            debug!("Resolving Field: {}", ctx.field().name());
+            debug!("Resolving Function: {}", ctx.field().name());
             let entity = entity.clone();
             let as_field = as_field.clone();
             let resolver_type = resolver_type.clone();

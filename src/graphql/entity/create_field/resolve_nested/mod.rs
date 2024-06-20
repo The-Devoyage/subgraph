@@ -1,5 +1,5 @@
-use async_graphql::{dynamic::ResolverContext, indexmap::IndexMap, Value};
-use log::debug;
+use async_graphql::{dynamic::ResolverContext, Value};
+use log::{debug, trace};
 
 use crate::{
     configuration::subgraph::entities::service_entity_field::ServiceEntityFieldConfig,
@@ -13,30 +13,37 @@ impl ServiceEntity {
         ctx: &ResolverContext,
         entity_field: &ServiceEntityFieldConfig,
     ) -> Result<Option<Value>, async_graphql::Error> {
-        let field_name = ctx.field().name();
+        debug!("Resolving Nested Field");
 
-        debug!("Resolving Nested Field: {:?}", &field_name);
+        let field_name = ctx.field().name();
+        trace!("Field Name: {:?}", field_name);
 
         let parent_value = match ctx.parent_value.as_value() {
             Some(value) => value,
             None => {
-                debug!("Parent Value is None, creating empty IndexMap");
-                let index_map = IndexMap::new();
-                return Ok(Some(Value::from(index_map)));
+                trace!("Parent is none, returning none");
+                return Ok(None);
             }
         };
+        trace!("Parent Value: {:?}", parent_value);
 
         let parent_value = ServiceEntity::get_parent_value(&parent_value, field_name)?;
+        trace!("Parent Value: {:?}", parent_value);
 
         let document = DocumentUtils::json_to_document(&parent_value)?;
+
+        if document.is_none() {
+            trace!("Documenet is None, returning none");
+            return Ok(None);
+        }
 
         let value = entity_field
             .scalar
             .clone()
-            .document_field_to_async_graphql_value(&document, &entity_field)?;
+            .document_field_to_async_graphql_value(&document.unwrap(), &entity_field)?;
 
-        debug!("Resolved Nested Value: {:?}", value,);
+        trace!("Resolved Nested Value: {:?}", value,);
 
-        Ok(Some(value))
+        Ok(value)
     }
 }

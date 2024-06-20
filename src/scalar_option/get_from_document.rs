@@ -42,6 +42,9 @@ impl ScalarOption {
             ScalarOption::DateTime => {
                 DocumentUtils::get_document_datetime_scalar(document, &field_name, is_list)
             }
+            ScalarOption::Enum => {
+                DocumentUtils::get_document_enum_scalar(document, &field_name, is_list)
+            }
         };
         trace!("Value: {:?}", value);
         value

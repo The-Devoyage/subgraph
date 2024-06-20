@@ -171,13 +171,14 @@ async fn join_sqlite_to_mongo() {
     let json = response.data.into_json().unwrap();
     let user = json.get("get_user").unwrap();
     let user_id = user["data"].get("_id").unwrap();
+    let coffee_name = format!("KatzWithUser-{}", uuid::Uuid::new_v4().to_string());
     println!("UserID: {}", user_id);
     let graphql_query = format!(
         r#"
             mutation {{
                 create_coffee(create_coffee_input: {{
                     values: {{
-                        name: "KatzWithUser",
+                        name: "{}",
                         price: 15,
                         available: true,
                         created_by: {}
@@ -189,7 +190,7 @@ async fn join_sqlite_to_mongo() {
                 }}
             }}
         "#,
-        user_id
+        coffee_name, user_id
     );
     //Insert new coffee, with valid created_by
     let request = async_graphql::Request::new(graphql_query);
@@ -197,25 +198,45 @@ async fn join_sqlite_to_mongo() {
     assert!(response.is_ok());
 
     //Find the coffee, join on the created_by field to populate the data.
-    let request = async_graphql::Request::new(
+    // let request = async_graphql::Request::new(
+    //     r#"
+    //     query {
+    //         get_coffee(get_coffee_input: { query: { name: "KatzWithUser" } }) {
+    //             data {
+    //                 id
+    //                 name
+    //                 price
+    //                 available
+    //                 created_by(created_by: { query: {} }) {
+    //                     data {
+    //                         _id
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     "#,
+    // );
+    let request = async_graphql::Request::new(format!(
         r#"
-        query {
-            get_coffee(get_coffee_input: { query: { name: "KatzWithUser" } }) {
-                data {
+        query {{
+            get_coffee(get_coffee_input: {{ query: {{ name: "{}" }} }}) {{
+                data {{
                     id
                     name
                     price
                     available
-                    created_by(created_by: { query: {} }) {
-                        data {
+                    created_by(created_by: {{ query: {{}} }}) {{
+                        data {{
                             _id
-                        }
-                    }
-                }
-            }
-        }
+                        }}
+                    }}
+                }}
+            }}
+        }}
         "#,
-    );
+        coffee_name
+    ));
 
     let response = execute(request, None).await;
     let json = response.data.into_json().unwrap();

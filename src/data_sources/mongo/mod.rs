@@ -1,6 +1,6 @@
 use async_graphql::dynamic::FieldValue;
 use bson::{doc, to_document, Document};
-use log::{debug, error, trace};
+use log::{debug, error, trace, warn};
 use mongodb::{options::ClientOptions, Client, Database};
 
 use crate::{
@@ -65,15 +65,23 @@ impl MongoDataSource {
         entity: &ServiceEntityConfig,
         subgraph_config: &SubGraphConfig,
         resolver_type: &ResolverType,
+        key: Option<String>, // Provide a key to keep track of nested fields.
     ) -> Result<(Document, Vec<EagerLoadOptions>), async_graphql::Error> {
         debug!("Serialize String Object IDs to Object IDs");
+        trace!("Filter: {:?}", filter);
 
         let mut converted = filter.clone();
         let mut combined_eager_options = vec![];
 
-        let mut key = "".to_string();
         for (k, value) in filter.iter() {
-            debug!("Key: {}, Value: {}", k, value);
+            trace!(
+                "Current Key: {:?}, Processing Key: {}, Value: {}",
+                key.clone(),
+                k,
+                value
+            );
+
+            // If it is a servie defined field, iterate through the fields to find the correct field.
             if k == "query"
                 || k == "values"
                 || FilterOperator::list()
@@ -90,12 +98,14 @@ impl MongoDataSource {
                         ));
                     }
                 };
+                // Send through recursive function to convert the object id string to object id
                 let (nested_converted, nested_eager_load_options) =
                     match MongoDataSource::convert_object_id_string_to_object_id_from_doc(
                         document.clone(),
                         entity,
                         subgraph_config,
                         resolver_type,
+                        key.clone(),
                     ) {
                         Ok(nested) => nested,
                         Err(e) => {
@@ -150,15 +160,18 @@ impl MongoDataSource {
                 // Handle object types and eager loaded fields
                 match field.scalar {
                     ScalarOption::Object => {
-                        let separator = if key.is_empty() { "" } else { "." };
+                        trace!("Found Object Scalar");
+                        trace!("Current Key: {:?}", key.clone());
+                        let separator = if key.is_none() { "" } else { "." };
                         let separated = format!("{}{}", separator, k);
-                        key.push_str(&separated);
+                        let key = Some(separated);
                         let (nested_converted, nested_eager_load_options) =
                             match MongoDataSource::convert_object_id_string_to_object_id_from_doc(
                                 value.as_document().unwrap().clone(),
                                 entity,
                                 subgraph_config,
                                 resolver_type,
+                                key.clone(),
                             ) {
                                 Ok(nested) => nested,
                                 Err(e) => {
@@ -169,7 +182,9 @@ impl MongoDataSource {
                                     return Err(e);
                                 }
                             };
-                        converted.insert(key.clone(), nested_converted);
+                        trace!("Nested Converted: {:?}", nested_converted);
+                        trace!("Inserting Key: {:?}", key);
+                        converted.insert(key.as_ref().unwrap().clone(), nested_converted);
                         combined_eager_options.extend(nested_eager_load_options);
                     }
                     _ => (),
@@ -201,6 +216,7 @@ impl MongoDataSource {
                             &eager_entity,
                             subgraph_config,
                             resolver_type,
+                            key.clone(),
                         ) {
                             Ok(nested) => nested,
                             Err(e) => {
@@ -306,6 +322,7 @@ impl MongoDataSource {
         resolver_type: &ResolverType,
     ) -> Result<(Document, Vec<EagerLoadOptions>), async_graphql::Error> {
         debug!("Finalizing Input Filters");
+        trace!("Filter: {:?}", filter);
 
         let mut finalized = filter.clone();
         let mut eager_filters = Vec::new();
@@ -395,6 +412,7 @@ impl MongoDataSource {
                 entity,
                 subgraph_config,
                 &resolver_type,
+                None,
             )?;
         eager_filters.extend(eager_load_options);
 
@@ -467,6 +485,11 @@ impl MongoDataSource {
                 }
             }
 
+            // Get the limit from the opts input
+            if let Some(per_page) = opts.per_page {
+                limit = per_page;
+            }
+
             // If opts.page and opts.per_page, calculate the new skip and limit values.
             if let Some(page_value) = opts.page {
                 if let Some(per_page_value) = opts.per_page {
@@ -515,6 +538,7 @@ impl MongoDataSource {
         subgraph_config: &SubGraphConfig,
     ) -> Result<Option<FieldValue<'a>>, async_graphql::Error> {
         debug!("Executing Operation - Mongo Data Source");
+        trace!("Input: {:?}", input);
 
         let eager_load_options;
         (input, eager_load_options) =
@@ -563,9 +587,10 @@ impl MongoDataSource {
                 )
                 .await?;
                 let opts_doc = if input.clone().get("opts").is_some() {
-                    trace!("opts: {:?}", input.get("opts").unwrap());
+                    trace!("Options Document Found: {:?}", input.get("opts").unwrap());
                     to_document(input.get("opts").unwrap()).unwrap()
                 } else {
+                    trace!("Options Document Not Found. Defaulting to 10 per page.");
                     let mut d = Document::new();
                     d.insert("per_page", 10);
                     d.insert("page", 1);
@@ -578,11 +603,20 @@ impl MongoDataSource {
                     1
                 };
                 let total_pages = if let Some(per_page_value) = opts_doc.get("per_page") {
-                    let per_page = per_page_value.as_i32().unwrap();
-                    if total_count as i32 % per_page as i32 == 0 {
-                        total_count as i32 / per_page as i32
+                    let mut per_page = per_page_value.as_i32();
+                    if per_page.is_none() {
+                        let per_page_i64 = per_page_value.as_i64();
+                        if per_page_i64.is_none() {
+                            warn!("Invalid per_page value. Defaulting to 10.");
+                            per_page = Some(10);
+                        } else {
+                            per_page = Some(per_page_i64.unwrap() as i32);
+                        }
+                    }
+                    if total_count as i32 % per_page.unwrap() as i32 == 0 {
+                        total_count as i32 / per_page.unwrap() as i32
                     } else {
-                        (total_count as i32 / per_page as i32) + 1
+                        (total_count as i32 / per_page.unwrap() as i32) + 1
                     }
                 } else {
                     1

@@ -15,7 +15,7 @@ impl ScalarOption {
         self,
         document: &Document,
         field: &ServiceEntityFieldConfig,
-    ) -> Result<Value, async_graphql::Error> {
+    ) -> Result<Option<Value>, async_graphql::Error> {
         debug!("Resolving Document Field: {:?}", field.name);
 
         let value = match self {
@@ -32,6 +32,7 @@ impl ScalarOption {
             ScalarOption::DateTime => {
                 ServiceEntity::resolve_document_datetime_scalar(document, field)
             }
+            ScalarOption::Enum => ServiceEntity::resolve_document_enum_scalar(document, field),
         };
 
         trace!("Resolved Document Field: {:?}", field.name);

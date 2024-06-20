@@ -1,5 +1,26 @@
 # Changelog
 
+## [v0.0.15]
+
+### Fixed
+
+- Internal Joins with Eager Loaded Fields Fixed
+- Implement and resolve Document NONE values.
+- Object Scalars with Required False and Required True Children Resolving
+- Limit/per page for Mongo
+- Unexpected object nesting when updating/saving Mongo Documents.
+
+### Changed
+
+- Update Async Graphql
+- Allow empty `data_sources` and `entities` when starting service.
+
+### Added
+
+- Add health check to mutation and query objects.
+- Provide string `"null"` converts to `null` in default value.
+- Enum Scalar Support
+
 ## [v0.0.14]
 
 ### Added

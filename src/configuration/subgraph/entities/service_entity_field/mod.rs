@@ -24,6 +24,7 @@ pub struct ServiceEntityFieldConfig {
     pub eager: Option<bool>,
     pub is_virtual: Option<bool>,
     pub primary_key: Option<bool>,
+    pub enum_values: Option<Vec<String>>,
 }
 
 impl ServiceEntityFieldConfig {

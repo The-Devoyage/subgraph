@@ -49,6 +49,13 @@ impl ScalarOption {
                     None => Ok(Value::Null),
                 }
             }
+            ScalarOption::Enum => {
+                let value = ServiceEntity::resolve_sql_enum_scalar(response_row, field_name)?;
+                match value {
+                    Some(value) => Ok(Value::from(value)),
+                    None => Ok(Value::Null),
+                }
+            }
             _ => {
                 error!("ScalarOption {:?} not implemented", self);
                 Err(async_graphql::Error::new(format!(
